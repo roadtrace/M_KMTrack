@@ -900,21 +900,21 @@ button {
   body{
     min-height:100vh;
     background:
-      radial-gradient(circle at 7% 44%,rgba(30,127,147,.16) 0,transparent 34%),
-      radial-gradient(circle at 78% 30%,rgba(75,56,133,.16) 0,transparent 38%),
-      linear-gradient(155deg,#111e28 0%,#171925 47%,#0c1d28 100%);
+      radial-gradient(circle at 7% 40%,rgba(24,132,178,.27) 0,transparent 38%),
+      radial-gradient(circle at 82% 28%,rgba(61,67,145,.19) 0,transparent 40%),
+      linear-gradient(155deg,#102231 0%,#141a27 46%,#07111a 100%);
     background-attachment:fixed;
   }
   .top-shell{position:sticky;top:0;z-index:20;}
   header{
     position:relative;z-index:2;display:block;
-    min-height:152px;padding:calc(env(safe-area-inset-top) + 24px) 18px 17px;
+    min-height:0;padding:calc(env(safe-area-inset-top) + 16px) 16px 14px;
     background:linear-gradient(145deg,rgba(31,38,44,.98),rgba(21,27,32,.98));
     border-radius:0 0 30px 30px;
     box-shadow:0 12px 28px rgba(0,0,0,.30);
   }
   .header-brand{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;}
-  .header-logo{width:min(300px,70vw);height:auto;max-width:none;max-height:82px;object-fit:contain;object-position:center;flex:none;}
+  .header-logo{width:auto;height:72px;max-width:min(55vw,430px);max-height:72px;object-fit:contain;object-position:center;flex:none;}
   .header-copy{width:100%;align-items:center;text-align:center;margin-top:4px;}
   .header-copy .sub{font-family:var(--font-ui);font-size:12px;letter-spacing:.035em;color:#aeb4bc;max-width:min(92vw,480px);}
   #storage-status:not([hidden]){margin-top:5px;color:#efc067;white-space:normal;}
@@ -945,24 +945,24 @@ button {
 
   main{padding-top:12px;}
   .readout{
-    margin-top:6px;padding:18px;gap:16px;
+    margin-top:6px;padding:14px 16px;gap:14px;
     background:linear-gradient(135deg,rgba(39,39,53,.66),rgba(28,32,45,.53));
     border:1px solid rgba(176,184,205,.22);border-radius:18px;
     box-shadow:0 14px 32px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   }
-  .readout-main{gap:24px 20px;padding:5px 0;}
+  .readout-main{gap:10px 16px;padding:0;}
   .readout-main .field .label{font-size:10px;letter-spacing:.14em;color:#aeb4c0;}
-  .readout-main .field .value{font-size:clamp(15px,4.2vw,19px);margin-top:5px;letter-spacing:.08em;}
-  .readout-main .status{font-size:12px;margin-top:10px;}
+  .readout-main .field .value{font-size:clamp(11px,3.4vw,16px);margin-top:2px;letter-spacing:.01em;}
+  .readout-main .status{font-size:11px;margin-top:2px;}
   .bound-panel{
-    flex-basis:145px;padding:13px;background:rgba(31,38,47,.50);
-    border-color:rgba(255,255,255,.16);border-radius:16px;box-shadow:none;
+    flex-basis:132px;padding:10px 12px;background:rgba(31,38,47,.50);
+    border-color:rgba(255,255,255,.16);border-radius:10px;box-shadow:none;
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   }
-  .bound-panel-label{font-size:13px;margin-bottom:9px;}
-  .bound-toggle{gap:9px;}
-  button.bound-btn{min-height:58px;border-color:rgba(255,255,255,.18);background:rgba(47,55,64,.72);border-radius:14px;box-shadow:none;}
+  .bound-panel-label{font-size:12px;margin-bottom:8px;}
+  .bound-toggle{gap:8px;}
+  button.bound-btn{min-height:48px;border-color:rgba(255,255,255,.18);background:rgba(47,55,64,.72);border-radius:12px;box-shadow:none;}
   button.bound-btn.active{background:linear-gradient(145deg,#ffc000,#f2ad00);border-color:#ffc000;box-shadow:0 9px 18px rgba(244,180,0,.18);}
 
   .kmpost{
@@ -978,26 +978,28 @@ button {
   .kmpost .kmlabel{font-size:11px;}
   .kmpost .kmunit{font-size:12px;}
   .nearby-asset{border-left-color:rgba(230,255,246,.52);}
+  .defect-focus-select,.select-toggle-btn{height:42px;min-height:42px;padding-top:6px;padding-bottom:6px;}
+  .lane-divider{display:none;}
 
   @media(max-width:600px){
-    header{min-height:142px;padding:calc(env(safe-area-inset-top) + 20px) 14px 16px;}
-    .header-logo{width:min(270px,72vw);height:auto;max-width:none;}
-    .header-copy .sub{font-size:11px;}
+    header{min-height:0;padding:calc(env(safe-area-inset-top) + 4px) 12px 8px;}
+    .header-logo{width:auto;height:55px;max-width:42vw;max-height:55px;}
+    .header-copy .sub{font-size:9px;}
     .dataset-drawer{width:calc(100% - 20px);}
     .dataset-drawer>summary{padding-left:18px;padding-right:18px;}
-    .readout{padding:14px;gap:12px;}
-    .readout-main{gap:20px 12px;}
-    .bound-panel{flex-basis:126px;padding:11px;}
-    button.bound-btn{min-height:54px;}
+    .readout{padding:14px 16px;gap:14px;}
+    .readout-main{gap:10px 16px;}
+    .bound-panel{flex-basis:132px;padding:10px 12px;}
+    button.bound-btn{min-height:48px;}
   }
   @media(max-width:390px){
     .dataset-content{grid-template-columns:1fr;}
     .readout{padding:12px;gap:10px;}
-    .readout-main .field .value{font-size:13px;letter-spacing:.035em;}
+    .readout-main .field .value{font-size:12px;letter-spacing:.01em;}
     .bound-panel{flex-basis:112px;padding:9px;}
   }
   @media (orientation:landscape) and (min-width:700px){
-    header{min-height:112px;padding:calc(env(safe-area-inset-top) + 9px) 18px 12px;}
+    header{min-height:0;padding:calc(env(safe-area-inset-top) + 8px) 18px 9px;}
     .header-logo{height:58px;width:auto;max-height:58px;}
     .header-copy{margin-top:0;}
     .dataset-drawer{width:min(calc(100% - 36px),1144px);}
@@ -1019,6 +1021,7 @@ button {
       </div>
     </div>
   </header>
+</div>
   <details class="dataset-drawer" id="dataset-drawer">
     <summary>
       <span class="dataset-state-dot" aria-hidden="true"></span>
@@ -1038,7 +1041,6 @@ button {
       </div>
     </div>
   </details>
-</div>
 
 <main>
 
