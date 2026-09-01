@@ -282,6 +282,24 @@
   .log-entry .info .type{font-weight:700; font-size:14px;}
   .log-entry .info .meta{font-family:var(--mono); font-size:11px; color:#9aa0a6; margin-top:3px; line-height:1.5;}
   .log-entry .del{background:none; border:none; color:#c1392b; font-size:18px; cursor:pointer; padding:4px 8px;}
+  .swipe-row{position:relative;overflow:hidden;border-radius:8px;margin-bottom:8px;touch-action:pan-y;}
+  .swipe-row .log-entry{margin-bottom:0;will-change:transform;transition:transform 180ms ease;}
+  .swipe-row .log-entry:focus-visible{outline:3px solid rgba(244,180,0,.65);outline-offset:-3px;}
+  .swipe-row.dragging .log-entry{transition:none;}
+  .swipe-action{position:absolute;inset-block:0;width:88px;border:0;color:#fff;font-weight:750;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .swipe-action.edit{left:0;background:#1d78b5;}
+  .swipe-action.delete{right:0;background:var(--safety-red);}
+  .swipe-undo{position:fixed;z-index:1100;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:16px;max-width:calc(100vw - 28px);padding:11px 12px 11px 16px;border-radius:12px;background:#f3f5f6;color:#191c1f;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:13px;}
+  .swipe-undo button{border:0;background:transparent;color:#1269a1;font-weight:800;min-height:36px;padding:4px 8px;cursor:pointer;}
+  .swipe-preview .log-entry{animation:swipe-preview 900ms ease-in-out 250ms 1;}
+  @keyframes swipe-preview{0%,100%{transform:translateX(0)}38%{transform:translateX(44px)}62%{transform:translateX(44px)}}
+  @media (prefers-reduced-motion:reduce){
+    .swipe-row .log-entry{transition:none;}
+    .swipe-preview .log-entry{animation:none;}
+  }
+  @media (forced-colors:active){
+    .swipe-action,.swipe-undo{border:1px solid ButtonText;}
+  }
 
   .count-bar{font-size:12px; color:#9aa0a6; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;}
   .count-bar-left{display:flex; align-items:center; gap:8px;}
@@ -1040,6 +1058,7 @@ button {
 
 </main>
 
+<script src="./swipe-actions.js"></script>
 <script>
 class GeoKalmanFilter{
   constructor(){
@@ -1069,7 +1088,7 @@ const gpsFilter = new GeoKalmanFilter();
 
 let currentPos = null; // {lat, lon, acc}; coordinates are Kalman-smoothed
 let calibData = [];    // {e, b, k, lat, lon} — loaded from the NLEX network dataset
-let entries = [];      // {type, timestamp, lat, lon, km, expressway, bound, lane, photoId, photoFilename, photoTimestamp}
+let entries = [];      // {id, type, timestamp, lat, lon, km, expressway, bound, lane, photoId, photoFilename, photoTimestamp}
 let expresswayBounds = {}; // { "NLEX": ["NB","SB"], "C3-R10 RAMP": ["EB","WB"], ... }
 let userBound = null;      // manually selected direction, e.g. "NB"
 let currentExpressway = null; // last detected corridor, used to know which bound pair to show
@@ -1153,6 +1172,7 @@ function newId(){
 const STORAGE_KEY_ENTRIES = 'nlex_inspection_entries_v1';
 const STORAGE_KEY_DATASET = 'nlex_network_dataset_v1';
 const STORAGE_KEY_BOUND = 'nlex_user_bound_v1';
+const STORAGE_KEY_SWIPE_PREVIEW = 'kmtrack_swipe_preview_v1';
 let storageAvailable = true;
 
 function testStorageWritable(){
@@ -1177,9 +1197,11 @@ function loadFromStorage(){
       // malformed entries, and backfill fields introduced after some
       // entries were already saved (photoId/photoFilename/photoTimestamp),
       // so older logs don't break the photo UI or CSV export.
+      let addedStableIds = false;
       entries = (Array.isArray(parsed) ? parsed : [])
         .filter(e => e && typeof e === 'object' && typeof e.lat === 'number' && typeof e.lon === 'number')
         .map(e => ({
+          id: typeof e.id === 'string' && e.id ? e.id : (addedStableIds = true, newId()),
           type: typeof e.type === 'string' && e.type ? e.type : 'Others',
           timestamp: typeof e.timestamp === 'string' && e.timestamp ? e.timestamp : fullTimestamp(),
           lat: e.lat,
@@ -1192,6 +1214,7 @@ function loadFromStorage(){
           photoFilename: typeof e.photoFilename === 'string' ? e.photoFilename : '',
           photoTimestamp: typeof e.photoTimestamp === 'string' ? e.photoTimestamp : ''
         }));
+      if(addedStableIds) localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
     }
     const savedBound = localStorage.getItem(STORAGE_KEY_BOUND);
     if(savedBound) userBound = savedBound;
@@ -1942,6 +1965,7 @@ function logDefect(type, lane){
   const isOffMappedNetwork = !result || result.distance > offNetworkThresholdKm(currentPos.acc);
 
   entries.push({
+    id: newId(),
     type,
     timestamp: fullTimestamp(),
     lat: currentPos.lat,
@@ -2651,6 +2675,7 @@ async function captureContinuousLane(laneValue){
     await putPhoto(photoId + ':raw', result.rawBlob);
     entries.push({
       ...cameraDraftEntry,
+      id: newId(),
       timestamp: fullTimestamp(),
       photoId,
       photoFilename: result.filename,
@@ -2791,6 +2816,7 @@ async function saveCapturedPhoto(){
     } else {
       entries.push({
         ...cameraDraftEntry,
+        id: newId(),
         timestamp: fullTimestamp(),
         photoId,
         photoFilename: pendingCaptureFilename,
@@ -2958,6 +2984,125 @@ function applyContinuousLaneColors(type){
 // ---------- Multi-select delete mode ----------
 let selectMode = false;
 let selectedIndices = new Set();
+let openSwipeEntryId = null;
+let swipePreviewChecked = false;
+let undoNotice = null;
+
+function hideSwipeUndo(){
+  if(undoNotice){ undoNotice.remove(); undoNotice = null; }
+}
+
+function showSwipeUndo(){
+  hideSwipeUndo();
+  const notice = document.createElement('div');
+  notice.className = 'swipe-undo';
+  notice.setAttribute('role', 'status');
+  notice.setAttribute('aria-live', 'polite');
+  notice.innerHTML = '<span>Inspection entry deleted</span><button type="button">Undo</button>';
+  notice.querySelector('button').addEventListener('click', () => deletionController.undo());
+  document.body.appendChild(notice);
+  undoNotice = notice;
+}
+
+const deletionController = KMTrackSwipe.createDeletionController({
+  getEntries: () => entries,
+  persist: saveEntries,
+  render: renderLog,
+  deletePhoto,
+  onPending: showSwipeUndo,
+  onFinalize: hideSwipeUndo,
+  onUndo: hideSwipeUndo
+});
+
+function setSwipeOffset(row, offset){
+  const card = row.querySelector('.log-entry');
+  if(card) card.style.transform = `translateX(${offset}px)`;
+}
+
+function closeOpenSwipe(exceptId){
+  if(!openSwipeEntryId || openSwipeEntryId === exceptId) return;
+  const openRow = document.querySelector(`.swipe-row[data-entry-id="${CSS.escape(openSwipeEntryId)}"]`);
+  if(openRow) setSwipeOffset(openRow, 0);
+  openSwipeEntryId = null;
+}
+
+function maybeShowSwipePreview(list){
+  if(swipePreviewChecked || selectMode) return;
+  swipePreviewChecked = true;
+  let shown = false;
+  try{ shown = localStorage.getItem(STORAGE_KEY_SWIPE_PREVIEW) === '1'; }catch(e){ /* non-critical */ }
+  if(shown) return;
+  try{ localStorage.setItem(STORAGE_KEY_SWIPE_PREVIEW, '1'); }catch(e){ /* non-critical */ }
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const first = list.querySelector('.swipe-row');
+  if(!first) return;
+  first.classList.add('swipe-preview');
+  first.addEventListener('animationend', () => first.classList.remove('swipe-preview'), {once:true});
+}
+
+function wireSwipeRows(list){
+  if(selectMode) return;
+  list.querySelectorAll('.swipe-row').forEach(row => {
+    const card = row.querySelector('.log-entry');
+    const entryId = row.dataset.entryId;
+    let startX = 0, startY = 0, lastX = 0, baseOffset = 0;
+    let pointerId = null, intent = '';
+
+    row.addEventListener('pointerdown', e => {
+      if(e.button !== undefined && e.button !== 0) return;
+      if(e.target.closest('button, a, input, select')) return;
+      closeOpenSwipe(entryId);
+      pointerId = e.pointerId;
+      startX = lastX = e.clientX; startY = e.clientY;
+      baseOffset = openSwipeEntryId === entryId ? (card.style.transform.includes('-') ? -KMTrackSwipe.REVEAL_WIDTH_PX : KMTrackSwipe.REVEAL_WIDTH_PX) : 0;
+      intent = '';
+    });
+    row.addEventListener('pointermove', e => {
+      if(e.pointerId !== pointerId) return;
+      lastX = e.clientX;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if(!intent && Math.max(Math.abs(dx), Math.abs(dy)) >= 10){
+        intent = Math.abs(dx) > Math.abs(dy) * 1.25 ? 'horizontal' : 'vertical';
+        if(intent === 'horizontal'){
+          row.classList.add('dragging');
+          try{ row.setPointerCapture(pointerId); }catch(err){ /* pointer may already be released */ }
+        }
+      }
+      if(intent !== 'horizontal') return;
+      e.preventDefault();
+      setSwipeOffset(row, KMTrackSwipe.resistedOffset(baseOffset + dx));
+    });
+    const finish = e => {
+      if(e.pointerId !== pointerId) return;
+      const dx = lastX - startX;
+      pointerId = null; row.classList.remove('dragging');
+      if(intent !== 'horizontal') return;
+      card.dataset.suppressClick = '1';
+      setTimeout(() => delete card.dataset.suppressClick, 0);
+      const rawOffset = baseOffset + dx;
+      const decision = KMTrackSwipe.releaseDecision(rawOffset, row.getBoundingClientRect().width);
+      const idx = Number(card.dataset.idx);
+      if(decision === 'edit'){
+        openSwipeEntryId = null; setSwipeOffset(row, 0); openEditModal(idx);
+      }else if(decision === 'delete'){
+        openSwipeEntryId = null; deletionController.remove(idx, true);
+      }else if(decision === 'reveal-edit'){
+        closeOpenSwipe(entryId); openSwipeEntryId = entryId; setSwipeOffset(row, KMTrackSwipe.REVEAL_WIDTH_PX);
+      }else if(decision === 'reveal-delete'){
+        closeOpenSwipe(entryId); openSwipeEntryId = entryId; setSwipeOffset(row, -KMTrackSwipe.REVEAL_WIDTH_PX);
+      }else{
+        openSwipeEntryId = null; setSwipeOffset(row, 0);
+      }
+    };
+    row.addEventListener('pointerup', finish);
+    row.addEventListener('pointercancel', e => {
+      if(e.pointerId !== pointerId) return;
+      pointerId = null; row.classList.remove('dragging');
+      openSwipeEntryId = null; setSwipeOffset(row, 0);
+    });
+  });
+  maybeShowSwipePreview(list);
+}
 
 function updateBulkBar(){
   const bar = document.getElementById('bulk-actions-bar');
@@ -2978,6 +3123,7 @@ function exitSelectMode(){
 }
 
 function renderLog(){
+  openSwipeEntryId = null;
   const list = document.getElementById('log-list');
   const exportBtn = document.getElementById('export-btn');
   const backupBtn = document.getElementById('backup-btn');
@@ -2999,9 +3145,17 @@ function renderLog(){
   entries.slice().reverse().forEach((e) => {
     const realIdx = entries.indexOf(e);
     const div = document.createElement('div');
+    const row = document.createElement('div');
     const isSelected = selectedIndices.has(realIdx);
     div.className = 'log-entry ' + typeClass(e.type) + (selectMode ? ' select-mode' : '') + (isSelected ? ' selected' : '');
     div.dataset.idx = realIdx;
+    if(!selectMode){
+      div.tabIndex = 0;
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-label', `Edit ${e.type} inspection entry`);
+    }
+    row.className = 'swipe-row';
+    row.dataset.entryId = e.id;
 
     const photoActionsHtml = e.photoId ? `
       <div class="entry-actions">
@@ -3013,7 +3167,7 @@ function renderLog(){
 
     const checkboxHtml = selectMode
       ? `<div class="entry-checkbox${isSelected ? ' checked' : ''}" data-idx="${realIdx}">${isSelected ? '✓' : ''}</div>`
-      : `<button class="del" data-idx="${realIdx}">✕</button>`;
+      : `<button type="button" class="del" data-idx="${realIdx}" aria-label="Delete ${e.type} entry">✕</button>`;
 
     div.innerHTML = `
       <div class="info">
@@ -3023,7 +3177,9 @@ function renderLog(){
       </div>
       ${checkboxHtml}
     `;
-    list.appendChild(div);
+    row.innerHTML = `<button type="button" class="swipe-action edit" data-idx="${realIdx}" aria-label="Edit ${e.type} entry">Edit</button><button type="button" class="swipe-action delete" data-idx="${realIdx}" aria-label="Delete ${e.type} entry">Delete</button>`;
+    row.appendChild(div);
+    list.appendChild(row);
   });
   list.querySelectorAll('.del').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -3032,14 +3188,7 @@ function renderLog(){
       const entry = entries[idx];
       if(!entry) return;
       if(!confirm(`Delete this entry?\n\n${entry.type}${entry.lane ? ' · Lane: '+entry.lane : ''}\n${entry.timestamp}`)) return;
-      const photoId = entry.photoId;
-      entries.splice(idx, 1);
-      saveEntries();
-      renderLog();
-      if(photoId){
-        deletePhoto(photoId);
-        deletePhoto(photoId + ':raw');
-      }
+      deletionController.remove(idx, false);
     });
   });
   list.querySelectorAll('.photo-view-btn').forEach(btn => {
@@ -3054,6 +3203,13 @@ function renderLog(){
       await removeEntryPhoto(+e.currentTarget.dataset.idx);
     });
   });
+  list.querySelectorAll('.swipe-action.edit').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation(); openEditModal(+e.currentTarget.dataset.idx);
+  }));
+  list.querySelectorAll('.swipe-action.delete').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation(); deletionController.remove(+e.currentTarget.dataset.idx, true);
+  }));
+  wireSwipeRows(list);
   if(selectMode) updateBulkBar();
 }
 renderLog();
@@ -3099,9 +3255,10 @@ document.getElementById('bulk-delete-btn').addEventListener('click', async () =>
 });
 
 document.addEventListener('click', (e) => {
-  if(e.target.closest('.del') || e.target.closest('.photo-view-btn') || e.target.closest('.photo-remove-btn')) return;
+  if(e.target.closest('.del') || e.target.closest('.swipe-action') || e.target.closest('.photo-view-btn') || e.target.closest('.photo-remove-btn')) return;
   const card = e.target.closest('.log-entry');
   if(!card || card.dataset.idx === undefined) return;
+  if(card.dataset.suppressClick === '1') return;
   const idx = Number(card.dataset.idx);
   if(selectMode){
     if(selectedIndices.has(idx)) selectedIndices.delete(idx); else selectedIndices.add(idx);
@@ -3110,6 +3267,13 @@ document.addEventListener('click', (e) => {
     return;
   }
   openEditModal(idx);
+});
+
+document.addEventListener('keydown', e => {
+  const card = e.target.closest('.log-entry');
+  if(!card || e.target !== card || selectMode || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault();
+  openEditModal(Number(card.dataset.idx));
 });
 
 
@@ -3513,14 +3677,7 @@ function excelColumnName(index){
 }
 
 function inspectionWorkbookRows(){
-  return [
-    ['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename'],
-    ...entries.map(e=>[
-      e.type,e.timestamp,e.lat,e.lon,toDMM(e.lat,'N','S'),toDMM(e.lon,'E','W'),
-      e.expressway||'',e.bound||'',e.lane||'',e.km===null||e.km===undefined?'':Number(kmToCsvNumber(e.km)),
-      e.photoId?'Yes':'No',e.photoFilename||''
-    ])
-  ];
+  return KMTrackSwipe.inspectionWorkbookRows(entries, toDMM, kmToCsvNumber);
 }
 
 async function buildInspectionWorkbook(createdAt){
@@ -3676,7 +3833,8 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
           photoAvailable=true; exportedPhotos++;
         }else missingPhotos++;
       }
-      manifestEntries.push({...entry,photoAvailable,archivePhotoPath});
+      const {id: internalId, ...exportEntry} = entry;
+      manifestEntries.push({...exportEntry,photoAvailable,archivePhotoPath});
       await new Promise(resolve=>setTimeout(resolve,0));
     }
     const manifest={format:'KMTrack inspection backup',version:1,createdAt:createdAt.toISOString(),entryCount:entries.length,photoCount:exportedPhotos,missingPhotoCount:missingPhotos,entries:manifestEntries};
