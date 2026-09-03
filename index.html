@@ -1028,7 +1028,7 @@ button {
   .lane-divider{display:none;}
 
   @media(max-width:600px){
-    header{min-height:0;padding:max(8px,calc(env(safe-area-inset-top) - 20px)) 12px 5px;}
+    header{min-height:0;padding:env(safe-area-inset-top) 12px 5px;}
     .header-logo{width:auto;height:48px;max-width:38vw;max-height:48px;}
     .header-copy .sub{font-size:9px;}
     .dataset-drawer{width:calc(100% - 20px);}
@@ -1141,7 +1141,7 @@ button {
   html[data-theme="light"] .log-entry .info .meta,html[data-theme="light"] .photo-status{color:#667985;}
   html[data-theme="light"] .lane-modal{background:#fff;color:#23272b;border-color:rgba(32,42,49,.12);border-radius:16px;box-shadow:0 12px 30px rgba(38,48,56,.14);}
   html[data-theme="light"] .edit-select,html[data-theme="light"] .lane-modal input{background:#f7f8fa;color:#23272b;border-color:rgba(32,42,49,.16);}
-  @media(max-width:600px){.theme-toggle{right:10px;top:max(8px,calc(env(safe-area-inset-top) - 20px));width:32px;height:32px;}}
+  @media(max-width:600px){.theme-toggle{right:10px;top:env(safe-area-inset-top);width:32px;height:32px;}}
   @media(prefers-reduced-motion:reduce){.theme-toggle{transition:none;}}
 </style>
 </head>
