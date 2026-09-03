@@ -15,6 +15,7 @@
 </script>
 <link rel="apple-touch-icon" href="KMTrack_logo.png">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <title>KMTrack — Road Inspection Log</title>
 <style>
   @font-face{
@@ -1143,10 +1144,36 @@ button {
   html[data-theme="light"] .edit-select,html[data-theme="light"] .lane-modal input{background:#f7f8fa;color:#23272b;border-color:rgba(32,42,49,.16);}
   @media(max-width:600px){.theme-toggle{right:10px;top:env(safe-area-inset-top);width:32px;height:32px;}}
   @media(prefers-reduced-motion:reduce){.theme-toggle{transition:none;}}
+
+  /* ---------- Inspection / map tabs ---------- */
+  body{padding-bottom:calc(68px + env(safe-area-inset-bottom));}
+  .app-view[hidden]{display:none!important;}
+  .map-view{height:calc(100dvh - 68px - env(safe-area-inset-bottom));min-height:420px;position:relative;background:#dce4e8;}
+  #osm-map{width:100%;height:100%;background:#dce4e8;}
+  .map-topbar{position:absolute;z-index:500;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 10px);display:flex;align-items:center;gap:10px;padding:10px 11px 10px 14px;border:1px solid rgba(255,255,255,.16);border-radius:14px;background:linear-gradient(180deg,rgba(30,41,49,.94),rgba(17,30,39,.94));color:#eef4f6;box-shadow:0 8px 22px rgba(0,0,0,.24);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+  .map-topbar-copy{min-width:0;flex:1;}
+  .map-title{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+  .map-status{margin-top:1px;font-size:10px;color:#b9c5cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .map-locate-btn,.map-theme-toggle{width:38px;height:38px;flex:0 0 38px;padding:0;border:1px solid rgba(255,255,255,.22);border-radius:11px;background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;cursor:pointer;}
+  .map-locate-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;}
+  .map-theme-toggle::before{content:'☀';font-size:18px;line-height:1;}
+  .app-tab-bar{position:fixed;z-index:900;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,560px);height:calc(68px + env(safe-area-inset-bottom));padding:6px 18px env(safe-area-inset-bottom);display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid rgba(255,255,255,.10);border-bottom:0;border-radius:18px 18px 0 0;background:linear-gradient(180deg,rgba(27,39,48,.98),rgba(14,26,35,.99));box-shadow:0 -8px 24px rgba(0,0,0,.24);}
+  .app-tab-btn{min-height:56px;padding:5px 12px;border:0;border-radius:12px;background:transparent;color:#98a7b0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;cursor:pointer;}
+  .app-tab-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .app-tab-btn.active{background:rgba(71,169,215,.14);color:#79cef4;}
+  html[data-theme="light"] .app-tab-bar{background:rgba(255,255,255,.98);border-color:rgba(32,42,49,.10);box-shadow:0 -7px 22px rgba(38,48,56,.11);}
+  html[data-theme="light"] .app-tab-btn{color:#747b80;}
+  html[data-theme="light"] .app-tab-btn.active{background:#eef7fb;color:#1683b6;}
+  html[data-theme="light"] .map-topbar{background:rgba(255,255,255,.95);color:#252a2e;border-color:rgba(32,42,49,.10);box-shadow:0 7px 20px rgba(38,48,56,.13);}
+  html[data-theme="light"] .map-status{color:#727a80;}
+  html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-toggle{background:#f4f6f7;color:#25343d;border-color:rgba(32,42,49,.12);}
+  html[data-theme="light"] .map-theme-toggle::before{content:'☾';}
+  @media(prefers-reduced-motion:reduce){.app-tab-btn{transition:none;}}
 </style>
 </head>
 <body>
 
+<div class="app-view inspection-view" id="inspection-view" role="tabpanel" aria-labelledby="inspection-tab">
 <div class="top-shell">
   <header>
     <div class="header-brand">
@@ -1318,7 +1345,34 @@ button {
   </section>
 
 </main>
+</div>
 
+<section class="app-view map-view" id="map-view" role="tabpanel" aria-labelledby="map-tab" hidden>
+  <div class="map-topbar">
+    <div class="map-topbar-copy">
+      <div class="map-title">Live inspection map</div>
+      <div class="map-status" id="map-status">Waiting for GPS location…</div>
+    </div>
+    <button type="button" class="map-locate-btn" id="map-locate-btn" aria-label="Center map on current location" title="Center on current location">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+    </button>
+    <button type="button" class="map-theme-toggle" id="map-theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
+  </div>
+  <div id="osm-map" aria-label="OpenStreetMap showing the current inspection location"></div>
+</section>
+
+<nav class="app-tab-bar" role="tablist" aria-label="KMTrack sections">
+  <button type="button" class="app-tab-btn active" id="inspection-tab" role="tab" aria-selected="true" aria-controls="inspection-view" data-app-view="inspection">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6M9 3h6v4H9z"></path><path d="M7 5H5v16h14V5h-2M8 11h8M8 15h8"></path></svg>
+    <span>Inspection</span>
+  </button>
+  <button type="button" class="app-tab-btn" id="map-tab" role="tab" aria-selected="false" aria-controls="map-view" data-app-view="map">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></svg>
+    <span>Map</span>
+  </button>
+</nav>
+
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="./swipe-actions.js"></script>
 <script>
 class GeoKalmanFilter{
@@ -2029,6 +2083,90 @@ tickClock();
 // ---------- Geolocation ----------
 const gpsStatus = document.getElementById('gps-status');
 
+let osmMap = null;
+let osmBaseLayer = null;
+let osmLocationMarker = null;
+let osmAccuracyCircle = null;
+let osmHasCenteredOnLocation = false;
+
+const MAP_BASEMAPS = {
+  light:{
+    url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    name:'CARTO Voyager'
+  },
+  dark:{
+    url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    name:'CARTO Dark Matter'
+  }
+};
+
+function updateOsmBasemap(){
+  if(!osmMap) return;
+  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  const basemap = MAP_BASEMAPS[theme];
+  if(osmBaseLayer) osmBaseLayer.remove();
+  osmBaseLayer = L.tileLayer(basemap.url,{
+    subdomains:'abcd',
+    maxZoom:20,
+    updateWhenIdle:true,
+    keepBuffer:2,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+  }).addTo(osmMap);
+  osmBaseLayer.bringToBack();
+}
+
+function initOsmMap(){
+  if(osmMap || typeof L === 'undefined') return;
+  osmMap = L.map('osm-map',{zoomControl:true,attributionControl:true}).setView([14.86,120.88],10);
+  updateOsmBasemap();
+  updateOsmLocation();
+}
+
+function updateOsmLocation(forceCenter){
+  const status = document.getElementById('map-status');
+  if(!currentPos){
+    if(status) status.textContent = 'Waiting for GPS location…';
+    return;
+  }
+  const point = [currentPos.lat,currentPos.lon];
+  if(status) status.textContent = `${currentPos.lat.toFixed(6)}, ${currentPos.lon.toFixed(6)}${currentPos.acc ? ` · ±${Math.round(currentPos.acc)} m` : ''}`;
+  if(!osmMap) return;
+  if(!osmLocationMarker){
+    osmLocationMarker = L.circleMarker(point,{radius:8,color:'#fff',weight:3,fillColor:'#168fd0',fillOpacity:1,className:'map-location-marker'}).addTo(osmMap);
+    osmAccuracyCircle = L.circle(point,{radius:Math.max(currentPos.acc || 0,1),color:'#168fd0',weight:1,fillColor:'#168fd0',fillOpacity:.10,interactive:false}).addTo(osmMap);
+  }else{
+    osmLocationMarker.setLatLng(point);
+    osmAccuracyCircle.setLatLng(point).setRadius(Math.max(currentPos.acc || 0,1));
+  }
+  if(forceCenter || !osmHasCenteredOnLocation){
+    osmMap.setView(point,17,{animate:false});
+    osmHasCenteredOnLocation = true;
+  }
+}
+
+function showAppView(viewName){
+  const showMap = viewName === 'map';
+  document.getElementById('inspection-view').hidden = showMap;
+  document.getElementById('map-view').hidden = !showMap;
+  document.querySelectorAll('.app-tab-btn').forEach(button => {
+    const active = button.dataset.appView === viewName;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-selected',active ? 'true' : 'false');
+  });
+  if(showMap){
+    initOsmMap();
+    requestAnimationFrame(() => {
+      osmMap?.invalidateSize(false);
+      updateOsmLocation();
+    });
+  }
+}
+
+document.querySelectorAll('.app-tab-btn').forEach(button => {
+  button.addEventListener('click',() => showAppView(button.dataset.appView));
+});
+document.getElementById('map-locate-btn').addEventListener('click',() => updateOsmLocation(true));
+
 function haversineKm(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1) * Math.PI/180;
@@ -2088,6 +2226,7 @@ function kmToCsvNumber(km){
 
 function updateReadout(){
   if(!currentPos) return;
+  updateOsmLocation();
   document.getElementById('lat').textContent = currentPos.lat.toFixed(6);
   document.getElementById('lon').textContent = currentPos.lon.toFixed(6);
   document.getElementById('acc').textContent = currentPos.acc ? `±${currentPos.acc.toFixed(0)} m` : '--';
@@ -3352,19 +3491,24 @@ function setTheme(theme){
   const isLight = theme === 'light';
   document.documentElement.toggleAttribute('data-theme', isLight);
   if(isLight) document.documentElement.dataset.theme = 'light';
-  const toggle = document.getElementById('theme-toggle');
+  const toggles = [document.getElementById('theme-toggle'),document.getElementById('map-theme-toggle')];
   const nextLabel = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-  if(toggle){ toggle.setAttribute('aria-label', nextLabel); toggle.title = nextLabel; }
+  toggles.forEach(toggle => {
+    if(toggle){ toggle.setAttribute('aria-label', nextLabel); toggle.title = nextLabel; }
+  });
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   if(themeMeta) themeMeta.content = isLight ? '#19384c' : '#07131f';
+  updateOsmBasemap();
 }
 
 setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-document.getElementById('theme-toggle').addEventListener('click', () => {
+function toggleTheme(){
   const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
   setTheme(nextTheme);
   try{ localStorage.setItem(STORAGE_KEY_THEME, nextTheme); }catch(e){ /* theme preference is non-critical */ }
-});
+}
+document.getElementById('theme-toggle').addEventListener('click',toggleTheme);
+document.getElementById('map-theme-toggle').addEventListener('click',toggleTheme);
 
 function showSwipeUndo(){
   hideSwipeUndo();
