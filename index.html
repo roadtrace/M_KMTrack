@@ -909,7 +909,7 @@ button {
   .top-shell{position:sticky;top:0;z-index:20;}
   header{
     position:relative;z-index:2;display:block;
-    min-height:0;padding:calc(env(safe-area-inset-top) + 16px) 16px 14px;
+    min-height:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 9px;
     background:
       radial-gradient(circle at 16% 10%,rgba(31,112,158,.24),transparent 46%),
       linear-gradient(145deg,rgba(27,48,64,.98),rgba(15,27,38,.98));
@@ -918,10 +918,10 @@ button {
     box-shadow:0 12px 28px rgba(0,0,0,.30),inset 0 -1px rgba(170,211,238,.055);
   }
   .header-brand{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;}
-  .header-logo{width:auto;height:72px;max-width:min(55vw,430px);max-height:72px;object-fit:contain;object-position:center;flex:none;}
-  .header-copy{width:100%;align-items:center;text-align:center;margin-top:4px;}
+  .header-logo{width:auto;height:64px;max-width:min(50vw,390px);max-height:64px;object-fit:contain;object-position:center;flex:none;}
+  .header-copy{width:100%;align-items:center;text-align:center;margin-top:1px;}
   .header-copy .sub{font-family:var(--font-ui);font-size:12px;letter-spacing:.035em;color:#aeb4bc;max-width:min(92vw,480px);}
-  #storage-status:not([hidden]){margin-top:5px;color:#efc067;white-space:normal;}
+  #storage-status:not([hidden]){margin-top:2px;color:#efc067;white-space:normal;}
 
   .dataset-drawer{
     position:relative;z-index:1;margin:-20px auto 0;width:min(100%,560px);
@@ -950,9 +950,9 @@ button {
   main{padding-top:12px;}
   .readout{
     margin-top:6px;padding:14px 16px;gap:14px;
-    background:linear-gradient(135deg,rgba(39,39,53,.66),rgba(28,32,45,.53));
-    border:1px solid rgba(176,184,205,.22);border-radius:18px;
-    box-shadow:0 14px 32px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);
+    background:linear-gradient(180deg,rgba(30,41,49,.92),rgba(17,30,39,.92));
+    border:1px solid rgba(255,255,255,.10);border-radius:18px;
+    box-shadow:0 12px 24px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.035);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   }
   .readout-main{grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:10px 8px;padding:0;}
@@ -960,8 +960,8 @@ button {
   .readout-main .field .value{font-size:clamp(11px,3.4vw,16px);margin-top:2px;letter-spacing:.01em;}
   .readout-main .status{font-size:11px;margin-top:2px;}
   .bound-panel{
-    flex-basis:132px;padding:10px 12px;background:rgba(31,38,47,.50);
-    border-color:rgba(255,255,255,.16);border-radius:10px;box-shadow:none;
+    flex-basis:132px;padding:10px 12px;background:rgba(255,255,255,.035);
+    border-color:rgba(255,255,255,.10);border-radius:10px;box-shadow:none;
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   }
   .bound-panel-label{font-size:12px;margin-bottom:8px;}
@@ -983,11 +983,25 @@ button {
   .kmpost .kmunit{font-size:12px;}
   .nearby-asset{border-left-color:rgba(230,255,246,.52);}
   .defect-focus-select,.select-toggle-btn{height:42px;min-height:42px;padding-top:6px;padding-bottom:6px;}
+  .defect-focus-select{
+    background-color:rgba(17,30,39,.98);
+    background-image:
+      url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa0a6' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(180deg,rgba(30,41,49,.98),rgba(17,30,39,.98));
+    background-repeat:no-repeat,no-repeat;background-position:right 8px center,0 0;background-size:14px,100% 100%;
+    border-color:rgba(255,255,255,.14);box-shadow:0 7px 16px rgba(0,0,0,.20);
+  }
+  .category-camera-btn,.select-toggle-btn{
+    background:linear-gradient(180deg,rgba(30,41,49,.98),rgba(17,30,39,.98));
+    border-color:rgba(255,255,255,.14);color:#dfe4e8;
+    box-shadow:0 7px 16px rgba(0,0,0,.20);
+  }
+  .category-camera-btn:hover,.select-toggle-btn:hover{background:linear-gradient(180deg,rgba(36,49,58,.98),rgba(21,36,46,.98));}
   .lane-divider{display:none;}
 
   @media(max-width:600px){
-    header{min-height:0;padding:calc(env(safe-area-inset-top) + 4px) 12px 8px;}
-    .header-logo{width:auto;height:55px;max-width:42vw;max-height:55px;}
+    header{min-height:0;padding:calc(env(safe-area-inset-top) + 2px) 12px 5px;}
+    .header-logo{width:auto;height:48px;max-width:38vw;max-height:48px;}
     .header-copy .sub{font-size:9px;}
     .dataset-drawer{width:calc(100% - 20px);}
     .dataset-drawer>summary{padding-left:18px;padding-right:18px;}
