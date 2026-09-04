@@ -3,6 +3,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const html = fs.readFileSync(require.resolve('./index.html'),'utf8');
 const css = fs.readFileSync(require.resolve('./radius-system.css'),'utf8')+'\n'+fs.readFileSync(require.resolve('./sharing.css'),'utf8');
+test('date inputs shrink inside both filter grids and inset tabs retain rounded highlights',()=>{
+  const rule=css.match(/html:root :is\(\.entry-filters,\.map-entry-controls\) input\[type="date"\]\{([^}]+)\}/)[1];
+  assert.match(rule,/min-inline-size:0/);
+  assert.match(rule,/max-width:100%/);
+  assert.match(rule,/-webkit-appearance:none/);
+  assert.match(rule,/overflow:hidden/);
+  assert.match(css,/html:root \.app-tab-btn\{[^}]*border-radius:var\(--radius-md\)/);
+  assert.match(html,/\.app-tab-btn\.active\{background:/);
+});
 test('application corner declarations use tokens, zero, inheritance or inset formulas',()=>{
   const styles = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(match=>match[1]).join('\n')+'\n'+css;
   for(const [,radius] of styles.matchAll(/border-radius\s*:\s*([^;}]+)/g)){
