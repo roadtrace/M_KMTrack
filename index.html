@@ -1157,6 +1157,15 @@ button {
   .map-locate-btn,.map-theme-toggle{width:38px;height:38px;flex:0 0 38px;padding:0;border:1px solid rgba(255,255,255,.22);border-radius:11px;background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;cursor:pointer;}
   .map-locate-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;}
   .map-theme-toggle::before{content:'☀';font-size:18px;line-height:1;}
+  .entry-filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:10px 0;}
+  .entry-filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:1;min-width:120px;}
+  .entry-filters input,.entry-filters select,.entry-filters button,.map-entry-controls input[type="date"],.map-entry-controls button{min-height:38px;max-width:100%;min-width:0;border:1px solid var(--border-strong);border-radius:10px;background:var(--panel);color:var(--line-white);padding:6px 10px;font:inherit;}
+  .entry-filters button,.map-entry-controls button{cursor:pointer;}
+  .map-entry-controls{position:absolute;z-index:500;bottom:30px;left:12px;right:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border:1px solid var(--border-strong);border-radius:14px;background:var(--panel);color:var(--line-white);font-size:12px;box-shadow:var(--shadow-card);}
+  .map-entry-controls label{display:flex;align-items:center;gap:6px;}
+  .map-entry-controls input[type="checkbox"]{width:18px;height:18px;accent-color:#df4242;}
+  .map-entry-controls input[type="date"]{width:140px;}
+  .map-entry-controls input:disabled{opacity:.55;}
   .app-tab-bar{position:fixed;z-index:900;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,560px);height:calc(68px + env(safe-area-inset-bottom));padding:6px 18px env(safe-area-inset-bottom);display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid rgba(255,255,255,.10);border-bottom:0;border-radius:18px 18px 0 0;background:linear-gradient(180deg,rgba(27,39,48,.98),rgba(14,26,35,.99));box-shadow:0 -8px 24px rgba(0,0,0,.24);}
   .app-tab-btn{min-height:56px;padding:5px 12px;border:0;border-radius:12px;background:transparent;color:#98a7b0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;cursor:pointer;}
   .app-tab-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -1337,6 +1346,11 @@ button {
         <button class="export-btn backup-btn" id="backup-btn" disabled>Export Photos ZIP</button>
       </div>
     </div>
+    <div class="entry-filters" aria-label="Inspection entry filters">
+      <label>Date<input type="date" id="entry-filter-day"></label>
+      <label>Defect type<select id="entry-filter-type"><option value="">All defects</option></select></label>
+      <button type="button" id="entry-filter-clear">Clear filters</button>
+    </div>
     <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none;">
       <button type="button" class="bulk-select-all-btn" id="bulk-select-all-btn">Select all</button>
       <button type="button" class="bulk-delete-btn" id="bulk-delete-btn" disabled>Delete selected (0)</button>
@@ -1359,6 +1373,11 @@ button {
     <button type="button" class="map-theme-toggle" id="map-theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
   </div>
   <div id="osm-map" aria-label="OpenStreetMap showing the current inspection location"></div>
+  <div class="map-entry-controls" aria-label="Map entry display options">
+    <label><input type="checkbox" id="map-show-entries">Show entries</label>
+    <label>Date<input type="date" id="map-entry-day" disabled></label>
+    <button type="button" id="map-entry-clear">All dates</button>
+  </div>
 </section>
 
 <nav class="app-tab-bar" role="tablist" aria-label="KMTrack sections">
@@ -1374,6 +1393,7 @@ button {
 
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="./swipe-actions.js"></script>
+<script src="./entry-filters.js"></script>
 <script>
 class GeoKalmanFilter{
   constructor(){
@@ -2085,10 +2105,13 @@ const gpsStatus = document.getElementById('gps-status');
 
 let osmMap = null;
 let osmBaseLayer = null;
+let osmEntryLayer = null;
 let osmLocationMarker = null;
 let osmAccuracyCircle = null;
 let osmHasCenteredOnLocation = false;
 
+// CARTO browser basemap key: necessarily visible in tile requests. KMTrack use only.
+const CARTO_BASEMAP_KEY = 'cb1_2vu9_1_cfb20b1e114827e0d64be5a3';
 const MAP_BASEMAPS = {
   light:{
     url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -2105,7 +2128,7 @@ function updateOsmBasemap(){
   const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   const basemap = MAP_BASEMAPS[theme];
   if(osmBaseLayer) osmBaseLayer.remove();
-  osmBaseLayer = L.tileLayer(basemap.url,{
+  osmBaseLayer = L.tileLayer(`${basemap.url}?key=${encodeURIComponent(CARTO_BASEMAP_KEY)}`,{
     subdomains:'abcd',
     maxZoom:20,
     updateWhenIdle:true,
@@ -2120,7 +2143,30 @@ function initOsmMap(){
   osmMap = L.map('osm-map',{zoomControl:true,attributionControl:true}).setView([14.86,120.88],10);
   updateOsmBasemap();
   updateOsmLocation();
+  updateMapEntries();
 }
+
+function updateMapEntries(){
+  const show = document.getElementById('map-show-entries').checked;
+  const day = document.getElementById('map-entry-day');
+  day.disabled = !show;
+  if(!osmMap) return;
+  if(!osmEntryLayer) osmEntryLayer = L.layerGroup();
+  osmEntryLayer.clearLayers();
+  if(!show){ osmEntryLayer.remove(); return; }
+  osmEntryLayer.addTo(osmMap);
+  KMTrackEntryFilters.mapEntries(entries,day.value).forEach(entry => {
+    L.circleMarker([entry.lat,entry.lon],{
+      radius:5,color:'#b91c1c',weight:1,fillColor:'#ef4444',fillOpacity:1,interactive:false
+    }).addTo(osmEntryLayer);
+  });
+}
+document.getElementById('map-show-entries').addEventListener('change',updateMapEntries);
+document.getElementById('map-entry-day').addEventListener('change',updateMapEntries);
+document.getElementById('map-entry-clear').addEventListener('click',() => {
+  document.getElementById('map-entry-day').value = '';
+  updateMapEntries();
+});
 
 function updateOsmLocation(forceCenter){
   const status = document.getElementById('map-status');
@@ -3478,7 +3524,37 @@ function applyContinuousLaneColors(type){
 
 // ---------- Multi-select delete mode ----------
 let selectMode = false;
-let selectedIndices = new Set();
+let selectedEntryIds = new Set();
+function getLogFilters(){
+  return {day:document.getElementById('entry-filter-day').value,type:document.getElementById('entry-filter-type').value};
+}
+function visibleEntries(){ return KMTrackEntryFilters.filterEntries(entries,getLogFilters()); }
+function syncEntryFilterOptions(){
+  const select = document.getElementById('entry-filter-type');
+  const previous = select.value;
+  const types = [...new Set(entries.map(entry => entry.type).concat(previous || []))].sort();
+  select.replaceChildren(new Option('All defects',''),...types.map(type => new Option(type,type)));
+  select.value = previous;
+}
+function applyEntryFilters(){
+  selectedEntryIds.clear();
+  renderLog();
+}
+document.getElementById('entry-filter-day').addEventListener('change',applyEntryFilters);
+document.getElementById('entry-filter-type').addEventListener('change',applyEntryFilters);
+document.getElementById('entry-filter-clear').addEventListener('click',() => {
+  document.getElementById('entry-filter-day').value = '';
+  document.getElementById('entry-filter-type').value = '';
+  applyEntryFilters();
+});
+
+function entriesForExport(){
+  const scope = KMTrackEntryFilters.exportScope(entries,getLogFilters(),selectedEntryIds);
+  if(!scope.entries.length){ alert('No entries match the current filters.'); return null; }
+  if(scope.restricted && !confirm('Export filtered/selected entries?')) return null;
+  // Freeze one consistent export batch before any asynchronous workbook/photo work.
+  return JSON.parse(JSON.stringify(scope.entries));
+}
 let openSwipeEntryId = null;
 let swipePreviewChecked = false;
 let undoNotice = null;
@@ -3627,14 +3703,16 @@ function updateBulkBar(){
   const delBtn = document.getElementById('bulk-delete-btn');
   const allBtn = document.getElementById('bulk-select-all-btn');
   bar.style.display = selectMode ? 'flex' : 'none';
-  delBtn.textContent = `Delete selected (${selectedIndices.size})`;
-  delBtn.disabled = selectedIndices.size === 0;
-  allBtn.textContent = (selectedIndices.size > 0 && selectedIndices.size === entries.length) ? 'Deselect all' : 'Select all';
+  delBtn.textContent = `Delete selected (${selectedEntryIds.size})`;
+  delBtn.disabled = selectedEntryIds.size === 0;
+  const visible = visibleEntries();
+  allBtn.disabled = visible.length === 0;
+  allBtn.textContent = visible.length && visible.every(entry => selectedEntryIds.has(entry.id)) ? 'Deselect all' : 'Select all';
 }
 
 function exitSelectMode(){
   selectMode = false;
-  selectedIndices.clear();
+  selectedEntryIds.clear();
   document.getElementById('select-toggle-btn').classList.remove('active');
   document.getElementById('select-toggle-btn').textContent = 'Select';
   updateBulkBar();
@@ -3642,11 +3720,18 @@ function exitSelectMode(){
 
 function renderLog(){
   openSwipeEntryId = null;
+  syncEntryFilterOptions();
+  const visible = visibleEntries();
+  const visibleIds = new Set(visible.map(entry => entry.id));
+  selectedEntryIds.forEach(id => { if(!visibleIds.has(id)) selectedEntryIds.delete(id); });
+  updateMapEntries();
   const list = document.getElementById('log-list');
   const exportBtn = document.getElementById('export-btn');
   const backupBtn = document.getElementById('backup-btn');
   document.getElementById('count-mini').textContent = entries.length;
-  document.getElementById('count-label').textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
+  document.getElementById('count-label').textContent = (getLogFilters().day || getLogFilters().type)
+    ? `${visible.length} of ${entries.length} entries`
+    : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
   document.getElementById('last-time').textContent = entries.length ? `last: ${entries[entries.length-1].timestamp.split(' ')[1]}` : '--';
 
   if(entries.length === 0){
@@ -3660,11 +3745,12 @@ function renderLog(){
   backupBtn.disabled = false;
 
   list.innerHTML = '';
-  entries.slice().reverse().forEach((e) => {
+  if(!visible.length) list.innerHTML = '<div class="log-empty">No entries match the current filters.</div>';
+  visible.slice().reverse().forEach((e) => {
     const realIdx = entries.indexOf(e);
     const div = document.createElement('div');
     const row = document.createElement('div');
-    const isSelected = selectedIndices.has(realIdx);
+    const isSelected = selectedEntryIds.has(e.id);
     div.className = 'log-entry ' + typeClass(e.type) + (selectMode ? ' select-mode' : '') + (isSelected ? ' selected' : '');
     div.dataset.idx = realIdx;
     if(!selectMode){
@@ -3724,7 +3810,7 @@ renderLog();
 
 document.getElementById('select-toggle-btn').addEventListener('click', () => {
   selectMode = !selectMode;
-  selectedIndices.clear();
+  selectedEntryIds.clear();
   const toggleBtn = document.getElementById('select-toggle-btn');
   toggleBtn.classList.toggle('active', selectMode);
   toggleBtn.textContent = selectMode ? 'Cancel' : 'Select';
@@ -3733,19 +3819,20 @@ document.getElementById('select-toggle-btn').addEventListener('click', () => {
 });
 
 document.getElementById('bulk-select-all-btn').addEventListener('click', () => {
-  if(selectedIndices.size === entries.length){
-    selectedIndices.clear();
+  const visible = visibleEntries();
+  if(visible.every(entry => selectedEntryIds.has(entry.id))){
+    selectedEntryIds.clear();
   } else {
-    entries.forEach((_, i) => selectedIndices.add(i));
+    visible.forEach(entry => selectedEntryIds.add(entry.id));
   }
   updateBulkBar();
   renderLog();
 });
 
 document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
-  if(selectedIndices.size === 0) return;
-  if(!confirm(`Delete ${selectedIndices.size} selected ${selectedIndices.size === 1 ? 'entry' : 'entries'}? This cannot be undone.`)) return;
-  const idxs = Array.from(selectedIndices).sort((a, b) => b - a); // descending so splicing doesn't shift earlier indices
+  if(selectedEntryIds.size === 0) return;
+  if(!confirm(`Delete ${selectedEntryIds.size} selected ${selectedEntryIds.size === 1 ? 'entry' : 'entries'}? This cannot be undone.`)) return;
+  const idxs = entries.map((entry,index) => selectedEntryIds.has(entry.id) ? index : -1).filter(index => index >= 0).reverse();
   const photoIdsToDelete = [];
   idxs.forEach(idx => {
     const entry = entries[idx];
@@ -3769,7 +3856,8 @@ document.addEventListener('click', (e) => {
   if(card.dataset.suppressClick === '1') return;
   const idx = Number(card.dataset.idx);
   if(selectMode){
-    if(selectedIndices.has(idx)) selectedIndices.delete(idx); else selectedIndices.add(idx);
+    const id = entries[idx].id;
+    if(selectedEntryIds.has(id)) selectedEntryIds.delete(id); else selectedEntryIds.add(id);
     updateBulkBar();
     renderLog();
     return;
@@ -4184,12 +4272,12 @@ function excelColumnName(index){
   return name;
 }
 
-function inspectionWorkbookRows(){
-  return KMTrackSwipe.inspectionWorkbookRows(entries, toDMM, kmToCsvNumber);
+function inspectionWorkbookRows(exportEntries = entries){
+  return KMTrackSwipe.inspectionWorkbookRows(exportEntries, toDMM, kmToCsvNumber);
 }
 
-async function buildInspectionWorkbook(createdAt){
-  const rows=inspectionWorkbookRows();
+async function buildInspectionWorkbook(createdAt, exportEntries = entries){
+  const rows=inspectionWorkbookRows(exportEntries);
   const rowXml=rows.map((row,rowIndex)=>{
     const cells=row.map((value,colIndex)=>{
       const ref=`${excelColumnName(colIndex)}${rowIndex+1}`;
@@ -4220,13 +4308,15 @@ function exportTimestamp(date){
 
 document.getElementById('export-btn').addEventListener('click', async () => {
   if(entries.length === 0) return;
+  const exportEntries = entriesForExport();
+  if(!exportEntries) return;
   const d = new Date();
   const fname = `kmtrack_${exportTimestamp(d)}.xlsx`;
   const exportBtn = document.getElementById('export-btn');
   exportBtn.disabled = true;
   let url = null;
   try{
-    const blob = await buildInspectionWorkbook(d);
+    const blob = await buildInspectionWorkbook(d, exportEntries);
     url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -4315,6 +4405,8 @@ function safeBackupFilename(name,index){
 
 document.getElementById('backup-btn').addEventListener('click', async () => {
   if(entries.length===0) return;
+  const exportEntries = entriesForExport();
+  if(!exportEntries) return;
   const button=document.getElementById('backup-btn');
   const csvButton=document.getElementById('export-btn');
   button.disabled=true; csvButton.disabled=true;
@@ -4324,16 +4416,16 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
     const createdAt=new Date();
     const stamp=exportTimestamp(createdAt);
     const files=[
-      {name:`KMTrack_backup_${stamp}/inspection_log.xlsx`,blob:await buildInspectionWorkbook(createdAt),date:createdAt},
+      {name:`KMTrack_backup_${stamp}/inspection_log.xlsx`,blob:await buildInspectionWorkbook(createdAt,exportEntries),date:createdAt},
       {name:`KMTrack_backup_${stamp}/README.txt`,blob:new Blob(['KMTrack inspection backup\n\nThis archive contains the inspection Excel workbook, available stamped photos, and manifest.json.\nPhotos listed as missing in the manifest were referenced by the log but were not present in this browser storage at export time.\n'],{type:'text/plain;charset=utf-8'}),date:createdAt}
     ];
     const manifestEntries=[];
     let exportedPhotos=0; let missingPhotos=0;
-    for(let i=0;i<entries.length;i++){
-      const entry=entries[i];
+    for(let i=0;i<exportEntries.length;i++){
+      const entry=exportEntries[i];
       let archivePhotoPath=''; let photoAvailable=false;
       if(entry.photoId){
-        button.textContent=`Packing ${i+1}/${entries.length}…`;
+        button.textContent=`Packing ${i+1}/${exportEntries.length}…`;
         const photo=await getPhoto(entry.photoId);
         if(photo){
           archivePhotoPath=`KMTrack_backup_${stamp}/photos/${safeBackupFilename(entry.photoFilename,i)}`;
@@ -4345,7 +4437,7 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
       manifestEntries.push({...exportEntry,photoAvailable,archivePhotoPath});
       await new Promise(resolve=>setTimeout(resolve,0));
     }
-    const manifest={format:'KMTrack inspection backup',version:1,createdAt:createdAt.toISOString(),entryCount:entries.length,photoCount:exportedPhotos,missingPhotoCount:missingPhotos,entries:manifestEntries};
+    const manifest={format:'KMTrack inspection backup',version:1,createdAt:createdAt.toISOString(),entryCount:exportEntries.length,photoCount:exportedPhotos,missingPhotoCount:missingPhotos,entries:manifestEntries};
     files.push({name:`KMTrack_backup_${stamp}/manifest.json`,blob:new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'}),date:createdAt});
     button.textContent='Building ZIP…';
     const zip=await createStoredZip(files);
@@ -4354,7 +4446,7 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
     link.href=url; link.download=`KMTrack_backup_${stamp}.zip`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
     const note=missingPhotos ? ` ${missingPhotos} referenced photo(s) were missing and are identified in manifest.json.` : '';
-    alert(`Backup ready: ${entries.length} entries and ${exportedPhotos} photos.${note}`);
+    alert(`Backup ready: ${exportEntries.length} entries and ${exportedPhotos} photos.${note}`);
   }catch(err){
     alert(`Could not create the backup ZIP. ${err.message||err}`);
   }finally{
