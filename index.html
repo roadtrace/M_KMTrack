@@ -1195,6 +1195,7 @@ button {
 </style>
 <link rel="stylesheet" href="radius-system.css">
 <link rel="stylesheet" href="sharing.css">
+<link rel="stylesheet" href="photo-viewer.css">
 </head>
 <body>
 
@@ -1437,6 +1438,8 @@ button {
 <script src="./entry-filters.js"></script>
 <script src="./inspection-sharing.js"></script>
 <script src="./sharing-ui.js"></script>
+<script src="./photo-zoom.js"></script>
+<script src="./photo-viewer.js"></script>
 <script>
 class GeoKalmanFilter{
   constructor(){
@@ -3484,6 +3487,7 @@ async function viewPhotoForEntry(index){
     const modal = document.getElementById('photo-modal');
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
+    requestAnimationFrame(() => document.getElementById('photo-preview').focus());
   }catch(err){
     alert('Could not open the saved photo: '+err.message);
   }
@@ -4200,12 +4204,15 @@ let editPhotoObjectUrl = null;
 async function renderEditPhotoPreview(entry){
   const emptyEl = document.getElementById('edit-photo-empty');
   const imgEl = document.getElementById('edit-photo-thumb');
+  const thumbWrap = document.getElementById('edit-photo-thumb-wrap');
   const removeBtn = document.getElementById('edit-photo-remove-btn');
   const addBtn = document.getElementById('edit-photo-add-btn');
 
   if(editPhotoObjectUrl){ URL.revokeObjectURL(editPhotoObjectUrl); editPhotoObjectUrl = null; }
 
   if(!entry || !entry.photoId){
+    thumbWrap.tabIndex = -1;
+    thumbWrap.setAttribute('aria-disabled','true');
     imgEl.style.display = 'none';
     imgEl.src = '';
     emptyEl.style.display = 'flex';
@@ -4215,6 +4222,8 @@ async function renderEditPhotoPreview(entry){
   }
 
   addBtn.textContent = 'Change Photo';
+  thumbWrap.tabIndex = 0;
+  thumbWrap.removeAttribute('aria-disabled');
   removeBtn.style.display = 'block';
   try{
     const blob = await getPhoto(entry.photoId);
@@ -4650,9 +4659,12 @@ if('serviceWorker' in navigator){
   </div>
 </div>
 
-<div class="photo-modal" id="photo-modal" aria-hidden="true">
+<div class="photo-modal" id="photo-modal" role="dialog" aria-modal="true" aria-label="Inspection photo viewer" aria-hidden="true">
   <div class="photo-card">
-    <img id="photo-preview" alt="KMTrack inspection photo">
+    <div class="photo-stage" id="photo-stage"><img id="photo-preview" alt="KMTrack inspection photo" role="button" tabindex="0" aria-label="Open full-screen photo zoom" title="Tap for full-screen zoom"></div>
+    <div class="photo-zoom-controls" aria-label="Photo zoom controls">
+      <button id="photo-zoom-out" type="button" aria-label="Zoom out">−</button><output id="photo-zoom-level" aria-live="polite">100%</output><button id="photo-zoom-in" type="button" aria-label="Zoom in">+</button><button id="photo-zoom-reset" type="button">Reset</button><button id="photo-zoom-close" type="button" aria-label="Close full-screen photo">×</button>
+    </div>
     <div class="photo-actions">
       <button id="photo-close" type="button">Close</button>
       <a id="photo-download" href="#" download>Download Photo</a>
