@@ -3992,11 +3992,14 @@ document.addEventListener('click', (e) => {
   if(!card || card.dataset.idx === undefined) return;
   if(card.dataset.suppressClick === '1') return;
   const idx = Number(card.dataset.idx);
-  if(selectMode){
+  const clickedCheckbox = e.target.closest('.entry-checkbox');
+  if(selectMode || clickedCheckbox){
     const id = entries[idx].id;
     if(selectedEntryIds.has(id)) selectedEntryIds.delete(id); else selectedEntryIds.add(id);
+    selectMode = selectedEntryIds.size > 0;
     updateBulkBar();
     renderLog();
+    document.querySelector(`.entry-checkbox[data-idx="${idx}"]`)?.focus({preventScroll:true});
     return;
   }
   openEditModal(idx);

@@ -31,7 +31,7 @@ html:root #export-menu-btn{background:var(--safety-green);color:#fff;border-radi
 .log-selection-row #undo-import-btn{font-size:11px;}
 #selection-count{font-size:12px;color:var(--text-muted);}
 html:root #select-toggle-btn{flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0;border-radius:var(--radius-md);font-size:22px;border:2px solid var(--border-strong);}
-#select-toggle-btn[aria-checked="true"],#select-toggle-btn[aria-checked="mixed"]{background:var(--line-yellow);color:#191c1f;}
+#select-toggle-btn[aria-checked="true"],#select-toggle-btn[aria-checked="mixed"]{background:#f4b400;color:#191c1f;}
 html:root .entry-checkbox{width:44px;height:44px;flex:0 0 44px;min-height:44px;border-radius:var(--radius-sm);font-size:20px;cursor:pointer;}
 .log-entry .info .meta{white-space:normal;overflow-wrap:anywhere;font-size:11px;}
 #bulk-select-all-btn[hidden]{display:none!important;}
@@ -113,18 +113,27 @@ html:root :is(#select-toggle-btn,.entry-checkbox){
  background:transparent;border:0;box-shadow:none;font-size:0;color:transparent;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox)::before{
- content:'';width:24px;height:24px;box-sizing:border-box;border:1px solid var(--text-subtle);
- border-radius:var(--radius-xs);background:transparent;pointer-events:none;
+ content:'';width:24px;height:24px;box-sizing:border-box;border:2px solid #35556a;
+ border-radius:5px;background:transparent;pointer-events:none;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox):is([aria-checked="true"],[aria-checked="mixed"])::before{
- background:var(--line-yellow);border-color:var(--line-yellow);
+ background:#1a3c34;border-color:#2dd4a0;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="true"]::after{
- content:'';position:absolute;width:6px;height:10px;border:solid #191c1f;border-width:0 2px 2px 0;
- transform:translateY(-1px) rotate(45deg);pointer-events:none;
+ content:'';position:absolute;left:50%;top:50%;width:6px;height:10px;border:solid #2dd4a0;border-width:0 2px 2px 0;
+ transform:translate(-50%,-58%) rotate(45deg);pointer-events:none;
 }
 html:root #select-toggle-btn[aria-checked="mixed"]::after{
- content:'';position:absolute;width:10px;height:2px;background:#191c1f;pointer-events:none;
+ content:'';position:absolute;left:50%;top:50%;width:10px;height:2px;background:#2dd4a0;transform:translate(-50%,-50%);pointer-events:none;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible{outline:none;}
 html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible::before{outline:2px solid var(--line-yellow);outline-offset:2px;}
+/* Row cards retain their 4px defect stripe; offset the header hit area so
+   both visible 24px boxes share the same left edge. */
+html:root .inspection-list-heading #select-toggle-btn{transform:translateX(4px);}
+/* Reference selection treatment: yellow checkbox fill with a bright green
+   selection outline that keeps the defect stripe visible underneath. */
+html:root .inspection-record-list .log-entry.selected{outline:2px solid #2bd6ad;outline-offset:-2px;}
+html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible::before{outline-color:#2bd6ad;}
+html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="true"]::before,
+html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="mixed"]::before{background:#1a3c34;border-color:#2dd4a0;}
