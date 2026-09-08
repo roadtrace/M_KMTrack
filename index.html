@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KMTrack">
 <meta name="theme-color" content="#07131f">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <script>
   try{
@@ -1184,6 +1184,7 @@ button {
   .app-tab-btn{min-height:44px;padding:3px 12px;border:0;border-radius:var(--radius-md);background:transparent;color:#98a7b0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;cursor:pointer;}
   .app-tab-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .app-tab-btn.active{background:rgba(71,169,215,.14);color:#79cef4;}
+  .app-tab-btn:focus-visible{outline:2px solid currentColor;outline-offset:2px;}
   html[data-theme="light"] .app-tab-bar{background:rgba(255,255,255,.98);border-color:rgba(32,42,49,.10);box-shadow:0 -7px 22px rgba(38,48,56,.11);}
   html[data-theme="light"] .app-tab-btn{color:#747b80;}
   html[data-theme="light"] .app-tab-btn.active{background:#eef7fb;color:#1683b6;}
@@ -1192,6 +1193,38 @@ button {
   html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-toggle{background:#f4f6f7;color:#25343d;border-color:rgba(32,42,49,.12);}
   html[data-theme="light"] .map-theme-toggle::before{content:'☾';}
   @media(prefers-reduced-motion:reduce){.app-tab-btn{transition:none;}}
+  /* Inspection accessibility: preserve the existing surfaces and category fills. */
+  .bound-hint,.bound-auto-status{color:var(--text-muted);}
+  html:not([data-theme="light"]) .status.err{color:#e47164;}
+  html[data-theme="light"] .bound-panel-label{color:var(--text-muted);}
+  html[data-theme="light"] #defect-section.gps-pending .defect-gate{color:#765300;}
+  .lane-btn.shoving{color:#191c1f;}
+  .haptic-label:has(input:focus-visible){outline:3px solid var(--line-yellow);outline-offset:2px;}
+  .lane-btn-row{grid-template-columns:repeat(5,minmax(0,1fr));}
+  .lane-btn{min-width:0;}
+  .lane-btn.others-btn{font-size:11px;overflow-wrap:anywhere;}
+  .lane-btn.others-btn .others-sub{font-size:11px;}
+  .readout-main .field .label{white-space:normal;overflow-wrap:anywhere;font-size:11px;letter-spacing:.08em;}
+  .readout-main .field{min-width:0;}
+  .bound-auto-status,.dataset-drawer>summary,.app-tab-btn{font-size:11px;}
+  .header-copy .sub{font-size:11px;}
+  .category-label .category-sub{font-size:11px;}
+  .theme-toggle{width:44px;height:44px;}
+  .bridge-filter-toggle{width:44px;height:44px;}
+  .bridge-filter-menu{top:61px;}
+  .category-camera-btn{width:44px;height:44px;flex:0 0 44px;}
+  .defect-focus-select,.select-toggle-btn,.export-btn{height:auto;min-height:44px;}
+  .entry-filters :is(input,select,button){height:44px;min-height:44px;}
+  @media(max-width:360px){
+    .readout{flex-direction:column;}
+    .readout-main{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .bound-panel{flex-basis:auto;}
+    .bound-toggle{flex-direction:row;flex-wrap:wrap;}
+    .bound-toggle button.bound-btn{flex:1;}
+  }
+  @media(orientation:landscape) and (min-width:700px){
+    main>.readout>.bound-panel,main>.kmpost{margin-top:0;}
+  }
 </style>
 <link rel="stylesheet" href="radius-system.css">
 <link rel="stylesheet" href="sharing.css">
@@ -1427,7 +1460,7 @@ button {
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6M9 3h6v4H9z"></path><path d="M7 5H5v16h14V5h-2M8 11h8M8 15h8"></path></svg>
     <span>Inspection</span>
   </button>
-  <button type="button" class="app-tab-btn" id="map-tab" role="tab" aria-selected="false" aria-controls="map-view" data-app-view="map">
+  <button type="button" class="app-tab-btn" id="map-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="map-view" data-app-view="map">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></svg>
     <span>Map</span>
   </button>
@@ -1438,6 +1471,7 @@ button {
 <script src="./entry-filters.js"></script>
 <script src="./inspection-sharing.js"></script>
 <script src="./sharing-ui.js"></script>
+<script src="./log-controls.js"></script>
 <script src="./photo-zoom.js"></script>
 <script src="./photo-viewer.js"></script>
 <script>
@@ -2265,6 +2299,7 @@ function showAppView(viewName){
     const active = button.dataset.appView === viewName;
     button.classList.toggle('active',active);
     button.setAttribute('aria-selected',active ? 'true' : 'false');
+    button.tabIndex = active ? 0 : -1;
   });
   if(showMap){
     initOsmMap();
@@ -2277,6 +2312,20 @@ function showAppView(viewName){
 
 document.querySelectorAll('.app-tab-btn').forEach(button => {
   button.addEventListener('click',() => showAppView(button.dataset.appView));
+  button.addEventListener('keydown',event => {
+    if(event.altKey || event.ctrlKey || event.metaKey) return;
+    const tabs = Array.from(document.querySelectorAll('.app-tab-btn'));
+    const index = tabs.indexOf(button);
+    let next;
+    if(event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    else if(event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    else if(event.key === 'Home') next = 0;
+    else if(event.key === 'End') next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    showAppView(tabs[next].dataset.appView);
+    tabs[next].focus();
+  });
 });
 document.getElementById('map-locate-btn').addEventListener('click',() => updateOsmLocation(true));
 
@@ -3786,7 +3835,7 @@ function updateBulkBar(){
   const bar = document.getElementById('bulk-actions-bar');
   const delBtn = document.getElementById('bulk-delete-btn');
   const allBtn = document.getElementById('bulk-select-all-btn');
-  bar.style.display = selectMode ? 'flex' : 'none';
+  bar.style.display = selectedEntryIds.size ? 'flex' : 'none';
   delBtn.textContent = `Delete selected (${selectedEntryIds.size})`;
   delBtn.disabled = selectedEntryIds.size === 0;
   const visible = visibleEntries();
@@ -3798,7 +3847,7 @@ function exitSelectMode(){
   selectMode = false;
   selectedEntryIds.clear();
   document.getElementById('select-toggle-btn').classList.remove('active');
-  document.getElementById('select-toggle-btn').textContent = 'Select';
+  document.getElementById('select-toggle-btn').setAttribute('aria-checked','false');
   updateBulkBar();
 }
 
@@ -3854,18 +3903,22 @@ function renderLog(){
       <div class="photo-status">Photo entry${e.photoTimestamp ? ' · '+xmlEscape(e.photoTimestamp) : ''}</div>
     ` : '';
 
-    const checkboxHtml = selectMode
-      ? `<div class="entry-checkbox${isSelected ? ' checked' : ''}" data-idx="${realIdx}">${isSelected ? '✓' : ''}</div>`
-      : '';
+    const checkboxHtml = `<button type="button" class="entry-checkbox${isSelected ? ' checked' : ''}" data-idx="${realIdx}" role="checkbox" aria-checked="${isSelected}" aria-label="Select ${xmlEscape(e.type)} entry from ${xmlEscape(e.timestamp)}">${isSelected ? '✓' : ''}</button>`;
 
+    const datePart=String(e.timestamp).split(/[ T]/)[0];
+    const dateValue=new Date(datePart+'T12:00:00');
+    const shortDate=Number.isNaN(dateValue.getTime()) ? datePart : dateValue.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     div.innerHTML = `
-      <div class="info">
-        <div class="type">${xmlEscape(e.type)}</div>
-        ${e.importBatchId?`<div class="import-label">Imported · ${xmlEscape(e.inspector||e.importLabel||'Unnamed inspector')}</div>`:''}
-        <div class="meta">${xmlEscape(e.timestamp)}<br>${e.lat.toFixed(6)}, ${e.lon.toFixed(6)} · km ${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}${e.expressway ? ` · ${xmlEscape(e.expressway)}${e.bound ? ' '+xmlEscape(e.bound) : ''}` : ''}${e.lane ? ` · Lane: ${xmlEscape(e.lane)}` : ' · Lane: —'}</div>
-        ${photoActionsHtml}
-      </div>
       ${checkboxHtml}
+      <div class="record-type"><span class="type">${xmlEscape(e.type)}</span>
+        ${e.importBatchId?`<span class="import-label">Imported · ${xmlEscape(e.inspector||e.importLabel||'Unnamed inspector')}</span>`:''}
+      </div>
+      <time class="record-date" datetime="${xmlEscape(String(e.timestamp).replace(' ','T'))}" title="${xmlEscape(e.timestamp)}">${xmlEscape(shortDate)}</time>
+      <div class="record-context"><span class="record-road">${xmlEscape(e.expressway||'—')}</span>
+      <span class="record-km"><span class="record-mobile-label">KM </span>${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}</span>
+      <span class="record-bound">${xmlEscape(e.bound||'—')}</span>
+      <span class="record-lane"><span class="record-mobile-label">Lane </span>${xmlEscape(e.lane||'—')}</span></div>
+      ${e.photoId ? `<div class="record-photo-actions">${photoActionsHtml}</div>` : ''}
     `;
     row.innerHTML = `<button type="button" class="swipe-action edit" data-idx="${realIdx}" aria-label="Edit ${xmlEscape(e.type)} entry">Edit</button><button type="button" class="swipe-action delete" data-idx="${realIdx}" aria-label="Delete ${xmlEscape(e.type)} entry">Delete</button>`;
     row.appendChild(div);
@@ -3895,12 +3948,10 @@ function renderLog(){
 renderLog();
 
 document.getElementById('select-toggle-btn').addEventListener('click', () => {
-  selectMode = !selectMode;
-  selectedEntryIds.clear();
-  const toggleBtn = document.getElementById('select-toggle-btn');
-  toggleBtn.classList.toggle('active', selectMode);
-  toggleBtn.textContent = selectMode ? 'Cancel' : 'Select';
-  updateBulkBar();
+  const visible = visibleEntries();
+  if(visible.length && visible.every(entry => selectedEntryIds.has(entry.id))) selectedEntryIds.clear();
+  else visible.forEach(entry => selectedEntryIds.add(entry.id));
+  selectMode = selectedEntryIds.size > 0;
   renderLog();
 });
 

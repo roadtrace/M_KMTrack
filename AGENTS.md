@@ -1,5 +1,6 @@
 # KMTrack project guidance
 
+- Read `DESIGN.md` before UI work. It records the current visual baseline; preserve it and update it deliberately when an approved visual change alters the system.
 - Read `BORDER_RADIUS_RULES.md` before editing or reviewing UI styles.
 - Preserve the existing light/dark gradients, translucent panels, and brand appearance. The user rejected the flat color-system restyle; do not reapply it or remove gradients unless explicitly requested.
 - Preserve the explicitly restored pre-system corner values in `radius-system.css`. The user prefers these original curves over the later formula-derived radius system.

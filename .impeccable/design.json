@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T06:25:15.801Z",
+  "title": "Design System: KMTrack",
+  "extensions": {
+    "colorMeta": {
+      "line-yellow": {
+        "displayName": "line yellow",
+        "canonical": "#f4b400",
+        "role": "primary"
+      },
+      "pothole-light": {
+        "displayName": "pothole light",
+        "canonical": "#e8b323",
+        "role": "primary"
+      },
+      "safety-green": {
+        "displayName": "safety green",
+        "canonical": "#2e8b57",
+        "role": "secondary"
+      },
+      "safety-orange": {
+        "displayName": "safety orange",
+        "canonical": "#d9772f",
+        "role": "secondary"
+      },
+      "safety-red": {
+        "displayName": "safety red",
+        "canonical": "#c1392b",
+        "role": "secondary"
+      },
+      "cracks": {
+        "displayName": "cracks",
+        "canonical": "#c9c9c9",
+        "role": "secondary"
+      },
+      "other-defect": {
+        "displayName": "other defect",
+        "canonical": "#c1707a",
+        "role": "secondary"
+      },
+      "action-ink": {
+        "displayName": "action ink",
+        "canonical": "#191c1f",
+        "role": "neutral"
+      },
+      "asphalt": {
+        "displayName": "asphalt",
+        "canonical": "#14181c",
+        "role": "neutral"
+      },
+      "asphalt-2": {
+        "displayName": "asphalt 2",
+        "canonical": "#1c2126",
+        "role": "neutral"
+      },
+      "panel": {
+        "displayName": "panel",
+        "canonical": "#252b31",
+        "role": "neutral"
+      },
+      "panel-raised": {
+        "displayName": "panel raised",
+        "canonical": "#2b3239",
+        "role": "neutral"
+      },
+      "surface-soft": {
+        "displayName": "surface soft",
+        "canonical": "#303840",
+        "role": "neutral"
+      },
+      "line-white": {
+        "displayName": "line white",
+        "canonical": "#f5f7f8",
+        "role": "neutral"
+      },
+      "text-muted": {
+        "displayName": "text muted",
+        "canonical": "#a7b0b8",
+        "role": "neutral"
+      },
+      "text-subtle": {
+        "displayName": "text subtle",
+        "canonical": "#707b84",
+        "role": "neutral"
+      },
+      "border": {
+        "displayName": "border",
+        "canonical": "rgba(255,255,255,.10)",
+        "role": "neutral"
+      },
+      "border-strong": {
+        "displayName": "border strong",
+        "canonical": "rgba(255,255,255,.18)",
+        "role": "neutral"
+      },
+      "asphalt-light": {
+        "displayName": "asphalt light",
+        "canonical": "#f4f5f7",
+        "role": "neutral"
+      },
+      "asphalt-2-light": {
+        "displayName": "asphalt 2 light",
+        "canonical": "#eceff2",
+        "role": "neutral"
+      },
+      "panel-light": {
+        "displayName": "panel light",
+        "canonical": "#fff",
+        "role": "neutral"
+      },
+      "panel-raised-light": {
+        "displayName": "panel raised light",
+        "canonical": "#f7f8fa",
+        "role": "neutral"
+      },
+      "surface-soft-light": {
+        "displayName": "surface soft light",
+        "canonical": "#eef1f3",
+        "role": "neutral"
+      },
+      "line-white-light": {
+        "displayName": "line white light",
+        "canonical": "#23272b",
+        "role": "neutral"
+      },
+      "text-muted-light": {
+        "displayName": "text muted light",
+        "canonical": "#696f74",
+        "role": "neutral"
+      },
+      "text-subtle-light": {
+        "displayName": "text subtle light",
+        "canonical": "#858b90",
+        "role": "neutral"
+      },
+      "border-light": {
+        "displayName": "border light",
+        "canonical": "rgba(32,42,49,.10)",
+        "role": "neutral"
+      },
+      "border-strong-light": {
+        "displayName": "border strong light",
+        "canonical": "rgba(32,42,49,.18)",
+        "role": "neutral"
+      },
+      "tab-active": {
+        "displayName": "tab active",
+        "canonical": "#79cef4",
+        "role": "secondary"
+      },
+      "tab-active-surface": {
+        "displayName": "tab active surface",
+        "canonical": "rgba(71,169,215,.14)",
+        "role": "secondary"
+      },
+      "tab-inactive": {
+        "displayName": "tab inactive",
+        "canonical": "#98a7b0",
+        "role": "neutral"
+      },
+      "tab-active-light": {
+        "displayName": "tab active light",
+        "canonical": "#1683b6",
+        "role": "secondary"
+      },
+      "tab-active-surface-light": {
+        "displayName": "tab active surface light",
+        "canonical": "#eef7fb",
+        "role": "secondary"
+      },
+      "tab-inactive-light": {
+        "displayName": "tab inactive light",
+        "canonical": "#747b80",
+        "role": "neutral"
+      },
+      "error-text-dark": {
+        "displayName": "Dark error text",
+        "canonical": "#e47164",
+        "role": "secondary"
+      }
+    },
+    "captureNotes": [
+      "Extracted from the current working tree; no new visual direction was introduced.",
+      "No tonal ramps are synthesized: the user requested an as-is baseline, and the app has no authored ramp system.",
+      "Component snippets show existing dark/default phone states with CSS-variable fallbacks. Light and landscape overrides are documented in DESIGN.md.",
+      "No new hover styling was invented for components without authored hover states."
+    ],
+    "shadows": [
+      {
+        "name": "shadow-card",
+        "value": "0 10px 28px rgba(0,0,0,.18)",
+        "purpose": "Shared dark card token"
+      },
+      {
+        "name": "shadow-card-light",
+        "value": "0 7px 20px rgba(38,48,56,.09)",
+        "purpose": "Shared light card token"
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-transform",
+        "value": "120ms ease",
+        "purpose": "General transform/filter transition"
+      },
+      {
+        "name": "control-color",
+        "value": "160ms ease",
+        "purpose": "General background/border/shadow transition"
+      },
+      {
+        "name": "swipe",
+        "value": "180ms ease",
+        "purpose": "Swipe-row return transition"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "small-camera",
+        "value": "(max-width:380px)"
+      },
+      {
+        "name": "narrow-phone",
+        "value": "(max-width:390px)"
+      },
+      {
+        "name": "phone",
+        "value": "(max-width:600px)"
+      },
+      {
+        "name": "landscape-dashboard",
+        "value": "(orientation:landscape) and (min-width:700px)"
+      },
+      {
+        "name": "compact-landscape",
+        "value": "(orientation:landscape) and (min-width:700px) and (max-width:900px)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Pothole lane",
+      "kind": "button",
+      "refersTo": "lane-pothole",
+      "description": "Existing phone lane control. No authored hover change.",
+      "html": "<button class=\"ds-lane\">1</button>",
+      "css": ".ds-lane{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);display:flex;align-items:center;justify-content:center;min-height:48px;padding:12px 2px;border:0;border-radius:var(--radius-md,12px);background:var(--line-yellow,#f4b400);color:#191c1f;font-size:15px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform 100ms ease,filter 100ms ease,box-shadow 140ms ease;cursor:pointer}.ds-lane:active{transform:scale(.97);filter:brightness(.9);box-shadow:0 2px 8px rgba(0,0,0,.18)}.ds-lane:focus-visible{outline:3px solid rgba(244,180,0,.55);outline-offset:2px}"
+    },
+    {
+      "name": "Shoving lane",
+      "kind": "button",
+      "refersTo": "lane-shoving",
+      "description": "Existing phone lane control. No authored hover change.",
+      "html": "<button class=\"ds-lane\">1</button>",
+      "css": ".ds-lane{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);display:flex;align-items:center;justify-content:center;min-height:48px;padding:12px 2px;border:0;border-radius:var(--radius-md,12px);background:var(--safety-orange,#d9772f);color:#191c1f;font-size:15px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform 100ms ease,filter 100ms ease,box-shadow 140ms ease;cursor:pointer}.ds-lane:active{transform:scale(.97);filter:brightness(.9);box-shadow:0 2px 8px rgba(0,0,0,.18)}.ds-lane:focus-visible{outline:3px solid rgba(244,180,0,.55);outline-offset:2px}"
+    },
+    {
+      "name": "Cracks lane",
+      "kind": "button",
+      "refersTo": "lane-cracks",
+      "description": "Existing phone lane control. No authored hover change.",
+      "html": "<button class=\"ds-lane\">1</button>",
+      "css": ".ds-lane{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);display:flex;align-items:center;justify-content:center;min-height:48px;padding:12px 2px;border:0;border-radius:var(--radius-md,12px);background:#c9c9c9;color:#191c1f;font-size:15px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform 100ms ease,filter 100ms ease,box-shadow 140ms ease;cursor:pointer}.ds-lane:active{transform:scale(.97);filter:brightness(.9);box-shadow:0 2px 8px rgba(0,0,0,.18)}.ds-lane:focus-visible{outline:3px solid rgba(244,180,0,.55);outline-offset:2px}"
+    },
+    {
+      "name": "Other defect lane",
+      "kind": "button",
+      "refersTo": "lane-other",
+      "description": "Existing phone lane control. No authored hover change.",
+      "html": "<button class=\"ds-lane\">1</button>",
+      "css": ".ds-lane{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);display:flex;align-items:center;justify-content:center;min-height:48px;padding:12px 2px;border:0;border-radius:var(--radius-md,12px);background:#c1707a;color:#191c1f;font-size:15px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform 100ms ease,filter 100ms ease,box-shadow 140ms ease;cursor:pointer}.ds-lane:active{transform:scale(.97);filter:brightness(.9);box-shadow:0 2px 8px rgba(0,0,0,.18)}.ds-lane:focus-visible{outline:3px solid rgba(244,180,0,.55);outline-offset:2px}"
+    },
+    {
+      "name": "Edit input",
+      "kind": "input",
+      "refersTo": "edit-input",
+      "description": "Dark edit-modal text field; light fields use #f7f8fa and #23272b.",
+      "html": "<input class=\"ds-edit\" aria-label=\"Lane\" placeholder=\"Lane\">",
+      "css": ".ds-edit{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);box-sizing:border-box;width:100%;min-height:48px;padding:11px;border-radius:8px;border:1px solid var(--border-strong,rgba(255,255,255,.18));background:#08131d;color:#fff;font-size:16px}.ds-edit:focus-visible{outline:3px solid rgba(244,180,0,.55);outline-offset:2px}"
+    },
+    {
+      "name": "Log entry",
+      "kind": "card",
+      "refersTo": "entry-card",
+      "description": "Shared inspection-list row: square internal edges, category stripe, title/date and road context; wide layouts align fields into columns.",
+      "html": "<div class=\"ds-entry\" tabindex=\"0\"><div class=\"ds-title\">Potholes</div><div class=\"ds-meta\">Lane 1 · KM --.---</div></div>",
+      "css": ".ds-entry{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);background:var(--panel,#252b31);color:var(--line-white,#f5f7f8);padding:10px 12px;border:1px solid var(--border,rgba(255,255,255,.10));border-left:4px solid var(--line-yellow,#f4b400);border-radius:0;box-shadow:0 5px 16px rgba(0,0,0,.12);cursor:pointer}.ds-title{font-size:14px;font-weight:700}.ds-meta{font-family:var(--font-readout,'Courier New',ui-monospace,monospace);font-size:clamp(9px,2.45vw,11px);letter-spacing:-.015em;line-height:1.5;color:var(--text-muted,#a7b0b8);margin-top:3px;white-space:normal;overflow-wrap:anywhere}.ds-entry:focus-visible{outline:3px solid rgba(244,180,0,.65);outline-offset:-3px}"
+    },
+    {
+      "name": "Segment tag",
+      "kind": "chip",
+      "description": "Existing non-interactive station tag, using placeholder content.",
+      "html": "<span class=\"ds-segment\">--</span>",
+      "css": ".ds-segment{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);display:inline-block;background:rgba(0,0,0,.25);padding:5px 12px;border-radius:var(--radius-lg,16px);font-size:12px;font-weight:700;letter-spacing:.5px;color:#f4f4f2}"
+    },
+    {
+      "name": "Bottom navigation",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Dark rectangular tray with the existing selected-tab and keyboard-focus treatment. Preview does not switch app views.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"KMTrack sections\"><button class=\"ds-tab ds-selected\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 5h6M9 3h6v4H9z\"></path><path d=\"M7 5H5v16h14V5h-2M8 11h8M8 15h8\"></path></svg>Inspection</button><button class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15\"></path></svg>Map</button></nav>",
+      "css": ".ds-nav{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(100%,560px);height:56px;padding:4px 12px 0;border:1px solid rgba(255,255,255,.10);border-bottom:0;border-radius:0;background:linear-gradient(180deg,rgba(27,39,48,.98),rgba(14,26,35,.99));box-shadow:0 -8px 24px rgba(0,0,0,.24)}.ds-tab{font-family:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif);min-height:44px;padding:3px 12px;border:0;border-radius:12px;background:transparent;color:#98a7b0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:700;cursor:pointer}.ds-selected{background:rgba(71,169,215,.14);color:#79cef4}.ds-tab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-tab:focus-visible{outline:2px solid currentColor;outline-offset:2px}"
+    },
+    {
+      "name": "Log master selection",
+      "kind": "button",
+      "description": "24px visible checkbox inside a 44px hit target; empty, partial and all-filtered states.",
+      "html": "<button class=\"ds-selection\" role=\"checkbox\" aria-checked=\"mixed\" aria-label=\"Select all filtered entries\"></button>",
+      "css": ".ds-selection{position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer}.ds-selection::before{content:\"\";width:24px;height:24px;box-sizing:border-box;border:1px solid var(--line-yellow,#f4b400);border-radius:var(--radius-xs,4px);background:var(--line-yellow,#f4b400)}.ds-selection::after{content:\"\";position:absolute;width:10px;height:2px;background:#191c1f}.ds-selection:focus-visible{outline:none}.ds-selection:focus-visible::before{outline:2px solid var(--line-yellow,#f4b400);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "overview": "This is the baseline of the existing M_KMTrack working tree as of 2026-09-07, including the bottom-navigation keyboard and inspection accessibility refinements. It documents the implemented interface, not a redesign or an accessibility certification. Descriptions are literal: no new creative metaphor, palette, tonal ramp, or component styling has been invented.\n\nKMTrack combines a centered road-marking logo, blue/navy gradient surroundings, translucent instrument panels, and a prominent green kilometer-station card. The interface is compact and practical, with strong defect-color coding and large lane targets. Light mode retains the dark branded header and green station card while surrounding panels become white and pale gray.",
+    "keyCharacteristics": [
+      "Layered gradients, translucency, soft offset shadows, and thin borders.",
+      "Inter interface text with selective monospace measurement metadata.",
+      "Restored, component-specific curves with a rectangular bottom navigation tray.",
+      "Compact phone layouts that expand into a landscape inspection dashboard."
+    ],
+    "rules": [
+      {
+        "name": "The Existing Cascade Rule",
+        "body": "Preserve the final computed appearance. Later theme rules, selector specificity, and the restored corner stylesheet take precedence over earlier declarations. Do not apply every root token indiscriminately.",
+        "section": "overview"
+      },
+      {
+        "name": "The Gradient Identity Rule",
+        "body": "Retain both theme backgrounds, the branded header, and the green station treatment. The previously rejected flat color-system restyle is not the baseline.",
+        "section": "colors"
+      },
+      {
+        "name": "The Restored Corners Rule",
+        "body": "Do not replace these values with a formula-derived scale. Use parent clipping for photo corners and offset outlines for focus; do not clip an entire interactive panel to round a child image.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do preserve both themes, the existing logo assets, gradients, and translucent panels.",
+      "Do use the final cascade and restored corner values as the baseline.",
+      "Do retain defect-color associations across capture controls and log entries.",
+      "Do preserve native controls, keyboard focus, safe-area spacing, and inspection workflows.",
+      "Do update this baseline deliberately when an approved visual change alters the system."
+    ],
+    "donts": [
+      "Don't reapply the rejected flat color-system restyle.",
+      "Don't round the bottom navigation tray or square its selected highlights.",
+      "Don't normalize existing sizes, radii, or typography merely to fit a new scale.",
+      "Don't invent palette ramps, claims, or new visual patterns and label them as existing.",
+      "Don't modify GPS, camera, storage, import/export, or offline behavior during visual refinement."
+    ]
+  }
+}

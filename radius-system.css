@@ -21,6 +21,7 @@ html:root .select-toggle-btn,html:root .export-btn{border-radius:999px;}
 html:root .swipe-row{border-radius:8px;}
 html:root .swipe-row .log-entry{border-radius:8px;}
 html:root[data-theme="light"] .swipe-row .log-entry{border-radius:16px;}
+html:root[data-theme="light"] .swipe-row{border-radius:16px;}
 
 .map-view{--map-control-inset:11px;}
 html:root :is(.map-topbar,.map-entry-controls){
@@ -74,3 +75,8 @@ html:root .app-tab-btn{border-radius:12px;}
 html:root .photo-card{border-radius:8px;overflow:hidden;}
 html:root #photo-preview{border-radius:0;display:block;}
 :where(button,input,select,a,[role="button"],[role="tab"]):focus-visible{outline:2px solid var(--line-yellow);outline-offset:2px;}
+@media(max-width:400px){
+  html:root .entry-filters{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);}
+  .entry-filters > label:nth-of-type(3){grid-column:1 / 3;}
+  .entry-filters > button{grid-column:3;}
+}
