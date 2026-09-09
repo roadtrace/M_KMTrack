@@ -1201,14 +1201,16 @@ button {
   .lane-btn.shoving{color:#191c1f;}
   .haptic-label:has(input:focus-visible){outline:3px solid var(--line-yellow);outline-offset:2px;}
   .lane-btn-row{grid-template-columns:repeat(5,minmax(0,1fr));}
-  .lane-btn{min-width:0;}
-  .lane-btn.others-btn{font-size:11px;overflow-wrap:anywhere;}
-  .lane-btn.others-btn .others-sub{font-size:11px;}
+  .lane-btn{min-width:0;height:60px;min-height:60px;padding:10px 2px;}
+  .lane-btn.others-btn{font-size:9px;line-height:1.2;overflow-wrap:normal;}
+  .lane-btn.others-btn .others-sub{font-size:8px;line-height:1.2;}
+  #defect-section.focused .focused-category .lane-btn{height:auto;min-height:96px;}
+  #defect-section.focused .focused-category .lane-btn.others-btn{min-height:64px;}
   .readout-main .field .label{white-space:normal;overflow-wrap:anywhere;font-size:11px;letter-spacing:.08em;}
   .readout-main .field{min-width:0;}
   .bound-auto-status,.dataset-drawer>summary,.app-tab-btn{font-size:11px;}
   .header-copy .sub{font-size:11px;}
-  .category-label .category-sub{font-size:11px;}
+  .category-label .category-sub{font-size:10px;}
   .theme-toggle{width:44px;height:44px;}
   .bridge-filter-toggle{width:44px;height:44px;}
   .bridge-filter-menu{top:61px;}
@@ -3898,27 +3900,32 @@ function renderLog(){
     const photoActionsHtml = e.photoId ? `
       <div class="entry-actions">
         <button type="button" class="photo-view-btn" data-idx="${realIdx}">View Photo</button>
-        <button type="button" class="photo-remove-btn" data-idx="${realIdx}">Remove Photo</button>
       </div>
-      <div class="photo-status">Photo entry${e.photoTimestamp ? ' · '+xmlEscape(e.photoTimestamp) : ''}</div>
     ` : '';
 
-    const checkboxHtml = `<button type="button" class="entry-checkbox${isSelected ? ' checked' : ''}" data-idx="${realIdx}" role="checkbox" aria-checked="${isSelected}" aria-label="Select ${xmlEscape(e.type)} entry from ${xmlEscape(e.timestamp)}">${isSelected ? '✓' : ''}</button>`;
+    const checkboxHtml = selectMode
+      ? `<button type="button" class="entry-checkbox${isSelected ? ' checked' : ''}" data-idx="${realIdx}" role="checkbox" aria-checked="${isSelected}" aria-label="Select ${xmlEscape(e.type)} entry from ${xmlEscape(e.timestamp)}">${isSelected ? '✓' : ''}</button>`
+      : '';
 
-    const datePart=String(e.timestamp).split(/[ T]/)[0];
-    const dateValue=new Date(datePart+'T12:00:00');
-    const shortDate=Number.isNaN(dateValue.getTime()) ? datePart : dateValue.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const dateValue=new Date(String(e.timestamp).replace(' ','T'));
+    const shortDate=Number.isNaN(dateValue.getTime())
+      ? String(e.timestamp)
+      : dateValue.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).replace(' AM',' am').replace(' PM',' pm');
+    const importedBy=e.importBatchId ? (String(e.inspector||'').trim()||'Unknown') : '';
+    const displayType=String(e.type).startsWith('Cracks') ? 'Cracks' : e.type;
+    const laneValue=String(e.lane||'—');
+    const laneLabel=/^\d+$/.test(laneValue) ? `L${laneValue}` : laneValue;
     div.innerHTML = `
-      ${checkboxHtml}
-      <div class="record-type"><span class="type">${xmlEscape(e.type)}</span>
-        ${e.importBatchId?`<span class="import-label">Imported · ${xmlEscape(e.inspector||e.importLabel||'Unnamed inspector')}</span>`:''}
+      <div class="record-type"><span class="type">${xmlEscape(displayType)}</span>
+        ${importedBy?`<span class="import-label">(Imported - ${xmlEscape(importedBy)})</span>`:''}
       </div>
       <time class="record-date" datetime="${xmlEscape(String(e.timestamp).replace(' ','T'))}" title="${xmlEscape(e.timestamp)}">${xmlEscape(shortDate)}</time>
       <div class="record-context"><span class="record-road">${xmlEscape(e.expressway||'—')}</span>
-      <span class="record-km"><span class="record-mobile-label">KM </span>${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}</span>
+      <span class="record-km">KM ${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}</span>
       <span class="record-bound">${xmlEscape(e.bound||'—')}</span>
-      <span class="record-lane"><span class="record-mobile-label">Lane </span>${xmlEscape(e.lane||'—')}</span></div>
+      <span class="record-lane">${xmlEscape(laneLabel)}</span></div>
       ${e.photoId ? `<div class="record-photo-actions">${photoActionsHtml}</div>` : ''}
+      ${checkboxHtml}
     `;
     row.innerHTML = `<button type="button" class="swipe-action edit" data-idx="${realIdx}" aria-label="Edit ${xmlEscape(e.type)} entry">Edit</button><button type="button" class="swipe-action delete" data-idx="${realIdx}" aria-label="Delete ${xmlEscape(e.type)} entry">Delete</button>`;
     row.appendChild(div);

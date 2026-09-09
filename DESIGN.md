@@ -130,7 +130,7 @@ components:
   entry-card:
     backgroundColor: "{colors.panel}"
     textColor: "{colors.line-white}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.lg}"
     padding: "10px 12px"
   edit-input:
     rounded: "{rounded.sm}"
@@ -196,7 +196,7 @@ The body inherits the browser's default size (16px in the inspected browser); it
 | Section label | Frontmatter `section-label`, uppercase. |
 | Coordinates | Monospace `coordinate-value`; becomes 12px at ≤390px. Labels use `coordinate-label`. |
 | Lane number | 15px/700 on phones; 20px in wide landscape, 18px at 700–900px; focused-category mode uses 28px. |
-| Log title / metadata | Frontmatter `entry-title` / `entry-meta`; metadata wraps within log cards to preserve full record details beside selection controls. Photo status also uses the compact monospace family. |
+| Log title / metadata | Entry titles are 15px/800 (14px on narrow phones); imported attribution is inline at 12px/400 (11px narrow). Timestamps and road context use matching 12px muted text (11px narrow) with tabular numerals for dates and KM values. |
 | Header status | 11px/450 with .035em tracking. |
 | Navigation | Frontmatter `tab-label`; icon above label. |
 
@@ -208,13 +208,15 @@ The phone inspection column is centered, max-width 520px, with 14px side/bottom 
 
 At ≤360px, the direction panel stacks below a two-equal-column measurement grid; direction buttons form a wrapping row. Above that width, the readout pairs a two-column measurement grid with a direction panel (132px basis, 112px at ≤390px). The final readout padding remains 14px 16px and bound-panel padding 10px 12px because the restored stylesheet overrides narrower earlier padding. The station card uses two columns, separated by a fine vertical line, with 17px 18px padding and a 14px gap on ordinary phones.
 
-Lane controls form five shrinkable equal columns with 5px gaps. Other-lane labels and explanations use 11px text; rows grow to fit the content. Focused-category mode changes to two columns with 12px gaps, and the Other lane spans both. Shared spacing tokens are listed in frontmatter, but the existing interface also uses 5, 6, 7, 10, 14, 18, 20, and 22px locally; do not silently snap these to a new scale.
+Lane controls form five shrinkable equal columns with 5px gaps. Standard phone rows are restored to a consistent 60px height; numbered lanes use 15px text while the Other-lane label and explanation use 9px and 8px so they do not enlarge the full row. Focused-category mode changes to two columns with 12px gaps, and the Other lane spans both with larger targets. Shared spacing tokens are listed in frontmatter, but the existing interface also uses 5, 6, 7, 10, 14, 18, 20, and 22px locally; do not silently snap these to a new scale.
+
+Inspection entries are independent rounded cards separated by a 6px gap. Each card has two compact information lines: defect type and imported-inspector attribution align with the timestamp above; expressway, KM station, bound, and lane align with the optional View Photo action below. The defect-color stripe remains on the leading edge. In selection state, a yellow inset ring and trailing checkbox appear without replacing the stripe. The select-all control shares the same one-line row as the two dates and filter button on phone widths.
 
 Landscape ≥700px expands main to 1180px with 12px 18px padding. The top grid is `minmax(250px,1fr) minmax(135px,.48fr) minmax(360px,1.5fr)` with a 16px column gap. GPS, direction, and station align at the top with no extra margin on direction/station; defects span the width in two columns. At 700–900px the grid becomes `minmax(215px,1fr) minmax(120px,.5fr) minmax(320px,1.5fr)` with 12px gaps. The readout wrapper becomes `display:contents`; its inner GPS panel is the visible card.
 
 The fixed bottom tray is at most 560px wide and 56px tall plus bottom safe-area inset; body reserves matching space. The map fills `100dvh - 56px - bottom safe area`, with a 420px minimum height. Its top and lower filter panels sit 12px from the sides; lower filters sit 30px from the bottom. Dates use shrinkable grid tracks and centered native date text. Entry filters use `minmax(0,1.15fr) auto minmax(0,1.15fr) minmax(0,1fr) auto` with 6px gaps.
 
-Inspection touch sizes: lane/direction buttons are at least 48px high; navigation, theme, bridge, camera category, export, select, focus select, and inspection date/filter controls are at least 44px. Map date/filter controls remain 38px. At ≤400px, inspection dates occupy the first row and defect/reset controls the second, preventing truncated dates. Camera topbar controls are 36px, or 34px at ≤380px. These are measured patterns, not a claim that every control meets a uniform target size.
+Inspection touch sizes: ordinary lane buttons are 60px high; navigation, theme, bridge, camera category, export, select, focus select, and inspection date/filter controls are at least 44px. Map date/filter controls remain 38px. The two inspection dates, separator, filter, and select-all control remain on one compact row down to common 390px phone widths. Camera topbar controls are 36px, or 34px at ≤380px. These are measured patterns, not a claim that every control meets a uniform target size.
 
 ## Elevation & Depth
 
@@ -273,7 +275,7 @@ Keep the five-lane category rows and distinct defect colors. Native checkbox ove
 
 Records share a single bordered list with separators and no gaps. Each row keeps 10px 12px padding, a bold defect title and a 4px defect-colored edge. Wide screens use aligned selection, Type, Date, Expressway/Segment, KM, Bound and Lane columns; at ≤760px the title/date sit above wrapping road context. Outer list corners remain rounded; interior rows are square. Photos retain their existing view/remove actions. Full timestamps and coordinates remain available in entry details. Selected entries have an inset yellow outline; light selection uses `#fff5cf`. Swipe actions expose blue editing and red deletion, with a floating undo message. Preserve the category border through light-mode overrides and keep revealed actions clipped.
 
-The log has always-visible row and master checkboxes with a 24px visible box centered inside an unchanged 44px tap target. Empty boxes use a transparent fill with muted blue-gray 2px outline (`#35556A`); checked and mixed boxes use dark green fill (`#1A3C34`) with bright green 1.5px outline (`#2DD4A0`) and CSS-drawn check or minus marks. Selected rows and checkbox focus use the bright highlight green. Selection states: empty selects all filtered entries, partial selects the remainder, and checked clears the filtered selection. A selected count and bulk-delete action appear when applicable. Record IDs remain the selection keys. The master exposes false/mixed/true through aria-checked; row checkboxes are keyboard-operable.
+The log uses the KMTrack Shared checkbox treatment for both rows and the master control: a 28px rounded square with an 8px radius centered inside an unchanged 44px tap target. Empty boxes use a transparent fill with a muted blue-gray 2px outline; checked and mixed boxes use the app's warm yellow fill with a dark navy CSS-drawn check or minus. Selected rows retain the yellow inset outline. Selection states: empty selects all filtered entries, partial selects the remainder, and checked clears the filtered selection. A selected count and bulk-delete action appear when applicable. Record IDs remain the selection keys. The master exposes false/mixed/true through aria-checked; row checkboxes are keyboard-operable.
 
 ### Inputs, filters, and dialogs
 

@@ -38,8 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('entry-filter-clear').addEventListener('click',()=>{menu.open=false;});
   document.addEventListener('click',event=>{if(!menu.contains(event.target)) menu.open=false;});
   menu.addEventListener('keydown',event=>{if(event.key === 'Escape'){menu.open=false;menu.querySelector('summary').focus();}});
-  const selection = document.createElement('div'); selection.className = 'log-selection-row';
-  const source = document.querySelector('.sharing-filters'); source.before(selection);
+  const source = document.querySelector('.sharing-filters');
   const toggle = document.getElementById('select-toggle-btn');
   toggle.textContent = ''; toggle.setAttribute('role','checkbox');
   const count = document.createElement('span'); count.id='selection-count'; count.setAttribute('role','status');
@@ -48,14 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
   source.remove();
   menu.querySelector('summary').setAttribute('aria-label','Inspection filters');
   menu.querySelector('summary').title='Inspection filters';
-  header.append(document.getElementById('undo-import-btn'));
-  selection.classList.add('inspection-list-heading');
-  selection.append(toggle);
-  for(const title of ['Type','Date','Exp./seg.','KM sta.','Bound','Lane']){
-    const label=document.createElement('span');label.textContent=title;selection.append(label);
-  }
+  const undoImport=document.getElementById('undo-import-btn');
+  undoImport.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5M4 7a9 9 0 1 1-1 7"/></svg>';
+  undoImport.setAttribute('aria-label','Undo last import');
+  undoImport.title='Undo last import';
+  header.append(undoImport);
+  filters.append(toggle);
   const list=document.getElementById('log-list');list.classList.add('inspection-record-list');
-  list.before(selection);
   const footer=document.createElement('div');footer.className='log-action-footer';
   const clear=document.createElement('button');clear.type='button';clear.className='select-toggle-btn';clear.textContent='Clear';
   clear.addEventListener('click',()=>{exitSelectMode();renderLog();toggle.focus({preventScroll:true});});

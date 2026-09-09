@@ -49,54 +49,44 @@ html:root .export-format-options .export-btn{width:100%;min-height:64px;padding:
 .export-format-dialog form{display:flex;justify-content:flex-end;}
 @media(max-width:360px){.log-toolbar h2{flex-basis:100%;}.log-toolbar>button{flex:1;}}
 
-/* One record list: aligned columns on wide screens, two-line records on phones. */
-.log-toolbar #undo-import-btn{font-size:11px;flex:0 1 auto;}
-.log-result-count{margin:8px 0;font-size:12px;}
+/* Reference-matched log cards: two compact information lines, independent
+   rounded panels, and selection controls on the trailing edge. */
+.log-toolbar #undo-import-btn{flex:0 0 44px;width:44px;min-height:44px;padding:0;border-radius:var(--radius-md);}
+.log-result-count{margin:7px 0 8px;font-size:12px;font-weight:650;color:var(--line-white);}
 .log-filter-options{width:280px;max-height:60dvh;overflow:auto;}
 .log-filter-options .sharing-filter-fields{grid-template-columns:1fr;margin:0;}
 .log-filter-options label{font-size:12px;gap:5px;}
 .log-filter-options label:has(#entry-filter-type)::before{content:'Defect type';}
-html:root .inspection-list-heading,html:root .inspection-record-list .log-entry{
- display:grid;grid-template-columns:44px minmax(0,1.4fr) 80px minmax(0,1.2fr) 100px 60px 65px;gap:12px;align-items:center;padding:10px 12px;
+.inspection-record-list{display:grid;gap:6px;}
+html:root .inspection-record-list .swipe-row{margin:0;border-radius:var(--radius-lg);}
+html:root .inspection-record-list .log-entry{
+ display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto auto;
+ gap:5px 10px;align-items:center;min-height:82px;margin:0;padding:10px 12px;
+ border:1px solid var(--border);border-left:4px solid var(--line-yellow);border-radius:var(--radius-lg);
+ background:var(--panel);box-shadow:0 5px 16px rgba(0,0,0,.12);
 }
-html:root .inspection-list-heading{margin:12px 0 0;border:1px solid var(--border);border-radius:var(--radius-md) var(--radius-md) 0 0;background:var(--panel);font-size:11px;font-weight:700;color:var(--text-muted);}
-html:root .inspection-record-list{border:1px solid var(--border);border-top:0;border-radius:0 0 var(--radius-md) var(--radius-md);overflow:hidden;}
-html:root .inspection-record-list .swipe-row{margin:0;border-radius:0;}
-html:root .inspection-record-list .log-entry{border-radius:0;margin:0;border-top:0;border-right:0;border-bottom:1px solid var(--border);box-shadow:none;min-height:68px;}
-html:root .inspection-record-list .swipe-row:last-child .log-entry{border-bottom:0;}
-.inspection-record-list .record-type{min-width:0;overflow-wrap:anywhere;font-weight:700;font-size:14px;}
-.inspection-record-list .import-label{display:block;font-weight:400;}
+html:root .inspection-record-list .log-entry.shoving{border-left-color:var(--safety-orange);}
+html:root .inspection-record-list .log-entry.cracks{border-left-color:#c9c9c9;}
+html:root .inspection-record-list .log-entry.other{border-left-color:#c1707a;}
+.inspection-record-list .record-type{grid-column:1;grid-row:1;display:flex;align-items:baseline;gap:8px;min-width:0;overflow-wrap:anywhere;}
+.inspection-record-list .record-type .type{font-size:15px;font-weight:800;line-height:1.2;color:var(--line-white);}
+.inspection-record-list .import-label{display:inline;margin:0;font-size:12px;font-weight:400;color:var(--text-muted);}
 .inspection-record-list :is(.record-road,.record-km,.record-bound,.record-lane,.record-date){min-width:0;font-size:12px;color:var(--text-muted);overflow-wrap:anywhere;}
+.inspection-record-list .record-date{grid-column:2;grid-row:1;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .inspection-record-list .record-km{font-variant-numeric:tabular-nums;}
-.record-mobile-label{display:none;}
-.record-photo-actions{grid-column:2/-1;}
-.record-photo-actions .entry-actions{margin-top:0;}
+.record-context{grid-column:1;grid-row:2;display:flex;flex-wrap:wrap;gap:2px 5px;align-items:baseline;min-width:0;}
+.record-context>span:not(:last-child)::after{content:' ·';margin-left:5px;}
+.record-photo-actions{grid-column:2;grid-row:2;justify-self:end;}
+.record-photo-actions .entry-actions{margin:0;}
+.record-photo-actions .photo-view-btn{min-height:32px;padding:5px 8px;font-size:10px;}
+.inspection-record-list .entry-checkbox{grid-column:3;grid-row:1 / 3;align-self:center;}
+.inspection-record-list .log-entry:not(:has(.record-photo-actions)) .record-context{grid-column:1 / 3;}
 .log-action-footer{position:sticky;bottom:calc(56px + env(safe-area-inset-bottom));z-index:15;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;margin-top:10px;border:1px solid var(--border-strong);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-card);}
 .log-action-footer #selection-count{margin-right:auto;}
 .log-action-footer button{min-height:44px;}
 .log-action-footer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .log-action-footer #bulk-delete-btn{border:0;border-radius:var(--radius-sm);padding:8px 12px;font:600 12px var(--font-ui);background:var(--safety-red);color:#fff;cursor:pointer;}
 .log-action-footer [hidden],#bulk-actions-bar[hidden]{display:none!important;}
-@media(max-width:760px){
- html:root .inspection-list-heading{grid-template-columns:44px 1fr;gap:10px;}
- .inspection-list-heading>span:nth-of-type(n+2){display:none;}
- html:root .inspection-record-list .log-entry{grid-template-columns:44px minmax(0,1fr) auto;column-gap:10px;row-gap:4px;}
- .inspection-record-list .entry-checkbox{grid-row:1/3;grid-column:1;}
- .record-type{grid-column:2;grid-row:1;}
- .record-date{grid-column:3;grid-row:1;white-space:nowrap;}
- .record-road{grid-column:2;grid-row:2;}
- .record-km{grid-column:3;grid-row:2;}
- .record-bound{grid-column:2;grid-row:3;}
- .record-lane{grid-column:3;grid-row:3;}
- .record-mobile-label{display:inline;}
- .record-photo-actions{grid-column:2/-1;}
-}
-
-.record-context{display:contents;}
-@media(max-width:760px){.record-context{grid-column:2/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;}.record-context>span:not(:last-child)::after{content:" ·";margin-left:6px;}.inspection-record-list .entry-checkbox{align-self:center;}}
-
-html:root[data-theme="light"] .inspection-record-list .swipe-row,html:root[data-theme="light"] .inspection-record-list .swipe-row .log-entry{border-radius:0;}
-.inspection-record-list :is(.record-road,.record-km,.record-bound,.record-lane,.record-date){font-size:13px;}
 @media(max-width:760px){
  .log-action-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;}
  .log-action-footer #export-menu-btn{grid-column:1;width:auto;min-width:0;padding-inline:10px;}
@@ -107,33 +97,43 @@ html:root[data-theme="light"] .inspection-record-list .swipe-row,html:root[data-
 
 .inspection-record-list,.inspection-record-list .log-entry{scroll-margin-top:140px;scroll-margin-bottom:calc(190px + env(safe-area-inset-bottom));}
 
-/* Compact visible checkbox; the full 44px button remains the hit target. */
+/* KMTrack Shared selection control: rounded visible checkbox inside an
+   unchanged 44px touch target. */
 html:root :is(#select-toggle-btn,.entry-checkbox){
  position:relative;display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;
  background:transparent;border:0;box-shadow:none;font-size:0;color:transparent;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox)::before{
- content:'';width:24px;height:24px;box-sizing:border-box;border:2px solid #35556a;
- border-radius:5px;background:transparent;pointer-events:none;
+ content:'';width:28px;height:28px;box-sizing:border-box;border:2px solid #67737c;
+ border-radius:8px;background:transparent;pointer-events:none;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox):is([aria-checked="true"],[aria-checked="mixed"])::before{
  background:#1a3c34;border-color:#2dd4a0;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="true"]::after{
- content:'';position:absolute;left:50%;top:50%;width:6px;height:10px;border:solid #2dd4a0;border-width:0 2px 2px 0;
- transform:translate(-50%,-58%) rotate(45deg);pointer-events:none;
+ content:'';position:absolute;left:50%;top:50%;width:7px;height:12px;border:solid #2dd4a0;border-width:0 3px 3px 0;
+ transform:translate(-50%,-60%) rotate(45deg);pointer-events:none;
 }
 html:root #select-toggle-btn[aria-checked="mixed"]::after{
- content:'';position:absolute;left:50%;top:50%;width:10px;height:2px;background:#2dd4a0;transform:translate(-50%,-50%);pointer-events:none;
+ content:'';position:absolute;left:50%;top:50%;width:12px;height:3px;border-radius:2px;background:#2dd4a0;transform:translate(-50%,-50%);pointer-events:none;
 }
 html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible{outline:none;}
 html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible::before{outline:2px solid var(--line-yellow);outline-offset:2px;}
-/* Row cards retain their 4px defect stripe; offset the header hit area so
-   both visible 24px boxes share the same left edge. */
-html:root .inspection-list-heading #select-toggle-btn{transform:translateX(4px);}
-/* Reference selection treatment: yellow checkbox fill with a bright green
-   selection outline that keeps the defect stripe visible underneath. */
-html:root .inspection-record-list .log-entry.selected{outline:2px solid #2bd6ad;outline-offset:-2px;}
-html:root :is(#select-toggle-btn,.entry-checkbox):focus-visible::before{outline-color:#2bd6ad;}
-html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="true"]::before,
-html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="mixed"]::before{background:#1a3c34;border-color:#2dd4a0;}
+/* Selection follows the supplied reference: warm yellow ring and checkmark. */
+html:root .inspection-record-list .log-entry.selected{outline:2px solid var(--line-yellow);outline-offset:-2px;}
+html:root :is(#select-toggle-btn,.entry-checkbox):is([aria-checked="true"],[aria-checked="mixed"])::before{background:var(--line-yellow);border-color:var(--line-yellow);}
+html:root :is(#select-toggle-btn,.entry-checkbox)[aria-checked="true"]::after{border-color:#173044;}
+html:root #select-toggle-btn[aria-checked="mixed"]::after{background:#173044;}
+html:root[data-theme="light"] .log-result-count{color:var(--line-white);}
+html:root[data-theme="light"] .inspection-record-list .swipe-row,
+html:root[data-theme="light"] .inspection-record-list .log-entry{border-radius:var(--radius-lg);}
+
+@media(max-width:430px){
+ html:root .log-date-filters{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 44px 44px;gap:4px;}
+ html:root .log-date-filters>#select-toggle-btn{grid-column:auto;}
+ html:root .inspection-record-list .log-entry{grid-template-columns:minmax(0,1fr) auto auto;gap:5px 7px;padding:9px 10px;}
+ .inspection-record-list .record-type{gap:6px;}
+ .inspection-record-list .record-type .type{font-size:14px;}
+ .inspection-record-list .import-label,.inspection-record-list :is(.record-road,.record-km,.record-bound,.record-lane,.record-date){font-size:11px;}
+ .record-photo-actions .photo-view-btn{padding:4px 6px;}
+}
