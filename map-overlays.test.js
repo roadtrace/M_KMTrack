@@ -59,3 +59,11 @@ test('map entry labels no longer render leader lines or arrow paths',()=>{
   assert.doesNotMatch(js,/map-km-leader|createElementNS/);
   assert.doesNotMatch(css,/map-km-leader/);
 });
+
+test('landmark pins keep a full touch target around a compact visible icon',()=>{
+  const js=fs.readFileSync(require.resolve('./map-overlays.js'),'utf8');
+  const css=fs.readFileSync(require.resolve('./map-overlays.css'),'utf8');
+  assert.match(js,/iconSize:\[44,44\],iconAnchor:\[22,36\]/);
+  assert.match(css,/\.map-landmark-pin\{width:44px;height:44px;/);
+  assert.match(css,/\.map-landmark-pin svg\{width:22px;height:28px;/);
+});

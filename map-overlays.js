@@ -101,10 +101,10 @@
       const popup=element('div','map-landmark-details');popup.append(element('strong','',title));
       if(asset.to) popup.append(element('div','',`Ends at ${asset.to}`));
       if(asset.network) popup.append(element('div','',asset.network));
-      const marker=L.marker([asset.lat,asset.lon],{icon:L.divIcon({html:host,className:'map-landmark-anchor',iconSize:[44,44],iconAnchor:[22,40]}),keyboard:false});
+      const marker=L.marker([asset.lat,asset.lon],{icon:L.divIcon({html:host,className:'map-landmark-anchor',iconSize:[44,44],iconAnchor:[22,36]}),keyboard:false});
       marker.bindPopup(popup,{maxWidth:240});
       const name=element('span','',title.replace(/ Bridge\b/g,''));
-      marker.bindTooltip(name,{permanent:map.getZoom()>=12,direction:'top',offset:[0,-36],className:'map-landmark-label'}).addTo(layer);
+      marker.bindTooltip(name,{permanent:map.getZoom()>=12,direction:'top',offset:[0,-28],className:'map-landmark-label'}).addTo(layer);
       host.onclick=()=>marker.openPopup();L.DomEvent.disableClickPropagation(host);
     });
   }
