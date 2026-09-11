@@ -216,6 +216,8 @@ Landscape ≥700px expands main to 1180px with 12px 18px padding. The top grid i
 
 The fixed bottom tray is at most 560px wide and 56px tall plus bottom safe-area inset; body reserves matching space. The map fills `100dvh - 56px - bottom safe area`, with a 420px minimum height. Its top and lower filter panels sit 12px from the sides; lower filters sit 30px from the bottom. Dates use shrinkable grid tracks and centered native date text. Entry filters use `minmax(0,1.15fr) auto minmax(0,1.15fr) minmax(0,1fr) auto` with 6px gaps.
 
+Map inspection entries use bound-colored dots with compact KM-station labels placed immediately beside, above, or below their respective dots. Leader lines and arrows are not used. Labels avoid the map header, legend, filter panel, and each other; when density leaves no nearby collision-free position, the label is suppressed until zooming reveals enough space while the dot remains visible and interactive.
+
 Inspection touch sizes: ordinary lane buttons are 60px high; navigation, theme, bridge, camera category, export, select, focus select, and inspection date/filter controls are at least 44px. Map date/filter controls remain 38px. The two inspection dates, separator, filter, and select-all control remain on one compact row down to common 390px phone widths. Camera topbar controls are 36px, or 34px at ≤380px. These are measured patterns, not a claim that every control meets a uniform target size.
 
 ## Elevation & Depth
@@ -308,3 +310,11 @@ Camera controls sit over the live viewfinder with safe-area spacing; landscape r
 - Don't normalize existing sizes, radii, or typography merely to fit a new scale.
 - Don't invent palette ramps, claims, or new visual patterns and label them as existing.
 - Don't modify GPS, camera, storage, import/export, or offline behavior during visual refinement.
+
+## Map entry and landmark overlays (2026-09-10)
+
+The map displays saved entries by default, honoring its existing date, defect, source, and inspector filters. Direction colors are NB cyan #00b9f2, SB red #ef4444, EB yellow #f4b400, WB violet #b18cff, and other/unset gray #a7b0b8. These map-only colors do not change inspection defect colors. The upper-right legend lists directions in the filtered entries.
+
+Each visible entry has its saved KM station in a callout joined to its geographic dot by a direction-colored leader. Missing KM values read KM n/a. Labels stagger when space permits and use 44px minimum hit heights; dots have transparent 44px hit targets. Clicking either opens the same entry editor used by the inspection log, resolving the entry by stable ID.
+
+Yellow map pins identify interchanges and Pulilan/Tibag Underpass. Names appear from zoom 12, with details on click. Existing bridge coordinates remain authoritative for existing assets; supplementary OSM landmark data is bundled and cached offline. See MAP_LANDMARKS.md for source provenance and coverage. Basemaps, gradients, fonts, and bottom navigation retain their existing design.

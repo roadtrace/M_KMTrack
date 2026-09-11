@@ -147,13 +147,15 @@ test('ZIP workbook, photos and manifest use one filtered snapshot across async w
   const workbook=await unzip(new Blob([find('/inspection_log.xlsx')]));
   assert.match(workbook['xl/worksheets/sheet1.xml'].toString(),/A1:L3/);
 });
-test('map toggle creates plain non-interactive red dots, filters by day, refreshes and hides',()=>{
+test('map toggle passes filtered entries to interactive overlays, refreshes and hides',()=>{
   const {control,context}=harness();
   context.osmMap={};context.osmEntryLayer=null;
   context.L={
     layerGroup:()=>({markers:[],clearLayers(){this.markers=[];},remove(){this.visible=false;},addTo(){this.visible=true;return this;}}),
     circleMarker:(point,options)=>({addTo(layer){layer.markers.push({point,options});}})
   };
+  context.KMTrackMap={legend(){},renderEntries(map,layer,rows,onOpen){layer.markers=rows.map(entry=>({entry,onOpen}));}};
+  context.openMapEntry=()=>{};context.formatKmStation=String;
   vm.runInContext(source('updateMapEntries'),context);
   context.updateMapEntries();
   assert.equal(context.osmEntryLayer.visible,false);
@@ -167,7 +169,7 @@ test('map toggle creates plain non-interactive red dots, filters by day, refresh
   assert.equal(context.osmEntryLayer.markers.length,3);
   control('map-entry-to').value='2026-09-03';
   context.updateMapEntries();
-  assert.ok(context.osmEntryLayer.markers.every(marker=>marker.options.interactive===false && marker.options.fillColor==='#ef4444'));
+  assert.ok(context.osmEntryLayer.markers.every(marker=>marker.onOpen===context.openMapEntry));
   context.entries.splice(0,1);
   context.updateMapEntries();
   assert.equal(context.osmEntryLayer.markers.length,1);

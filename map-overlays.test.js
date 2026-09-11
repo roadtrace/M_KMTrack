@@ -1,0 +1,55 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const map=require('./map-overlays.js');
+test('bounds normalize imported names without treating an unset bound as northbound',()=>{
+  assert.equal(map.boundKey('north-bound'),'NB');assert.equal(map.boundKey(' sb '),'SB');
+  assert.equal(map.boundKey('Eastbound'),'EB');assert.equal(map.boundKey('WB'),'WB');
+  assert.equal(map.boundKey(''), 'Other');assert.equal(map.boundKey('inner'),'Other');
+  assert.equal(new Set(Object.values(map.BOUNDS)).size,5);
+});
+test('landmarks retain every interchange, merge Pulilan directions and exclude unrelated bridges',()=>{
+  const rows=[{name:'Pulilan/Tibag Underpass (NB)',lat:14,lon:120},{name:'Pulilan/Tibag Underpass (SB)',lat:14,lon:120},
+    {name:'Dau Interchange Bridge',lat:15,lon:120},{name:'River Bridge',lat:15,lon:120}];
+  const before=JSON.stringify(rows),result=map.landmarks(rows);
+  assert.equal(result.length,2);assert.equal(result[0].name,'Pulilan Interchange / Tibag Underpass');assert.equal(JSON.stringify(rows),before);
+});
+test('map detail opening uses stable IDs after reorder or deletion',()=>{
+  const html=fs.readFileSync(require.resolve('./index.html'),'utf8');
+  const fn=html.match(/function openMapEntry\(id\)\{[\s\S]*?\n\}/)[0];
+  const opened=[],context=vm.createContext({entries:[{id:'b'},{id:'a'}],openEditModal:i=>opened.push(i),KMTrackMap:{focusEditor(){}}});
+  vm.runInContext(fn,context);context.openMapEntry('a');context.entries.shift();context.openMapEntry('a');context.openMapEntry('deleted');
+  assert.deepEqual(opened,[1,0]);
+});
+
+test('supplemental map data covers all requested networks with finite sourced locations and offline caching',()=>{
+  const data=require('./map-landmarks.json');
+  assert.ok(data.assets.length>=25);
+  for(const network of ['NLEX','SCTEX','NLEX Harbor Link','NLEX Connector'])assert.ok(data.assets.some(a=>a.network===network));
+  for(const a of data.assets){assert.ok(Number.isFinite(a.lat)&&a.lat>14&&a.lat<16);assert.ok(Number.isFinite(a.lon)&&a.lon>120&&a.lon<122);assert.ok(a.sources.length);}
+  const sw=fs.readFileSync(require.resolve('./sw.js'),'utf8');
+  for(const file of ['map-overlays.js','map-overlays.css','map-landmarks.json'])assert.ok(sw.includes("'./"+file+"'"));
+});
+
+test('overlapping dot hit areas resolve to the closest geographic point rather than DOM order',()=>{
+  const north={id:'north'},south={id:'south'};
+  const points=[{entry:south,x:100,y:119},{entry:north,x:100,y:100}];
+  assert.equal(map.nearestEntry(points,100,101),north);
+  assert.equal(map.nearestEntry(points,100,118),south);
+  assert.equal(map.nearestEntry([],100,100),null);
+});
+
+test('KM labels stay close to their dots, avoid occupied controls and declutter when boxed in',()=>{
+  const size={x:390,y:844},screen={x:180,y:300};
+  const right=map.labelPlacement(screen,size,[],false);
+  assert.deepEqual(right,{x:190,y:286});
+  const occupied=[{x:188,y:280,w:80,h:44}];
+  assert.deepEqual(map.labelPlacement(screen,size,occupied,false),{x:100,y:286});
+  const boxed=[{x:0,y:250,w:390,h:110}];
+  assert.equal(map.labelPlacement(screen,size,boxed,false),null);
+});
+
+test('map entry labels no longer render leader lines or arrow paths',()=>{
+  const js=fs.readFileSync(require.resolve('./map-overlays.js'),'utf8');
+  const css=fs.readFileSync(require.resolve('./map-overlays.css'),'utf8');
+  assert.doesNotMatch(js,/map-km-leader|createElementNS/);
+  assert.doesNotMatch(css,/map-km-leader/);
+});

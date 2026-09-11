@@ -1203,7 +1203,7 @@ button {
   .lane-btn-row{grid-template-columns:repeat(5,minmax(0,1fr));}
   .lane-btn{min-width:0;height:60px;min-height:60px;padding:10px 2px;}
   .lane-btn.others-btn{font-size:9px;line-height:1.2;overflow-wrap:normal;}
-  .lane-btn.others-btn .others-sub{font-size:8px;line-height:1.2;}
+  .lane-btn.others-btn .others-sub{font-size:8px;line-height:1.2;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;}
   #defect-section.focused .focused-category .lane-btn{height:auto;min-height:96px;}
   #defect-section.focused .focused-category .lane-btn.others-btn{min-height:64px;}
   .readout-main .field .label{white-space:normal;overflow-wrap:anywhere;font-size:11px;letter-spacing:.08em;}
@@ -1231,6 +1231,7 @@ button {
 <link rel="stylesheet" href="radius-system.css">
 <link rel="stylesheet" href="sharing.css">
 <link rel="stylesheet" href="photo-viewer.css">
+<link rel="stylesheet" href="map-overlays.css">
 </head>
 <body>
 
@@ -1435,13 +1436,14 @@ button {
     <button type="button" class="map-theme-toggle" id="map-theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
   </div>
   <div id="osm-map" aria-label="OpenStreetMap showing the current inspection location"></div>
+  <div id="map-bound-legend" class="map-bound-legend" aria-label="Map legend"></div>
   <div class="map-entry-controls" aria-label="Map entry display options">
     <div class="map-floating-actions" role="group" aria-label="Map controls">
       <button type="button" class="map-locate-btn" id="map-locate-btn" aria-label="Center map on current location" title="Center on current location">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
       </button>
     </div>
-    <label><input type="checkbox" id="map-show-entries">Show entries</label>
+    <label><input type="checkbox" id="map-show-entries" checked>Show entries</label>
     <label><input type="date" id="map-entry-from" aria-label="From date" disabled></label>
     <span class="date-range-separator" aria-hidden="true">to</span>
     <label><input type="date" id="map-entry-to" aria-label="To date" disabled></label>
@@ -1471,6 +1473,7 @@ button {
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="./swipe-actions.js"></script>
 <script src="./entry-filters.js"></script>
+<script src="./map-overlays.js"></script>
 <script src="./inspection-sharing.js"></script>
 <script src="./sharing-ui.js"></script>
 <script src="./log-controls.js"></script>
@@ -2123,6 +2126,7 @@ async function loadBridgeDataset(){
     const response = await fetch('bridges.json', { cache: 'no-store' });
     if(!response.ok) throw new Error('HTTP ' + response.status);
     bridgeData = sanitizeBridgeData(await response.json());
+    updateMapLandmarks();
     if(!bridgeData.length) throw new Error('no valid records');
     renderBridgeClassificationMenu();
     if(currentPos){
@@ -2191,6 +2195,8 @@ const gpsStatus = document.getElementById('gps-status');
 let osmMap = null;
 let osmBaseLayer = null;
 let osmEntryLayer = null;
+let osmLandmarkLayer = null;
+let supplementalMapLandmarks = [];
 let osmLocationMarker = null;
 let osmAccuracyCircle = null;
 let osmHasCenteredOnLocation = false;
@@ -2227,8 +2233,23 @@ function initOsmMap(){
   if(osmMap || typeof L === 'undefined') return;
   osmMap = L.map('osm-map',{zoomControl:false,attributionControl:true}).setView([14.86,120.88],10);
   updateOsmBasemap();
+  osmMap.on('moveend',updateMapEntries);
+  osmMap.on('zoomend',updateMapLandmarks);
+  updateMapLandmarks();
+  fetch('map-landmarks.json').then(r=>{if(!r.ok) throw new Error(r.status);return r.json();}).then(data=>{if(!Array.isArray(data.assets)) throw new Error('Invalid landmark dataset');supplementalMapLandmarks=data.assets;updateMapLandmarks();}).catch(err=>console.warn('Additional interchange markers unavailable',err));
   updateOsmLocation();
   updateMapEntries();
+}
+
+function updateMapLandmarks(){
+  if(!osmMap) return;
+  if(!osmLandmarkLayer) osmLandmarkLayer=L.layerGroup().addTo(osmMap);
+  KMTrackMap.renderLandmarks(osmMap,osmLandmarkLayer,[...bridgeData,...supplementalMapLandmarks]);
+}
+
+function openMapEntry(id){
+  const index=entries.findIndex(entry=>entry.id===id);
+  if(index>=0){ openEditModal(index); KMTrackMap.focusEditor(); }
 }
 
 function updateMapEntries(){
@@ -2243,13 +2264,11 @@ function updateMapEntries(){
   if(!osmMap) return;
   if(!osmEntryLayer) osmEntryLayer = L.layerGroup();
   osmEntryLayer.clearLayers();
-  if(!show){ osmEntryLayer.remove(); return; }
+  if(!show){ osmEntryLayer.remove(); KMTrackMap.legend([],false); return; }
   osmEntryLayer.addTo(osmMap);
-  KMTrackEntryFilters.mapEntries(entries,from.value,to.value,type.value,document.getElementById('map-entry-source').value,document.getElementById('map-entry-inspector').value).forEach(entry => {
-    L.circleMarker([entry.lat,entry.lon],{
-      radius:5,color:'#b91c1c',weight:1,fillColor:'#ef4444',fillOpacity:1,interactive:false
-    }).addTo(osmEntryLayer);
-  });
+  const visible=KMTrackEntryFilters.mapEntries(entries,from.value,to.value,type.value,document.getElementById('map-entry-source').value,document.getElementById('map-entry-inspector').value);
+  KMTrackMap.legend(visible,true);
+  KMTrackMap.renderEntries(osmMap,osmEntryLayer,visible,openMapEntry,formatKmStation);
 }
 document.getElementById('map-show-entries').addEventListener('change',updateMapEntries);
 document.getElementById('map-entry-from').addEventListener('change',updateMapEntries);
