@@ -218,6 +218,8 @@ The fixed bottom tray is at most 560px wide and 56px tall plus bottom safe-area 
 
 Map inspection entries use bound-colored dots with compact KM-station labels placed immediately beside, above, or below their respective dots. Leader lines and arrows are not used. Labels avoid the map header, legend, filter panel, and each other; when density leaves no nearby collision-free position, the label is suppressed until zooming reveals enough space while the dot remains visible and interactive.
 
+Map landmark labels distinguish formally identified interchanges from ordinary exits and append the station without a redundant `KM` prefix, for example `Dau Interchange · 83+353` and `Libtong Exit · 19+550`.
+
 Inspection touch sizes: ordinary lane buttons are 60px high; navigation, theme, bridge, camera category, export, select, focus select, and inspection date/filter controls are at least 44px. Map date/filter controls remain 38px. The two inspection dates, separator, filter, and select-all control remain on one compact row down to common 390px phone widths. Camera topbar controls are 36px, or 34px at ≤380px. These are measured patterns, not a claim that every control meets a uniform target size.
 
 ## Elevation & Depth

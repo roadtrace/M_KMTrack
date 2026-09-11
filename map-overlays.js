@@ -11,13 +11,18 @@
   }
   function landmarks(assets){
     const groups=new Map();
-    assets.filter(a=>a && typeof a.name==='string' && Number.isFinite(a.lat) && Math.abs(a.lat)<=90 && Number.isFinite(a.lon) && Math.abs(a.lon)<=180 && (/interchange/i.test(a.name)||/pulilan.*underpass/i.test(a.name))).forEach(a=>{
+    assets.filter(a=>a && typeof a.name==='string' && Number.isFinite(a.lat) && Math.abs(a.lat)<=90 && Number.isFinite(a.lon) && Math.abs(a.lon)<=180 && (a.kind==='interchange'||a.kind==='exit'||a.classification==='Interchange Bridge'||/pulilan.*underpass/i.test(a.name))).forEach(a=>{
       let name=a.name.replace(/\s*\((NB|SB)\)\s*$/i,'');
-      if(/pulilan.*underpass/i.test(name)) name='Pulilan Interchange / Tibag Underpass';
+      if(/pulilan.*underpass/i.test(name)) name='Pulilan Interchange';
       if(name==='Smart Connect (C5-NLEx Link) Interchange Bridge') name='Harbor Link (Smart Connect) Interchange';
+      else name=name.replace(/ Interchange Bridge\b/i,' Interchange');
       if(!groups.has(name)) groups.set(name,{...a,name});
     });
     return [...groups.values()];
+  }
+  function landmarkTitle(asset){
+    const station=String(asset.station||asset.from||'').trim();
+    return station ? `${asset.name} · ${station}` : asset.name;
   }
   function nearestEntry(points,x,y){
     let closest=null,distance=Infinity;
@@ -90,14 +95,15 @@
   function renderLandmarks(map,layer,assets){
     const L=globalThis.L;layer.clearLayers();
     landmarks(assets).forEach(asset=>{
-      const host=element('button','map-landmark-pin');host.type='button';host.setAttribute('aria-label',asset.name);
+      const title=landmarkTitle(asset);
+      const host=element('button','map-landmark-pin');host.type='button';host.setAttribute('aria-label',title);
       host.innerHTML='<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 39C13 33 2 23 2 16a14 14 0 1 1 28 0c0 7-11 17-14 23Z" fill="#f4b400" stroke="white" stroke-width="2"/><path d="M8 12h16M8 16h16M11 10v13m10-13v13M15 16v7m4-7v7" fill="none" stroke="white" stroke-width="2"/></svg>';
-      const popup=element('div','map-landmark-details');popup.append(element('strong','',asset.name));
-      if(asset.from) popup.append(element('div','',`KM ${asset.from}${asset.to?' – '+asset.to:''}`));
+      const popup=element('div','map-landmark-details');popup.append(element('strong','',title));
+      if(asset.to) popup.append(element('div','',`Ends at ${asset.to}`));
       if(asset.network) popup.append(element('div','',asset.network));
       const marker=L.marker([asset.lat,asset.lon],{icon:L.divIcon({html:host,className:'map-landmark-anchor',iconSize:[44,44],iconAnchor:[22,40]}),keyboard:false});
       marker.bindPopup(popup,{maxWidth:240});
-      const name=element('span','',asset.name.replace(/ Bridge\b/g,''));
+      const name=element('span','',title.replace(/ Bridge\b/g,''));
       marker.bindTooltip(name,{permanent:map.getZoom()>=12,direction:'top',offset:[0,-36],className:'map-landmark-label'}).addTo(layer);
       host.onclick=()=>marker.openPopup();L.DomEvent.disableClickPropagation(host);
     });
@@ -121,5 +127,5 @@
     });
     observer.observe(modal,{attributes:true,attributeFilter:['aria-hidden']});controls()[0]?.focus();
   }
-  return {BOUNDS,boundKey,landmarks,nearestEntry,labelPlacement,legend,renderEntries,renderLandmarks,focusEditor};
+  return {BOUNDS,boundKey,landmarks,landmarkTitle,nearestEntry,labelPlacement,legend,renderEntries,renderLandmarks,focusEditor};
 });

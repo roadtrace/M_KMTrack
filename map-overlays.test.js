@@ -6,11 +6,17 @@ test('bounds normalize imported names without treating an unset bound as northbo
   assert.equal(map.boundKey(''), 'Other');assert.equal(map.boundKey('inner'),'Other');
   assert.equal(new Set(Object.values(map.BOUNDS)).size,5);
 });
-test('landmarks retain every interchange, merge Pulilan directions and exclude unrelated bridges',()=>{
-  const rows=[{name:'Pulilan/Tibag Underpass (NB)',lat:14,lon:120},{name:'Pulilan/Tibag Underpass (SB)',lat:14,lon:120},
-    {name:'Dau Interchange Bridge',lat:15,lon:120},{name:'River Bridge',lat:15,lon:120}];
+test('landmarks retain actual interchanges, merge Pulilan directions as an interchange and exclude unrelated bridges',()=>{
+  const rows=[{name:'Pulilan/Tibag Underpass (NB)',lat:14,lon:120},{name:'Pulilan/Tibag Underpass (SB)',lat:14,lon:120},{name:'Libtong Exit',kind:'exit',station:'19+550',lat:14.7,lon:120.9},
+    {name:'Dau Interchange Bridge',classification:'Interchange Bridge',lat:15,lon:120},{name:'River Bridge',classification:'River Bridge',lat:15,lon:120}];
   const before=JSON.stringify(rows),result=map.landmarks(rows);
-  assert.equal(result.length,2);assert.equal(result[0].name,'Pulilan Interchange / Tibag Underpass');assert.equal(JSON.stringify(rows),before);
+  assert.equal(result.length,3);assert.equal(result[0].name,'Pulilan Interchange');assert.equal(result[1].name,'Libtong Exit');assert.equal(result[2].name,'Dau Interchange');assert.equal(JSON.stringify(rows),before);
+});
+
+test('landmark titles append their authoritative station without redundant KM text',()=>{
+  assert.equal(map.landmarkTitle({name:'Libtong Exit',station:'19+550'}),'Libtong Exit · 19+550');
+  assert.equal(map.landmarkTitle({name:'Dau Interchange',from:'83+353'}),'Dau Interchange · 83+353');
+  assert.equal(map.landmarkTitle({name:'Unknown Exit'}),'Unknown Exit');
 });
 test('map detail opening uses stable IDs after reorder or deletion',()=>{
   const html=fs.readFileSync(require.resolve('./index.html'),'utf8');
