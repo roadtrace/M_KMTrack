@@ -41,3 +41,7 @@ test('bridge filter keeps a compact visible control inside its full tap target',
   assert.match(css,/html:root \.bridge-filter-toggle\{[^}]*width:44px;height:44px[^}]*background:transparent/);
   assert.match(css,/html:root \.bridge-filter-toggle::before\{[^}]*width:28px;height:28px[^}]*border-radius:var\(--radius-sm\)/);
 });
+test('bridge filter shares the yellow active funnel treatment without a separate dot',()=>{
+  assert.match(css,/\.bridge-filter-toggle\.filtered::before\{[^}]*border-color:var\(--line-yellow\)[^}]*%23f4b400[^}]*box-shadow:/);
+  assert.match(css,/\.bridge-filter-toggle\.filtered::after\{display:none;/);
+});

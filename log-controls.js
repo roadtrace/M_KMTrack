@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const icon = direction => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v6h16v-6M12 3v12${direction === 'in' ? 'M7 10l5 5 5-5' : 'M7 8l5-5 5 5'}"/></svg>`;
   const header = document.querySelector('.log-header');
   header.classList.add('log-toolbar');
+  const badge=document.createElement('span');badge.id='log-count-badge';badge.className='log-count-badge';badge.setAttribute('role','status');
+  header.querySelector('h2').append(badge);
   document.getElementById('import-btn').innerHTML = `${icon('in')}<span>Import</span>`;
   const exportMenu = document.createElement('button');
   exportMenu.type = 'button'; exportMenu.id = 'export-menu-btn';
@@ -30,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filters = document.querySelector('.entry-filters');
   filters.classList.add('log-date-filters');
   const menu = document.createElement('details'); menu.className = 'log-filter-menu';
-  menu.innerHTML = '<summary aria-label="Defect filters" title="Defect filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg></summary><div class="log-filter-options"></div>';
+  menu.innerHTML = '<summary aria-label="Defect filters" title="Defect filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></svg></summary><div class="log-filter-options"></div>';
   const filterOptions = menu.querySelector('div');
   filterOptions.append(document.getElementById('entry-filter-type').parentElement,document.getElementById('entry-filter-clear'));
   filters.append(menu);
@@ -57,13 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectAll=document.getElementById('bulk-select-all-btn'),deleteSelected=document.getElementById('bulk-delete-btn');
   footer.append(count,toggle,exportMenu,selectAll,deleteSelected);list.after(footer);
   document.getElementById('bulk-actions-bar').hidden=true;
-  document.querySelector('.count-bar').classList.add('log-result-count');
+  const legacyCount=document.querySelector('.count-bar');legacyCount.classList.add('log-result-count');legacyCount.hidden=true;
   document.getElementById('last-time').hidden=true;
   document.querySelector('.count-divider').hidden=true;
   selectAll.hidden=true;deleteSelected.hidden=true;
   const sync = () => {
     const visible = visibleEntries(), n = visible.filter(entry=>selectedEntryIds.has(entry.id)).length;
     const all = n > 0 && n === visible.length;
+    footer.classList.toggle('selection-mode',selectMode);
     toggle.classList.toggle('active',selectMode);
     toggle.removeAttribute('role');
     toggle.removeAttribute('aria-checked');
@@ -71,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle.textContent = selectMode ? 'Cancel' : 'Select';
     toggle.title = toggle.getAttribute('aria-label'); toggle.disabled = !visible.length;
     count.textContent = n ? `${n} selected` : `${visible.length} ${visible.length === 1 ? 'entry' : 'entries'}`;
+    badge.textContent=visible.length.toLocaleString('en-US');
+    badge.setAttribute('aria-label',`${visible.length} ${Object.values(getLogFilters()).some(Boolean)?'filtered ':''}${visible.length===1?'entry':'entries'}`);
     selectAll.hidden=!selectMode;
     deleteSelected.hidden=!selectMode;
     deleteSelected.textContent=`Delete (${n})`;

@@ -1,4 +1,6 @@
-.log-header h2{flex:1;}
+.log-header h2{flex:1;display:flex;align-items:center;gap:2px;min-width:0;}
+.log-count-badge{display:inline-grid;place-items:center;align-self:center;box-sizing:border-box;min-width:24px;height:24px;padding:0 6px;border-radius:var(--radius-full);background:linear-gradient(145deg,#ef6267,#c93e49);color:#fff;font:800 11px/1 var(--font-ui);letter-spacing:0;box-shadow:0 0 4px rgba(239,82,91,.72),0 0 9px rgba(239,82,91,.32);font-variant-numeric:tabular-nums;transform:translate(-1px,-9px);}
+.count-bar[hidden]{display:none!important;}
 .sharing-filters{font-size:12px;margin:8px 0 12px;}
 .sharing-filters summary{cursor:pointer;min-height:32px;align-content:center;}
 .sharing-filter-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
@@ -24,7 +26,8 @@ html:root .map-filter-options{flex-direction:column;align-items:stretch;max-heig
 /* Compact log actions share the existing panel and safety-color vocabulary. */
 .log-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .log-toolbar h2{flex:1 1 140px;}
-.log-toolbar svg,.log-filter-menu svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.log-toolbar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.log-filter-menu summary svg{width:16px;height:16px;fill:currentColor;stroke:none;}
 html:root #export-menu-btn{background:var(--safety-green);color:#fff;border-radius:var(--radius-lg);}
 .log-toolbar #import-btn{border-radius:var(--radius-lg);}
 .log-selection-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 12px;}
@@ -100,6 +103,9 @@ html:root .log-action-footer :is(#select-toggle-btn,#export-menu-btn,#bulk-selec
 html:root .log-action-footer #select-toggle-btn:not(.active){border-color:var(--border-strong);}
 .log-action-footer #select-toggle-btn,.log-action-footer #export-menu-btn{grid-row:2;}
 .log-action-footer #bulk-select-all-btn,.log-action-footer #bulk-delete-btn{grid-row:3;}
+html:root .log-action-footer #select-toggle-btn.active{background:var(--line-yellow);color:#191c1f;border-color:transparent;}
+.log-action-footer.selection-mode #bulk-select-all-btn,.log-action-footer.selection-mode #bulk-delete-btn{grid-row:2;}
+.log-action-footer.selection-mode #select-toggle-btn,.log-action-footer.selection-mode #export-menu-btn{grid-row:3;}
 .log-action-footer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .log-action-footer #bulk-delete-btn{padding:0 10px;font:600 12px var(--font-ui);background:var(--safety-red);color:#fff;cursor:pointer;}
 .log-action-footer [hidden],#bulk-actions-bar[hidden]{display:none!important;}
@@ -142,11 +148,21 @@ html:root .bridge-filter-toggle{
 }
 html:root .bridge-filter-toggle::before{
  width:28px;height:28px;border:1px solid rgba(255,255,255,.34);border-radius:var(--radius-sm);
- background:rgba(0,0,0,.18) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M3 5a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.63L14 14.01V19a1 1 0 0 1-.55.89l-3 1.5A1 1 0 0 1 9 20.5v-6.49L3.22 6.63A1 1 0 0 1 3 5Z'/%3E%3C/svg%3E") center / 13px 13px no-repeat;
+ background:rgba(0,0,0,.18) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M4 5h16l-6 7v6l-4 2v-8z'/%3E%3C/svg%3E") center / 13px 13px no-repeat;
  -webkit-mask:none;mask:none;
 }
-html:root .bridge-filter-toggle.filtered::after{right:9px;top:9px;}
+html:root .bridge-filter-toggle.filtered::before{
+ border-color:var(--line-yellow);
+ background:rgba(0,0,0,.18) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f4b400' d='M4 5h16l-6 7v6l-4 2v-8z'/%3E%3C/svg%3E") center / 13px 13px no-repeat;
+ box-shadow:0 0 6px rgba(244,180,0,.38);
+}
+html:root .bridge-filter-toggle.filtered::after{display:none;}
 html:root .bridge-filter-menu{top:52px;}
+
+html:root :is(.log-filter-menu,.map-filter-menu).filtered > summary{
+ color:var(--line-yellow);border-color:var(--line-yellow);box-shadow:0 0 6px rgba(244,180,0,.38);
+}
+html:root .map-filter-menu > summary svg{width:16px;height:16px;}
 
 @media(max-width:430px){
  html:root .log-date-filters{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 44px;gap:4px;}

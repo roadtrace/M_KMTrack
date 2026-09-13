@@ -13,6 +13,16 @@ test('landmarks retain actual interchanges, merge Pulilan directions as an inter
   assert.equal(result.length,3);assert.equal(result[0].name,'Pulilan Interchange');assert.equal(result[1].name,'Libtong Exit');assert.equal(result[2].name,'Dau Interchange');assert.equal(JSON.stringify(rows),before);
 });
 
+test('landmark catalog uses requested names, removals and authoritative Caloocan junction nodes',()=>{
+  const assets=require('./map-landmarks.json').assets,names=assets.map(asset=>asset.name);
+  for(const removed of ['General T. de Leon Exit','Parada Exit','Libis Baesa Exit']) assert.ok(!names.includes(removed));
+  assert.ok(names.includes('Mindanao Exit'));assert.ok(!names.includes('Mindanao Avenue Interchange'));
+  assert.ok(names.includes('R10 Ramp'));assert.ok(!names.includes('Navotas Exit'));
+  const caloocan=assets.find(asset=>asset.name==='Caloocan Interchange'),c3=assets.find(asset=>asset.name==='C-3 Road Exit');
+  assert.deepEqual([caloocan.lat,caloocan.lon],[14.6447911,120.9750438]);
+  assert.deepEqual([c3.lat,c3.lon],[14.6327845,120.9766664]);
+});
+
 test('landmark titles append their authoritative station without redundant KM text',()=>{
   assert.equal(map.landmarkTitle({name:'Libtong Exit',station:'19+550'}),'Libtong Exit · 19+550');
   assert.equal(map.landmarkTitle({name:'Dau Interchange',from:'83+353'}),'Dau Interchange · 83+353');

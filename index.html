@@ -2258,6 +2258,8 @@ function updateMapEntries(){
   const from = document.getElementById('map-entry-from');
   const to = document.getElementById('map-entry-to');
   const type = document.getElementById('map-entry-type');
+  const mapFilterActive=Boolean(from.value||to.value||type.value||document.getElementById('map-entry-source').value||document.getElementById('map-entry-inspector').value||document.getElementById('map-entry-bound').value);
+  document.getElementById('map-filter-menu')?.classList?.toggle('filtered',mapFilterActive);
   from.disabled = !show;
   to.disabled = !show;
   from.max = to.value;

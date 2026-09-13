@@ -6,19 +6,6 @@
   "sourceTimestamp": "2026-05-31T22:37:44Z",
   "assets": [
     {
-      "name": "Libis Baesa Exit",
-      "network": "NLEX",
-      "kind": "exit",
-      "station": "11+252",
-      "lat": 14.6724045,
-      "lon": 121.0004304,
-      "positionMethod": "centroid of named OSM ramp junction nodes",
-      "sources": [
-        "https://www.openstreetmap.org/node/1129127457",
-        "https://www.openstreetmap.org/node/7290149727"
-      ]
-    },
-    {
       "name": "Lawang Bato Exit",
       "network": "NLEX",
       "kind": "exit",
@@ -286,31 +273,7 @@
       ]
     },
     {
-      "name": "Parada Exit",
-      "network": "NLEX Harbor Link",
-      "kind": "exit",
-      "station": "16+992",
-      "lat": 14.693065,
-      "lon": 120.9905444,
-      "positionMethod": "OSM ramp junction node",
-      "sources": [
-        "https://www.openstreetmap.org/node/2467283729"
-      ]
-    },
-    {
-      "name": "General T. de Leon Exit",
-      "network": "NLEX Harbor Link",
-      "kind": "exit",
-      "station": "16+630",
-      "lat": 14.6930059,
-      "lon": 120.9871648,
-      "positionMethod": "OSM ramp junction node",
-      "sources": [
-        "https://www.openstreetmap.org/node/3415563458"
-      ]
-    },
-    {
-      "name": "Navotas Exit",
+      "name": "R10 Ramp",
       "network": "NLEX Harbor Link",
       "kind": "exit",
       "station": "7+082",
@@ -338,13 +301,11 @@
       "network": "NLEX Connector",
       "kind": "interchange",
       "station": "9+609",
-      "lat": 14.6444007,
-      "lon": 120.9760687,
-      "positionMethod": "centroid of named OSM ramp junction nodes",
+      "lat": 14.6447911,
+      "lon": 120.9750438,
+      "positionMethod": "named central OSM motorway junction node",
       "sources": [
-        "https://www.openstreetmap.org/node/5534998578",
-        "https://www.openstreetmap.org/node/5551735872",
-        "https://www.openstreetmap.org/node/5842745258"
+        "https://www.openstreetmap.org/node/5551735872"
       ]
     },
     {
@@ -352,12 +313,11 @@
       "network": "NLEX Connector",
       "kind": "exit",
       "station": "9+730",
-      "lat": 14.6429185,
-      "lon": 120.9757167,
-      "positionMethod": "centroid of named OSM ramp junction nodes",
+      "lat": 14.6327845,
+      "lon": 120.9766664,
+      "positionMethod": "named OSM C-3 motorway junction node",
       "sources": [
-        "https://www.openstreetmap.org/node/5534878494",
-        "https://www.openstreetmap.org/node/6300737612"
+        "https://www.openstreetmap.org/node/5534878494"
       ]
     },
     {
@@ -386,9 +346,9 @@
       ]
     },
     {
-      "name": "Mindanao Avenue Interchange",
+      "name": "Mindanao Exit",
       "network": "NLEX Harbor Link",
-      "kind": "interchange",
+      "kind": "exit",
       "station": "20+407",
       "lat": 14.69349725,
       "lon": 121.02188255,
