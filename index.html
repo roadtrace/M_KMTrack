@@ -1415,7 +1415,7 @@ button {
       </div>
     </details>
     <div id="import-status" role="status"></div>
-    <button type="button" id="undo-import-btn" class="select-toggle-btn" hidden>Undo last import</button>
+    <button type="button" id="import-history-btn" class="select-toggle-btn" hidden>Imported files</button>
     <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
     <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none;">
       <button type="button" class="bulk-select-all-btn" id="bulk-select-all-btn">Select all</button>
@@ -1453,6 +1453,7 @@ button {
         <label><select id="map-entry-type" aria-label="Defect type"><option value="">All defects</option></select></label>
         <label>Source<select id="map-entry-source"><option value="">All inspections</option><option value="mine">My inspections</option><option value="imported">Imported inspections</option></select></label>
         <label>Inspector<select id="map-entry-inspector"><option value="">All inspectors</option></select></label>
+        <label>Bound<select id="map-entry-bound"><option value="">All bounds</option><option value="NB">NB</option><option value="SB">SB</option><option value="EB">EB</option><option value="WB">WB</option><option value="Other">Other / unset</option></select></label>
         <button type="button" id="map-entry-clear">All dates</button>
       </div>
     </details>
@@ -2266,7 +2267,7 @@ function updateMapEntries(){
   osmEntryLayer.clearLayers();
   if(!show){ osmEntryLayer.remove(); KMTrackMap.legend([],false); return; }
   osmEntryLayer.addTo(osmMap);
-  const visible=KMTrackEntryFilters.mapEntries(entries,from.value,to.value,type.value,document.getElementById('map-entry-source').value,document.getElementById('map-entry-inspector').value);
+  const visible=KMTrackEntryFilters.mapEntries(entries,from.value,to.value,type.value,document.getElementById('map-entry-source').value,document.getElementById('map-entry-inspector').value,document.getElementById('map-entry-bound').value);
   KMTrackMap.legend(visible,true);
   KMTrackMap.renderEntries(osmMap,osmEntryLayer,visible,openMapEntry,formatKmStation);
 }
@@ -2274,6 +2275,7 @@ document.getElementById('map-show-entries').addEventListener('change',updateMapE
 document.getElementById('map-entry-from').addEventListener('change',updateMapEntries);
 document.getElementById('map-entry-to').addEventListener('change',updateMapEntries);
 document.getElementById('map-entry-type').addEventListener('change',updateMapEntries);
+document.getElementById('map-entry-bound').addEventListener('change',updateMapEntries);
 document.addEventListener('click',event => {
   const menu = document.getElementById('map-filter-menu');
   if(!menu.contains(event.target)) menu.open = false;
@@ -2285,10 +2287,13 @@ document.getElementById('map-filter-menu').addEventListener('keydown',event => {
   }
 });
 document.getElementById('map-entry-clear').addEventListener('click',() => {
-  document.getElementById('map-entry-from').value = '';
-  document.getElementById('map-entry-to').value = '';
+  const days=entries.map(entry=>KMTrackEntryFilters.entryDay(entry)).filter(day=>/^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
+  document.getElementById('map-entry-from').value = days[0]||'';
+  document.getElementById('map-entry-to').value = days.at(-1)||'';
+  document.getElementById('map-entry-clear').classList.toggle('active',Boolean(days.length));
   updateMapEntries();
 });
+for(const id of ['map-entry-from','map-entry-to']) document.getElementById(id).addEventListener('input',()=>document.getElementById('map-entry-clear').classList.remove('active'));
 
 function updateOsmLocation(forceCenter){
   const status = document.getElementById('map-status');
@@ -3856,7 +3861,7 @@ function updateBulkBar(){
   const bar = document.getElementById('bulk-actions-bar');
   const delBtn = document.getElementById('bulk-delete-btn');
   const allBtn = document.getElementById('bulk-select-all-btn');
-  bar.style.display = selectedEntryIds.size ? 'flex' : 'none';
+  bar.style.display = 'none';
   delBtn.textContent = `Delete selected (${selectedEntryIds.size})`;
   delBtn.disabled = selectedEntryIds.size === 0;
   const visible = visibleEntries();
@@ -3974,10 +3979,13 @@ function renderLog(){
 renderLog();
 
 document.getElementById('select-toggle-btn').addEventListener('click', () => {
-  const visible = visibleEntries();
-  if(visible.length && visible.every(entry => selectedEntryIds.has(entry.id))) selectedEntryIds.clear();
-  else visible.forEach(entry => selectedEntryIds.add(entry.id));
-  selectMode = selectedEntryIds.size > 0;
+  if(!selectMode){
+    selectedEntryIds.clear();
+    selectMode = true;
+    renderLog();
+    return;
+  }
+  exitSelectMode();
   renderLog();
 });
 
@@ -4022,7 +4030,6 @@ document.addEventListener('click', (e) => {
   if(selectMode || clickedCheckbox){
     const id = entries[idx].id;
     if(selectedEntryIds.has(id)) selectedEntryIds.delete(id); else selectedEntryIds.add(id);
-    selectMode = selectedEntryIds.size > 0;
     updateBulkBar();
     renderLog();
     document.querySelector(`.entry-checkbox[data-idx="${idx}"]`)?.focus({preventScroll:true});

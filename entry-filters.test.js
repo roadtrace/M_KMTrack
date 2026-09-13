@@ -93,6 +93,12 @@ test('map day filtering includes valid zero coordinates and excludes invalid loc
   assert.deepEqual(ids(filters.mapEntries(entries,'2026-09-03')),['a','b','zero']);
   assert.deepEqual(ids(filters.mapEntries(entries)),['a','b','c','zero']);
 });
+test('map bound filtering normalizes cardinal names and groups unset values',()=>{
+  const rows=[{id:'n',timestamp:'2026-09-03',lat:14,lon:121,bound:'Northbound'},{id:'s',timestamp:'2026-09-03',lat:14,lon:121,bound:'SB'},{id:'u',timestamp:'2026-09-03',lat:14,lon:121,bound:''}];
+  assert.deepEqual(ids(filters.mapEntries(rows,'','','','','','NB')),['n']);
+  assert.deepEqual(ids(filters.mapEntries(rows,'','','','','','SB')),['s']);
+  assert.deepEqual(ids(filters.mapEntries(rows,'','','','','','Other')),['u']);
+});
 for(const button of ['export-btn','backup-btn']){
   test(`${button}: cancellation and empty filters do not download or read photos`,async()=>{
     const {control,state}=harness();

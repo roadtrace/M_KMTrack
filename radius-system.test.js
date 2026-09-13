@@ -37,3 +37,7 @@ test('geometry stylesheet loads after legacy CSS and is cached offline',()=>{
   assert.match(css,/html:root \.app-tab-bar\{[^}]*border-radius:0;/);
   assert.match(css,/outline-offset:2px/);
 });
+test('bridge filter keeps a compact visible control inside its full tap target',()=>{
+  assert.match(css,/html:root \.bridge-filter-toggle\{[^}]*width:44px;height:44px[^}]*background:transparent/);
+  assert.match(css,/html:root \.bridge-filter-toggle::before\{[^}]*width:28px;height:28px[^}]*border-radius:var\(--radius-sm\)/);
+});

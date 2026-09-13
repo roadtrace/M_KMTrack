@@ -67,3 +67,9 @@ test('landmark pins keep a full touch target around a compact visible icon',()=>
   assert.match(css,/\.map-landmark-pin\{width:44px;height:44px;/);
   assert.match(css,/\.map-landmark-pin svg\{width:22px;height:28px;/);
 });
+test('map labels use native typography and bound-tinted text without boxes',()=>{
+  const css=fs.readFileSync(require.resolve('./map-overlays.css'),'utf8');
+  assert.match(css,/\.map-km-label\{[^}]*border:0;background:transparent[^}]*color:color-mix\(in srgb,var\(--bound-color\)[^}]*system-ui/);
+  assert.match(css,/\.leaflet-tooltip\.map-landmark-label\{[^}]*system-ui/);
+  assert.match(css,/html\[data-theme="light"\] \.map-km-label\{[^}]*background:transparent[^}]*var\(--bound-color\)/);
+});
