@@ -55,7 +55,8 @@
       const dot=element('i','map-legend-dot');dot.style.background=color;dot.setAttribute('aria-hidden','true');
       item.append(dot,document.createTextNode(k==='Other'?'Other / unset':k));host.append(item);
     });
-    const landmarkKey=element('span','map-legend-landmark','◆ Landmarks');
+    const landmarkKey=element('span','map-legend-landmark');
+    landmarkKey.innerHTML='<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 39C13 33 2 23 2 16a14 14 0 1 1 28 0c0 7-11 17-14 23Z" fill="#f4b400" stroke="white" stroke-width="2"/><path d="M8 12h16M8 16h16M11 10v13m10-13v13M15 16v7m4-7v7" fill="none" stroke="white" stroke-width="2"/></svg><span>Landmarks</span>';
     landmarkKey.title='Interchanges and Pulilan/Tibag Underpass';host.append(landmarkKey);
   }
   function renderEntries(map,layer,rows,onOpen,formatKm){

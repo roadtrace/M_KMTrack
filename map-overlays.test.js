@@ -67,6 +67,12 @@ test('landmark pins keep a full touch target around a compact visible icon',()=>
   assert.match(css,/\.map-landmark-pin\{width:44px;height:44px;/);
   assert.match(css,/\.map-landmark-pin svg\{width:22px;height:28px;/);
 });
+test('legend uses the same location-pin artwork as map landmarks',()=>{
+  const js=fs.readFileSync(require.resolve('./map-overlays.js'),'utf8');
+  const pinPath='M16 39C13 33 2 23 2 16a14 14 0 1 1 28 0c0 7-11 17-14 23Z';
+  assert.equal(js.split(pinPath).length-1,2);
+  assert.doesNotMatch(js,/◆ Landmarks/);
+});
 test('map labels use native typography and bound-tinted text without boxes',()=>{
   const css=fs.readFileSync(require.resolve('./map-overlays.css'),'utf8');
   assert.match(css,/\.map-km-label\{[^}]*border:0;background:transparent[^}]*color:color-mix\(in srgb,var\(--bound-color\)[^}]*system-ui/);
