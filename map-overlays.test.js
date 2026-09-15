@@ -45,6 +45,23 @@ test('supplemental map data covers all requested networks with finite sourced lo
   for(const file of ['map-overlays.js','map-overlays.css','map-landmarks.json'])assert.ok(sw.includes("'./"+file+"'"));
 });
 
+test('supplied NLEX interchange lines preserve identifiers, names and offline coverage',()=>{
+  const data=require('./interchanges.json');
+  assert.equal(data.crs,'EPSG:4326');assert.equal(data.matchRadiusMeters,50);
+  assert.equal(data.ramps.length,448);
+  assert.equal(new Set(data.ramps.map(row=>row.seg_id)).size,448);
+  assert.equal(new Set(data.ramps.map(row=>row.site_id)).size,21);
+  assert.equal(data.ramps.filter(row=>row.from_node||row.to_node).length,0);
+  assert.equal(data.ramps.filter(row=>row.level).length,1);
+  for(const row of data.ramps){
+    assert.ok(row.seg_id&&row.site_id&&row.name);assert.equal(row.interchange,row.name);
+    assert.ok(row.points.length>=2);assert.ok(row.points.every(point=>Number.isFinite(point.lat)&&Number.isFinite(point.lon)));
+  }
+  const html=fs.readFileSync(require.resolve('./index.html'),'utf8');
+  const sw=fs.readFileSync(require.resolve('./sw.js'),'utf8');
+  assert.match(html,/fetch\('interchanges\.json'/);assert.ok(sw.includes("'./interchanges.json'"));
+});
+
 test('overlapping dot hit areas resolve to the closest geographic point rather than DOM order',()=>{
   const north={id:'north'},south={id:'south'};
   const points=[{entry:south,x:100,y:119},{entry:north,x:100,y:100}];

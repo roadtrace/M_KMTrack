@@ -70,12 +70,12 @@ test('Undo uses stable neighbor IDs to restore order after intervening changes',
 });
 
 test('exports exclude deleted entries and restored entries return with unchanged schema and formatting', () => {
-  const entry = {id:'internal-only',type:'Potholes',timestamp:'2026-09-01 09:00:00',lat:14.1,lon:120.2,expressway:'NLEX',bound:'NB',lane:'2',km:8.2,photoId:'p',photoFilename:'p.jpg'};
+  const entry = {id:'internal-only',type:'Potholes',timestamp:'2026-09-01 09:00:00',lat:14.1,lon:120.2,expressway:'NLEX',interchange:'Dau Interchange',bound:'NB',lane:'2',km:8.2,photoId:'p',photoFilename:'p.jpg'};
   const rows = swipe.inspectionWorkbookRows([entry], (v,p)=>`${p}${v}`, v=>Math.round(v*1000));
   assert.equal(rows.length, 2);
-  assert.equal(rows[0].length, 12);
-  assert.deepEqual(rows[0], ['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename']);
-  assert.deepEqual(rows[1], ['Potholes','2026-09-01 09:00:00',14.1,120.2,'N14.1','E120.2','NLEX','NB','2',8200,'Yes','p.jpg']);
+  assert.equal(rows[0].length, 13);
+  assert.deepEqual(rows[0], ['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename','Interchange / Exit']);
+  assert.deepEqual(rows[1], ['Potholes','2026-09-01 09:00:00',14.1,120.2,'N14.1','E120.2','NLEX','NB','2',8200,'Yes','p.jpg','Dau Interchange']);
   assert.equal(swipe.inspectionWorkbookRows([{...entry,km:null}], (v,p)=>`${p}${v}`, v=>Math.round(v*1000))[1][9], '');
   assert.equal(swipe.inspectionWorkbookRows([], ()=>'', v=>v).length, 1);
 });

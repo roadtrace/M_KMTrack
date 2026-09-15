@@ -1261,8 +1261,8 @@ button {
         <button class="calib-add" id="calib-reload">Reload dataset</button>
       </div>
       <div class="dataset-panel">
-        <div class="dataset-panel-title">Interchange / ramp data</div>
-        <div class="calib-hint" id="ramp-status">Loading interchange/ramp dataset...</div>
+        <div class="dataset-panel-title">Interchange line data</div>
+        <div class="calib-hint" id="ramp-status">Loading interchange line dataset...</div>
         <button class="calib-add" id="ramp-reload">Reload dataset</button>
       </div>
     </div>
@@ -1480,6 +1480,7 @@ button {
 <script src="./log-controls.js"></script>
 <script src="./photo-zoom.js"></script>
 <script src="./photo-viewer.js"></script>
+<script src="./location-resolver.js"></script>
 <script>
 class GeoKalmanFilter{
   constructor(){
@@ -1506,8 +1507,12 @@ class GeoKalmanFilter{
   }
 }
 const gpsFilter = new GeoKalmanFilter();
+const locationResolver = KMTrackLocation.createResolver();
 
-let currentPos = null; // {lat, lon, acc}; coordinates are Kalman-smoothed
+let currentPos = null; // {lat, lon, acc, timestamp, fresh}; coordinates are Kalman-smoothed
+let currentResolvedLocation = null;
+let gpsFreshnessTimer = null;
+const GPS_FRESH_MS = 12000;
 let calibData = [];    // {e, b, k, lat, lon} — loaded from the NLEX network dataset
 let entries = [];      // {id, type, timestamp, lat, lon, km, expressway, bound, lane, photoId, photoFilename, photoTimestamp}
 let expresswayBounds = {}; // { "NLEX": ["NB","SB"], "C3-R10 RAMP": ["EB","WB"], ... }
@@ -1605,7 +1610,7 @@ function updateDatasetDrawerState(){
   if(!drawer || !label) return;
   drawer.classList.toggle('loaded', calibrationDatasetReady);
   label.textContent = calibrationDatasetReady && rampDatasetReady
-    ? 'Network + ramp data loaded'
+    ? 'Network + interchange data loaded'
     : calibrationDatasetReady ? 'Network data loaded' : 'Loading network data';
 }
 
@@ -1643,6 +1648,7 @@ function loadFromStorage(){
           lon: e.lon,
           km: (e.km === null || typeof e.km === 'number') ? e.km : null,
           expressway: typeof e.expressway === 'string' ? e.expressway : '',
+          interchange: typeof e.interchange === 'string' ? e.interchange : '',
           bound: typeof e.bound === 'string' ? e.bound : '',
           lane: typeof e.lane === 'string' ? e.lane : '',
           photoId: typeof e.photoId === 'string' ? e.photoId : '',
@@ -1800,15 +1806,15 @@ window.addEventListener('online', () => {
   if(!calibData.length) loadCalibrationDataset(true);
 });
 
-// ---------- Interchange / ramp name lookup (additive layer) ----------
+// ---------- Interchange name lookup (additive layer) ----------
 // Deliberately kept separate from calibData/corridorIndex above: those
 // exist to interpolate a continuous km-station along the mainline, and
 // ramp points are not part of that continuous line (they fork off it).
 // Mixing them in would corrupt the km interpolation. This is a second,
-// independent dataset that only ever answers "am I near a named ramp?" —
+// independent dataset that only ever answers "am I near a named interchange line?" —
 // it never feeds km-station math, defect logging, or CSV export.
-const STORAGE_KEY_RAMPS = 'nlex_ramp_dataset_v1';
-let rampData = [];           // [{name, interchange, points:[{lat,lon}]}]
+const STORAGE_KEY_RAMPS = 'nlex_interchange_dataset_v2';
+let rampData = [];           // [{seg_id,site_id,name,interchange,points:[{lat,lon}]}]
 let rampPointIndex = [];     // flattened: [{lat,lon,rampIdx}] — one entry per point, across all ramps
 let rampGrid = new Map();    // same grid-bucket trick as spatialGrid, over rampPointIndex
 let rampMatchRadiusKm = 0.05; // default 50 m; a loaded dataset's matchRadiusMeters can override this
@@ -1828,8 +1834,17 @@ function sanitizeRampData(raw){
   const clean = raw.filter(r => r && typeof r.name === 'string' && r.name.trim()
     && Array.isArray(r.points) && r.points.length > 0
   ).map(r => ({
+    seg_id: typeof r.seg_id === 'string' ? r.seg_id.trim() : '',
+    site_id: typeof r.site_id === 'string' ? r.site_id.trim() : '',
     name: r.name.trim(),
     interchange: typeof r.interchange === 'string' ? r.interchange.trim() : '',
+    ramp: typeof r.ramp === 'string' ? r.ramp.trim() : '',
+    seg_type: typeof r.seg_type === 'string' ? r.seg_type.trim() : '',
+    bound: typeof r.bound === 'string' ? r.bound.trim() : '',
+    travel: typeof r.travel === 'string' ? r.travel.trim() : '',
+    level: typeof r.level === 'string' ? r.level.trim() : '',
+    from_node: typeof r.from_node === 'string' ? r.from_node.trim() : '',
+    to_node: typeof r.to_node === 'string' ? r.to_node.trim() : '',
     points: r.points.filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon))
   })).filter(r => r.points.length > 0);
   if(clean.length !== raw.length){
@@ -1886,25 +1901,27 @@ async function loadRampDataset(forceNetwork){
         rampData = sanitizeRampData(JSON.parse(cached));
         buildRampIndex();
         rampDatasetReady = rampData.length > 0;
-        statusEl.textContent = `Loaded ${rampData.length.toLocaleString()} ramp(s) from on-device cache (works offline).`;
+        const siteCount = new Set(rampData.map(r => r.site_id || r.interchange || r.name)).size;
+        statusEl.textContent = `Loaded ${rampData.length.toLocaleString()} line(s) for ${siteCount.toLocaleString()} interchange/exit site(s) from on-device cache.`;
         updateDatasetDrawerState();
         return;
       }
     }
-    statusEl.textContent = 'Downloading interchange/ramp dataset...';
-    const res = await fetch('ramps.json', { cache: 'no-store' });
+    statusEl.textContent = 'Loading interchange line dataset...';
+    const res = await fetch('interchanges.json', { cache: 'no-store' });
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     rampData = sanitizeRampData(JSON.parse(text));
     buildRampIndex();
     rampDatasetReady = rampData.length > 0;
     try{ localStorage.setItem(STORAGE_KEY_RAMPS, text); }catch(e){ /* dataset too big for storage quota; still usable this session */ }
-    statusEl.textContent = `Loaded ${rampData.length.toLocaleString()} ramp(s) from interchange/ramp dataset (cached for offline use).`;
+    const siteCount = new Set(rampData.map(r => r.site_id || r.interchange || r.name)).size;
+    statusEl.textContent = `Loaded ${rampData.length.toLocaleString()} line(s) for ${siteCount.toLocaleString()} interchange/exit site(s) (cached for offline use).`;
   }catch(err){
     rampDatasetReady = rampData.length > 0;
     statusEl.textContent = rampData.length
-      ? `Using ${rampData.length.toLocaleString()} previously cached ramp(s) — couldn't refresh (${err.message}).`
-      : `Could not load ramp dataset (${err.message}). Ramp names will show as unavailable.`;
+      ? `Using ${rampData.length.toLocaleString()} previously cached interchange line(s) — couldn't refresh (${err.message}).`
+      : `Could not load interchange dataset (${err.message}). Interchange names will show as unavailable.`;
   }finally{
     updateDatasetDrawerState();
   }
@@ -2379,11 +2396,13 @@ function offNetworkThresholdKm(accuracyMeters){
   return Math.min(OFF_NETWORK_KM + bufferKm, 0.35);
 }
 
-function computeKmStation(lat, lon){
+function computeKmStation(lat, lon, expressway=''){
   if(calibData.length<1) return null;
-  let candidates=[];
-  for(const r of [1,2,4,8]){ candidates=nearbyIndices(lat,lon,r); if(candidates.length) break; }
-  if(!candidates.length) candidates=calibData.map((_,i)=>i);
+  let candidates=nearbyIndices(lat,lon,4);
+  if(expressway) candidates=candidates.filter(i=>calibData[i].e===expressway);
+  if(!candidates.length){
+    candidates=calibData.map((point,index)=>(!expressway||point.e===expressway)?index:-1).filter(index=>index>=0);
+  }
 
   let first=nearestFrom(candidates,lat,lon);
   if(!first) return null;
@@ -2402,6 +2421,46 @@ function computeKmStation(lat, lon){
     km=total===0?best.k:best.k+(calibData[second.idx].k-best.k)*(first.dist/total);
   }
   return {km,expressway:best.e,bound:best.b,distance:first.dist};
+}
+
+function computeCorridorCandidates(lat,lon){
+  const local=nearbyIndices(lat,lon,4);
+  const corridors=new Set(local.map(index=>calibData[index].e));
+  const confirmed=locationResolver.state().confirmedCorridor;
+  if(confirmed) corridors.add(confirmed);
+  if(!corridors.size) for(const point of calibData) corridors.add(point.e);
+  return [...corridors].map(expressway=>computeKmStation(lat,lon,expressway)).filter(Boolean);
+}
+
+function resolvedLocationCanSave(){
+  if(!currentPos||!currentPos.fresh||!currentResolvedLocation?.saveAllowed) return false;
+  const result=currentResolvedLocation.result;
+  return !!result&&result.distance<=offNetworkThresholdKm(currentPos.acc);
+}
+
+function setGpsCaptureReady(ready){
+  const section=document.getElementById('defect-section');
+  if(section) section.classList.toggle('gps-pending',!ready);
+}
+
+function resolveFreshLocation(speedMs){
+  if(!currentPos) return null;
+  currentResolvedLocation=locationResolver.resolve({
+    lat:currentPos.lat,lon:currentPos.lon,accuracy:currentPos.acc,timestamp:currentPos.timestamp,
+    speed:speedMs,candidates:computeCorridorCandidates(currentPos.lat,currentPos.lon),
+    interchange:nearestRamp(currentPos.lat,currentPos.lon)
+  });
+  setGpsCaptureReady(resolvedLocationCanSave());
+  return currentResolvedLocation;
+}
+
+function markGpsUncertain(message){
+  if(currentPos) currentPos.fresh=false;
+  currentResolvedLocation=locationResolver.markStale(message);
+  gpsStatus.textContent=message;
+  gpsStatus.className='status warn';
+  setGpsCaptureReady(false);
+  updateReadout();
 }
 
 function formatKmStation(km){
@@ -2425,7 +2484,8 @@ function updateReadout(){
   document.getElementById('lon').textContent = currentPos.lon.toFixed(6);
   document.getElementById('acc').textContent = currentPos.acc ? `±${currentPos.acc.toFixed(0)} m` : '--';
 
-  const result = computeKmStation(currentPos.lat, currentPos.lon);
+  const resolution=currentResolvedLocation;
+  const result=resolution?.result||null;
   const kmEl = document.getElementById('km-value');
   const tagEl = document.getElementById('segment-tag');
 
@@ -2442,20 +2502,29 @@ function updateReadout(){
   kmEl.textContent = isOffMappedNetwork ? '--.---' : formatKmStation(result.km);
   updateMapKmStation();
   const displayBound = userBound || '?';
-  if(isOffMappedNetwork){
+  if(!currentPos.fresh){
+    tagEl.textContent = `⚠ GPS uncertain — holding ${result.expressway}`;
+    tagEl.classList.add('faroff');
+  } else if(!resolution.confirmed){
+    tagEl.textContent = `⚠ Confirming road — ${result.expressway}`;
+    tagEl.classList.add('faroff');
+  } else if(isOffMappedNetwork){
     tagEl.textContent = `⚠ Off mapped network (~${Math.round(result.distance*1000)}m from ${result.expressway})`;
+    tagEl.classList.add('faroff');
+  } else if(resolution.uncertain){
+    tagEl.textContent = `⚠ ${result.expressway} retained — ${resolution.reason.toLowerCase()}`;
     tagEl.classList.add('faroff');
   } else {
     tagEl.textContent = `${result.expressway} · ${displayBound}`;
     tagEl.classList.remove('faroff');
   }
-  if(!isOffMappedNetwork){
+  if(currentPos.fresh&&resolution.confirmed&&!isOffMappedNetwork){
     detectBoundFromTrend(result.expressway, result.km);
   }
   updateBridgeReadout(currentPos.lat, currentPos.lon, result, isOffMappedNetwork);
   renderBoundToggle(result.expressway);
   updateBoundAutoStatus(result.expressway);
-  updateRampReadout(currentPos.lat, currentPos.lon);
+  updateRampReadout(resolution.interchange);
   refreshCameraDraftFromLiveGPS();
 }
 
@@ -2472,28 +2541,26 @@ function refreshCameraDraftFromLiveGPS(){
   if(!cameraDraftEntry || cameraEditTargetIndex !== null) return;
   if(!cameraModal || !cameraModal.classList.contains('show')) return;
   if(pendingCaptureBlob) return;
-  if(!currentPos) return;
-  const result = computeKmStation(currentPos.lat, currentPos.lon);
-  const isOffMappedNetwork = !result || result.distance > offNetworkThresholdKm(currentPos.acc);
+  if(!resolvedLocationCanSave()) return;
+  const result=currentResolvedLocation.result;
+  const isOffMappedNetwork=result.distance>offNetworkThresholdKm(currentPos.acc);
   cameraDraftEntry.lat = currentPos.lat;
   cameraDraftEntry.lon = currentPos.lon;
   cameraDraftEntry.km = isOffMappedNetwork ? null : result.km;
   cameraDraftEntry.expressway = isOffMappedNetwork ? '' : result.expressway;
   cameraDraftEntry.bound = isOffMappedNetwork ? '' : (userBound || '');
+  cameraDraftEntry.interchange = isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || '');
   updateCameraOverlay(cameraDraftEntry);
 }
 
-function updateRampReadout(lat, lon){
+function updateRampReadout(interchange){
   const rampEl = document.getElementById('ramp-tag');
-  const match = nearestRamp(lat, lon);
-  if(!match){
+  if(!interchange){
     rampEl.classList.remove('show');
     rampEl.textContent = '';
     return;
   }
-  rampEl.textContent = match.ramp.interchange
-    ? `⤴ ${match.ramp.interchange} — ${match.ramp.name}`
-    : `⤴ ${match.ramp.name}`;
+  rampEl.textContent = `⤴ ${interchange.name}`;
   rampEl.classList.add('show');
 }
 
@@ -2610,21 +2677,32 @@ function renderBoundToggle(expressway){
 if(navigator.geolocation){
   navigator.geolocation.watchPosition(
     (pos) => {
-      const firstFix = !currentPos;
+      const receivedAt=Date.now();
+      const fixTimestamp=Number.isFinite(pos.timestamp)?pos.timestamp:receivedAt;
+      if(receivedAt-fixTimestamp>GPS_FRESH_MS){
+        markGpsUncertain('GPS uncertain — received an old location fix');
+        return;
+      }
+      if(currentPos&&fixTimestamp<=currentPos.timestamp) return;
       const speedMs = (typeof pos.coords.speed === 'number' && pos.coords.speed >= 0) ? pos.coords.speed : null;
       const smoothed = gpsFilter.process(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.timestamp, speedMs);
-      currentPos = { lat: smoothed.lat, lon: smoothed.lon, acc: pos.coords.accuracy };
-      gpsStatus.textContent = 'GPS locked — updating live';
-      gpsStatus.className = 'status ok';
-      if(firstFix){
-        const section = document.getElementById('defect-section');
-        if(section) section.classList.remove('gps-pending');
-      }
+      currentPos = { lat: smoothed.lat, lon: smoothed.lon, acc: pos.coords.accuracy, timestamp:fixTimestamp, fresh:true };
+      const resolution=resolveFreshLocation(speedMs);
+      gpsStatus.textContent = resolution?.confirmed
+        ? (resolution.uncertain?'GPS locked — road retained while connection is confirmed':'GPS locked — updating live')
+        : 'GPS locked — confirming road';
+      gpsStatus.className = resolution?.confirmed&&!resolution.uncertain?'status ok':'status warn';
+      clearTimeout(gpsFreshnessTimer);
+      gpsFreshnessTimer=setTimeout(()=>markGpsUncertain('GPS signal delayed — holding the last confirmed road'),GPS_FRESH_MS);
       updateReadout();
     },
     (err) => {
-      gpsStatus.textContent = 'GPS error: ' + err.message;
-      gpsStatus.className = 'status err';
+      if(currentPos) markGpsUncertain('GPS signal lost — holding the last confirmed road');
+      else {
+        gpsStatus.textContent = 'GPS error: ' + err.message;
+        gpsStatus.className = 'status err';
+        setGpsCaptureReady(false);
+      }
     },
     { enableHighAccuracy:true, maximumAge:1000, timeout:10000 }
   );
@@ -2643,12 +2721,12 @@ function fullTimestamp(){
 
 function logDefect(type, lane){
   lane = lane || '';
-  if(!currentPos){
-    alert('Waiting for GPS fix — please allow location access and wait a moment.');
+  if(!resolvedLocationCanSave()){
+    alert(currentPos ? 'GPS is uncertain or the road is not confirmed yet. Wait for a fresh, confirmed location before saving.' : 'Waiting for GPS fix — please allow location access and wait a moment.');
     return;
   }
 
-  const result = computeKmStation(currentPos.lat, currentPos.lon);
+  const result=currentResolvedLocation.result;
 
   // Use the exact same off-network rule as the live KM display.
   // If the vehicle is off the mapped network, do NOT save the nearest
@@ -2664,6 +2742,7 @@ function logDefect(type, lane){
     km: isOffMappedNetwork ? null : result.km,
     expressway: isOffMappedNetwork ? '' : result.expressway,
     bound: isOffMappedNetwork ? '' : (userBound || ''),
+    interchange: isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || ''),
     lane,
     photoId: '',
     photoFilename: '',
@@ -2814,7 +2893,9 @@ function currentEntryCameraData(entry){
   // "Others" value, etc.) are shown as-is.
   const rawLane = entry.lane || '';
   const lane = /^[1-4]$/.test(rawLane) ? `L${rawLane}` : (rawLane || '—');
-  const location = entry.expressway ? `${entry.expressway}${entry.bound ? ' · '+entry.bound : ''}` : 'North Luzon Expressway';
+  const location = entry.expressway
+    ? `${entry.expressway}${entry.bound ? ' · '+entry.bound : ''}${entry.interchange ? ' · '+entry.interchange : ''}`
+    : 'North Luzon Expressway';
   return { kmText, direction, lane, location };
 }
 
@@ -2834,11 +2915,11 @@ function updateCameraOverlay(entry){
 // instead of pushing it to entries[] — the photo entry is only committed
 // once a photo is actually captured.
 function getCameraSnapshot(type){
-  if(!currentPos){
-    alert('Waiting for GPS fix — please allow location access and wait a moment.');
+  if(!resolvedLocationCanSave()){
+    alert(currentPos ? 'GPS is uncertain or the road is not confirmed yet. Wait for a fresh, confirmed location before taking a photo.' : 'Waiting for GPS fix — please allow location access and wait a moment.');
     return null;
   }
-  const result = computeKmStation(currentPos.lat, currentPos.lon);
+  const result=currentResolvedLocation.result;
   const isOffMappedNetwork = !result || result.distance > offNetworkThresholdKm(currentPos.acc);
   return {
     type,
@@ -2847,6 +2928,7 @@ function getCameraSnapshot(type){
     km: isOffMappedNetwork ? null : result.km,
     expressway: isOffMappedNetwork ? '' : result.expressway,
     bound: isOffMappedNetwork ? '' : (userBound || ''),
+    interchange: isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || ''),
     lane: ''
   };
 }
@@ -2945,7 +3027,7 @@ async function openCameraForEntryPhoto(index){
   cameraEditTargetIndex = index;
   cameraDraftEntry = {
     type: entry.type, lat: entry.lat, lon: entry.lon,
-    km: entry.km, expressway: entry.expressway, bound: entry.bound,
+    km: entry.km, expressway: entry.expressway, interchange:entry.interchange||'', bound: entry.bound,
     lane: entry.lane || ''
   };
   cameraErrorEl.classList.remove('show');
@@ -4510,7 +4592,7 @@ async function buildInspectionWorkbook(createdAt, exportEntries = entries, inclu
     const photoHeight=includePhotos&&rowIndex>0&&photoByEntry.has(rowIndex-1)?' ht="75" customHeight="1"':'';
     return `<row r="${rowIndex+1}"${photoHeight}>${cells}</row>`;
   }).join('');
-  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:L${rows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="28" customWidth="1"/><col min="2" max="2" width="21" customWidth="1"/><col min="3" max="6" width="18" customWidth="1"/><col min="7" max="9" width="17" customWidth="1"/><col min="10" max="11" width="13" customWidth="1"/><col min="12" max="12" width="42" customWidth="1"/></cols><sheetData>${rowXml}</sheetData><autoFilter ref="A1:L${rows.length}"/></worksheet>`;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:M${rows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="28" customWidth="1"/><col min="2" max="2" width="21" customWidth="1"/><col min="3" max="6" width="18" customWidth="1"/><col min="7" max="9" width="17" customWidth="1"/><col min="10" max="11" width="13" customWidth="1"/><col min="12" max="12" width="42" customWidth="1"/><col min="13" max="13" width="42" customWidth="1"/></cols><sheetData>${rowXml}</sheetData><autoFilter ref="A1:M${rows.length}"/></worksheet>`;
   const files=[
     {name:'[Content_Types].xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`]),date:createdAt},
     {name:'_rels/.rels',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`]),date:createdAt},

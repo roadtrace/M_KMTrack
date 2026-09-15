@@ -5,7 +5,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const MAX_BYTES=250*1024*1024, MAX_ENTRIES=10000;
-  const textFields=['type','timestamp','expressway','bound','lane','photoFilename','photoTimestamp','inspector','notes'];
+  const textFields=['type','timestamp','expressway','interchange','bound','lane','photoFilename','photoTimestamp','inspector','notes'];
   function normalize(row){
     if(!row || typeof row!=='object' || Array.isArray(row)) throw Error('Invalid inspection record.');
     if(!Number.isFinite(row.lat)||Math.abs(row.lat)>90||!Number.isFinite(row.lon)||Math.abs(row.lon)>180) throw Error('Invalid coordinates.');
@@ -29,7 +29,7 @@
   }
   // Legacy workbooks round KM to three decimals and have no stable IDs.
   function fingerprint(row){
-    return JSON.stringify([row.type,row.timestamp,row.lat,row.lon,row.km==null?null:Math.round(Number(row.km)*1000),row.expressway||'',row.bound||'',row.lane||'',row.photoFilename||'']);
+    return JSON.stringify([row.type,row.timestamp,row.lat,row.lon,row.km==null?null:Math.round(Number(row.km)*1000),row.expressway||'',row.interchange||'',row.bound||'',row.lane||'',row.photoFilename||'']);
   }
   function planImport(existing,rows){
     const byId=new Map(),prints=new Set();
@@ -152,9 +152,10 @@
     const all=await rows('xl/worksheets/sheet1.xml'),headers=all.shift();
     const expected=['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename'];
     if(!headers||expected.some((v,i)=>headers[i]!==v)) throw Error('Please choose a KMTrack inspection workbook with its original columns.');
+    if(headers[12]&&headers[12]!=='Interchange / Exit') throw Error('Please choose a KMTrack inspection workbook with its original columns.');
     const records=all.filter(row=>row.some(Boolean)).map(row=>{
       if(row[2]===''||row[3]===''||row[2]==null||row[3]==null) throw Error('Workbook has missing coordinates.');
-      return normalize({type:row[0],timestamp:row[1],lat:Number(row[2]),lon:Number(row[3]),expressway:row[6]||'',bound:row[7]||'',lane:row[8]||'',km:row[9]?Number(row[9])/1000:null,photoFilename:row[11]||''});
+      return normalize({type:row[0],timestamp:row[1],lat:Number(row[2]),lon:Number(row[3]),expressway:row[6]||'',bound:row[7]||'',lane:row[8]||'',km:row[9]?Number(row[9])/1000:null,photoFilename:row[11]||'',interchange:row[12]||''});
     });
     if(files.has('xl/worksheets/sheet2.xml')){
       const metadata=await rows('xl/worksheets/sheet2.xml');

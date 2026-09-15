@@ -6,6 +6,7 @@ const html=fs.readFileSync(require.resolve('./index.html'),'utf8');
 const sharing=fs.readFileSync(require.resolve('./sharing-ui.js'),'utf8');
 const controls=fs.readFileSync(require.resolve('./log-controls.js'),'utf8');
 const importer=fs.readFileSync(require.resolve('./inspection-sharing.js'),'utf8');
+const swipe=fs.readFileSync(require.resolve('./swipe-actions.js'),'utf8');
 
 test('Excel exports center every cell style and format KM metres as stationing',()=>{
   assert.match(html,/<numFmt numFmtId="164" formatCode="0\+000"\/>/);
@@ -31,4 +32,10 @@ test('photo export and import advertise and preserve one native-photo workbook',
   assert.match(importer,/async function readWorkbookPhotos\(files\)/);
   assert.match(importer,/photoFile=embeddedPhotos\.get\(i\+2\)\|\|null/);
   assert.match(importer,/Choose a KMTrack \.xlsx or Photos \.zip file/);
+});
+
+test('resolved interchange names persist through Excel export and import',()=>{
+  assert.match(swipe,/Interchange \/ Exit/);
+  assert.match(importer,/interchange:row\[12\]\|\|''/);
+  assert.match(importer,/expressway','interchange','bound/);
 });
