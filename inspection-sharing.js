@@ -100,6 +100,38 @@
     if(doc.querySelector('parsererror')) throw Error('Invalid Excel XML.');
     return doc;
   }
+  async function readWorkbookPhotos(files){
+    const required=['xl/metadata.xml','xl/richData/richValueRel.xml','xl/richData/rdrichvalue.xml','xl/richData/_rels/richValueRel.xml.rels','xl/worksheets/sheet1.xml'];
+    if(required.some(path=>!files.has(path))) return new Map();
+    const [metadata,richRels,richValues,relationships,sheet]=await Promise.all(required.map(async path=>parseXml(await (await files.get(path).blob()).text())));
+    const children=(node,name)=>[...(node?.children||[])].filter(child=>child.localName===name);
+    const descendants=(node,name)=>[...(node?.getElementsByTagName('*')||[])].filter(child=>child.localName===name);
+    const valueBooks=children(descendants(metadata,'valueMetadata')[0],'bk');
+    const futureBooks=children(descendants(metadata,'futureMetadata')[0],'bk');
+    const richRecords=descendants(richValues,'rv');
+    const relationSlots=descendants(richRels,'rel');
+    const targets=new Map(descendants(relationships,'Relationship').map(rel=>[rel.getAttribute('Id'),rel.getAttribute('Target')]));
+    const photos=new Map();
+    for(const cell of descendants(sheet,'c')){
+      const vm=Number(cell.getAttribute('vm'));
+      if(!Number.isInteger(vm)||vm<1) continue;
+      const futureIndex=Number(descendants(valueBooks[vm-1],'rc')[0]?.getAttribute('v'));
+      const richIndex=Number(descendants(futureBooks[futureIndex],'rvb')[0]?.getAttribute('i'));
+      const imageSlot=Number(descendants(richRecords[richIndex],'v')[0]?.textContent);
+      const slot=relationSlots[imageSlot];
+      const relationId=slot?.getAttribute('r:id')||slot?.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+      const target=targets.get(relationId)||'';
+      const parts=['xl','richData'];
+      for(const part of target.split('/')){
+        if(!part||part==='.') continue;
+        if(part==='..') parts.pop(); else parts.push(part);
+      }
+      const mediaPath=parts.join('/');
+      const row=Number((cell.getAttribute('r')||'').replace(/\D/g,''));
+      if(row>=2&&mediaPath.startsWith('xl/media/')&&files.has(mediaPath)) photos.set(row,files.get(mediaPath));
+    }
+    return photos;
+  }
   async function readWorkbook(files){
     if(!files.has('xl/worksheets/sheet1.xml')) throw Error('Not a KMTrack workbook.');
     const strings=files.has('xl/sharedStrings.xml')?[...parseXml(await (await files.get('xl/sharedStrings.xml').blob()).text()).getElementsByTagName('si')].map(n=>n.textContent):[];
@@ -116,6 +148,7 @@
         return values;
       });
     }
+    const embeddedPhotos=await readWorkbookPhotos(files);
     const all=await rows('xl/worksheets/sheet1.xml'),headers=all.shift();
     const expected=['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename'];
     if(!headers||expected.some((v,i)=>headers[i]!==v)) throw Error('Please choose a KMTrack inspection workbook with its original columns.');
@@ -129,12 +162,15 @@
         if(metadata.length-1!==records.length) throw Error('Sharing details do not match this workbook. Use the original export.');
         return metadata.slice(1).map((row,i)=>{
           const full=normalize(JSON.parse(row[4]));
+          if((embeddedPhotos.has(i+2)||!records[i].photoFilename||records[i].photoFilename==='#VALUE!')&&full.photoFilename) records[i].photoFilename=full.photoFilename;
           if(fingerprint(full)!==fingerprint(records[i])) throw Error('Inspection rows were edited after export. Please use an original KMTrack export.');
+          full.photoFile=embeddedPhotos.get(i+2)||null;
+          full.photoAvailable=!!full.photoFile;
           return full;
         });
       }
     }
-    return records;
+    return records.map((record,index)=>({...record,photoFile:embeddedPhotos.get(index+2)||null,photoAvailable:embeddedPhotos.has(index+2)}));
   }
   async function readImport(file){
     const files=await readZip(file),manifests=[...files.keys()].filter(name=>/(^|\/)manifest\.json$/.test(name));
@@ -144,19 +180,20 @@
       const manifest=JSON.parse(await (await files.get(manifests[0]).blob()).text());
       if(manifest.format!=='KMTrack inspection backup'||![1,2].includes(manifest.version)||!Array.isArray(manifest.entries)) throw Error('Unsupported inspection backup.');
       rows=manifest.entries;hasPhotos=true;
-    }else if(/\.xlsx$/i.test(file.name)) rows=await readWorkbook(files);
+    }else if(/\.xlsx$/i.test(file.name)){rows=await readWorkbook(files);hasPhotos=rows.some(row=>row.photoFile);}
     else throw Error('Choose a KMTrack .xlsx or Photos .zip file.');
     if(!rows.length||rows.length>MAX_ENTRIES) throw Error('Import must contain 1–10,000 entries.');
     const valid=[],issues=[];let missingPhotos=0;
     for(let i=0;i<rows.length;i++){
       try{
+        const embeddedPhoto=rows[i].photoFile||null;
         const row=normalize(rows[i]);
-        row.photoFile=hasPhotos&&row.photoAvailable?files.get(row.archivePhotoPath):null;
+        row.photoFile=embeddedPhoto||(hasPhotos&&row.photoAvailable&&row.archivePhotoPath?files.get(row.archivePhotoPath):null);
         if((row.photoFilename||row.photoId)&&!row.photoFile) missingPhotos++;
         valid.push(row);
       }catch(error){issues.push(`Entry ${i+1}: ${error.message}`);}
     }
     return {rows:valid,issues,missingPhotos};
   }
-  return {normalize,fingerprint,planImport,forExport,readZip,readWorkbook,readImport,crc32};
+  return {normalize,fingerprint,planImport,forExport,readZip,readWorkbookPhotos,readWorkbook,readImport,crc32};
 });

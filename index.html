@@ -1397,7 +1397,7 @@ button {
       </div>
       <div class="export-actions">
         <button class="export-btn" id="export-btn" disabled>Export Excel</button>
-        <button class="export-btn backup-btn" id="backup-btn" disabled>Export Photos ZIP</button>
+        <button class="export-btn backup-btn" id="backup-btn" disabled>Export Excel with Photos</button>
       </div>
     </div>
     <div class="entry-filters" aria-label="Inspection entry filters">
@@ -4456,16 +4456,59 @@ function inspectionWorkbookRows(exportEntries = entries){
   return KMTrackSwipe.inspectionWorkbookRows(exportEntries, toDMM, kmToCsvNumber);
 }
 
-async function buildInspectionWorkbook(createdAt, exportEntries = entries){
+async function collectWorkbookPhotos(exportEntries){
+  const photos=[];
+  for(let entryIndex=0;entryIndex<exportEntries.length;entryIndex++){
+    const entry=exportEntries[entryIndex];
+    if(!entry.photoId) continue;
+    const blob=await getPhoto(entry.photoId);
+    if(!blob) continue;
+    const signature=new Uint8Array(await blob.slice(0,12).arrayBuffer());
+    const jpeg=signature[0]===255&&signature[1]===216&&signature[2]===255;
+    const png=signature[0]===137&&signature[1]===80&&signature[2]===78&&signature[3]===71;
+    if(!jpeg&&!png) continue;
+    photos.push({entryIndex,blob:blob.slice(0,blob.size,jpeg?'image/jpeg':'image/png'),extension:jpeg?'jpeg':'png'});
+  }
+  return photos;
+}
+
+function addInCellPhotoParts(files,photos,createdAt){
+  if(!photos.length) return;
+  const contentTypes=files.find(file=>file.name==='[Content_Types].xml');
+  const workbookRels=files.find(file=>file.name==='xl/_rels/workbook.xml.rels');
+  contentTypes.blob=new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">${[...new Set(photos.map(photo=>photo.extension))].map(extension=>`<Default Extension="${extension}" ContentType="image/${extension==='jpeg'?'jpeg':'png'}"/>`).join('')}<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/metadata.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"/><Override PartName="/xl/richData/richValueRel.xml" ContentType="application/vnd.ms-excel.richvaluerel+xml"/><Override PartName="/xl/richData/rdrichvalue.xml" ContentType="application/vnd.ms-excel.rdrichvalue+xml"/><Override PartName="/xl/richData/rdrichvaluestructure.xml" ContentType="application/vnd.ms-excel.rdrichvaluestructure+xml"/><Override PartName="/xl/richData/rdRichValueTypes.xml" ContentType="application/vnd.ms-excel.rdrichvaluetypes+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`]);
+  workbookRels.blob=new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sheetMetadata" Target="metadata.xml"/><Relationship Id="rId5" Type="http://schemas.microsoft.com/office/2022/10/relationships/richValueRel" Target="richData/richValueRel.xml"/><Relationship Id="rId6" Type="http://schemas.microsoft.com/office/2017/06/relationships/rdRichValue" Target="richData/rdrichvalue.xml"/><Relationship Id="rId7" Type="http://schemas.microsoft.com/office/2017/06/relationships/rdRichValueStructure" Target="richData/rdrichvaluestructure.xml"/><Relationship Id="rId8" Type="http://schemas.microsoft.com/office/2017/06/relationships/rdRichValueTypes" Target="richData/rdRichValueTypes.xml"/></Relationships>`]);
+  const future=photos.map((_,index)=>`<bk><extLst><ext uri="{3e2802c4-a4d2-4d8b-9148-e3be6c30e623}"><xlrd:rvb i="${index}"/></ext></extLst></bk>`).join('');
+  const metadata=photos.map((_,index)=>`<bk><rc t="1" v="${index}"/></bk>`).join('');
+  files.push(
+    {name:'xl/metadata.xml',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><metadata xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:xlrd="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata"><metadataTypes count="1"><metadataType name="XLRICHVALUE" minSupportedVersion="120000" copy="1" pasteAll="1" pasteValues="1" merge="1" splitFirst="1" rowColShift="1" clearFormats="1" clearComments="1" assign="1" coerce="1"/></metadataTypes><futureMetadata name="XLRICHVALUE" count="${photos.length}">${future}</futureMetadata><valueMetadata count="${photos.length}">${metadata}</valueMetadata></metadata>`])},
+    {name:'xl/richData/richValueRel.xml',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><richValueRels xmlns="http://schemas.microsoft.com/office/spreadsheetml/2022/richvaluerel" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${photos.map((_,index)=>`<rel r:id="rId${index+1}"/>`).join('')}</richValueRels>`])},
+    {name:'xl/richData/rdrichvalue.xml',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><rvData xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata" count="${photos.length}">${photos.map((_,index)=>`<rv s="0"><v>${index}</v><v>5</v></rv>`).join('')}</rvData>`])},
+    {name:'xl/richData/rdrichvaluestructure.xml',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><rvStructures xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata" count="1"><s t="_localImage"><k n="_rvRel:LocalImageIdentifier" t="i"/><k n="CalcOrigin" t="i"/></s></rvStructures>`])},
+    {name:'xl/richData/rdRichValueTypes.xml',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><rvTypesInfo xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><global><keyFlags><key name="_Self"><flag name="ExcludeFromFile" value="1"/><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_DisplayString"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_Flags"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_Format"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_SubLabel"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_Attribution"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_Icon"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_Display"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_CanonicalPropertyNames"><flag name="ExcludeFromCalcComparison" value="1"/></key><key name="_ClassificationId"><flag name="ExcludeFromCalcComparison" value="1"/></key></keyFlags></global></rvTypesInfo>`])},
+    {name:'xl/richData/_rels/richValueRel.xml.rels',date:createdAt,blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${photos.map((photo,index)=>`<Relationship Id="rId${index+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${index+1}.${photo.extension}"/>`).join('')}</Relationships>`])},
+    ...photos.map((photo,index)=>({name:`xl/media/image${index+1}.${photo.extension}`,date:createdAt,blob:photo.blob}))
+  );
+}
+
+async function buildInspectionWorkbook(createdAt, exportEntries = entries, includePhotos = false){
   const rows=inspectionWorkbookRows(exportEntries);
+  const photos=includePhotos?await collectWorkbookPhotos(exportEntries):[];
+  const photoByEntry=new Map(photos.map((photo,index)=>[photo.entryIndex,index]));
   const rowXml=rows.map((row,rowIndex)=>{
     const cells=row.map((value,colIndex)=>{
       const ref=`${excelColumnName(colIndex)}${rowIndex+1}`;
+      if(includePhotos&&rowIndex>0&&colIndex===10){
+        const richIndex=photoByEntry.get(rowIndex-1);
+        return richIndex===undefined?`<c r="${ref}" s="0"/>`:`<c r="${ref}" s="0" t="e" vm="${richIndex+1}"><v>#VALUE!</v></c>`;
+      }
+      if(colIndex===9&&(value===''||value===null||value===undefined)) return `<c r="${ref}" s="3"/>`;
       if(typeof value==='number'&&Number.isFinite(value)) return `<c r="${ref}" s="${colIndex===2||colIndex===3?2:colIndex===9?3:0}"><v>${value}</v></c>`;
       const style=rowIndex===0?' s="1"':'';
       return `<c r="${ref}" t="inlineStr"${style}><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
     }).join('');
-    return `<row r="${rowIndex+1}">${cells}</row>`;
+    const photoHeight=includePhotos&&rowIndex>0&&photoByEntry.has(rowIndex-1)?' ht="75" customHeight="1"':'';
+    return `<row r="${rowIndex+1}"${photoHeight}>${cells}</row>`;
   }).join('');
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:L${rows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="28" customWidth="1"/><col min="2" max="2" width="21" customWidth="1"/><col min="3" max="6" width="18" customWidth="1"/><col min="7" max="9" width="17" customWidth="1"/><col min="10" max="11" width="13" customWidth="1"/><col min="12" max="12" width="42" customWidth="1"/></cols><sheetData>${rowXml}</sheetData><autoFilter ref="A1:L${rows.length}"/></worksheet>`;
   const files=[
@@ -4473,11 +4516,12 @@ async function buildInspectionWorkbook(createdAt, exportEntries = entries){
     {name:'_rels/.rels',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`]),date:createdAt},
     {name:'xl/workbook.xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Inspection Log" sheetId="1" r:id="rId1"/></sheets></workbook>`]),date:createdAt},
     {name:'xl/_rels/workbook.xml.rels',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`]),date:createdAt},
-    {name:'xl/styles.xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FF191C1F"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF4B400"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`]),date:createdAt},
+    {name:'xl/styles.xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0+000"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FF191C1F"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF4B400"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"><alignment horizontal="center" vertical="center"/></xf></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`]),date:createdAt},
     {name:'xl/worksheets/sheet1.xml',blob:new Blob([sheet]),date:createdAt},
     {name:'docProps/core.xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>KMTrack Inspection Log</dc:title><dc:creator>KMTrack</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${createdAt.toISOString()}</dcterms:created></cp:coreProperties>`]),date:createdAt},
     {name:'docProps/app.xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>KMTrack</Application></Properties>`]),date:createdAt}
   ];
+  addInCellPhotoParts(files,photos,createdAt);
   await addSharingWorksheet(files,exportEntries,createdAt);
   const zip=await createStoredZip(files);
   return zip.slice(0,zip.size,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -4513,10 +4557,9 @@ document.getElementById('export-btn').addEventListener('click', async () => {
   }
 });
 
-// ---------- Complete local backup (uncompressed ZIP, no external library) ----------
-// ZIP "store" mode keeps the already-compressed JPEGs as-is, avoiding a large
-// dependency and needless recompression. Each photo is read once for its CRC,
-// then the original Blob is appended directly to the archive.
+// ---------- Stored ZIP package writer ----------
+// XLSX and legacy photo-backup files are ZIP packages. Store mode keeps already
+// compressed JPEGs as-is and avoids a large runtime dependency.
 const ZIP_CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for(let n=0;n<256;n++){
@@ -4584,6 +4627,7 @@ function safeBackupFilename(name,index){
   return `${String(index+1).padStart(4,'0')}_${cleaned||'inspection_photo.jpg'}`;
 }
 
+// Native Excel Place in Cell photo export. Legacy photo ZIPs remain importable.
 document.getElementById('backup-btn').addEventListener('click', async () => {
   if(entries.length===0) return;
   const exportEntries = await prepareSharingExport();
@@ -4596,40 +4640,15 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
   try{
     const createdAt=new Date();
     const stamp=exportTimestamp(createdAt);
-    const files=[
-      {name:`KMTrack_backup_${stamp}/inspection_log.xlsx`,blob:await buildInspectionWorkbook(createdAt,exportEntries),date:createdAt},
-      {name:`KMTrack_backup_${stamp}/README.txt`,blob:new Blob(['KMTrack inspection backup\n\nThis archive contains the inspection Excel workbook, available stamped photos, and manifest.json.\nPhotos listed as missing in the manifest were referenced by the log but were not present in this browser storage at export time.\n'],{type:'text/plain;charset=utf-8'}),date:createdAt}
-    ];
-    const manifestEntries=[];
-    let exportedPhotos=0; let missingPhotos=0;
-    for(let i=0;i<exportEntries.length;i++){
-      const entry=exportEntries[i];
-      let archivePhotoPath=''; let photoAvailable=false;
-      if(entry.photoId){
-        button.textContent=`Packing ${i+1}/${exportEntries.length}…`;
-        const photo=await getPhoto(entry.photoId);
-        if(photo){
-          archivePhotoPath=`KMTrack_backup_${stamp}/photos/${safeBackupFilename(entry.photoFilename,i)}`;
-          files.push({name:archivePhotoPath,blob:photo,date:createdAt});
-          photoAvailable=true; exportedPhotos++;
-        }else missingPhotos++;
-      }
-      const exportEntry = entry;
-      manifestEntries.push({...exportEntry,photoAvailable,archivePhotoPath});
-      await new Promise(resolve=>setTimeout(resolve,0));
-    }
-    const manifest={format:'KMTrack inspection backup',version:2,createdAt:createdAt.toISOString(),entryCount:exportEntries.length,photoCount:exportedPhotos,missingPhotoCount:missingPhotos,entries:manifestEntries};
-    files.push({name:`KMTrack_backup_${stamp}/manifest.json`,blob:new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'}),date:createdAt});
-    button.textContent='Building ZIP…';
-    const zip=await createStoredZip(files);
-    url=URL.createObjectURL(zip);
+    button.textContent='Embedding photos…';
+    const workbook=await buildInspectionWorkbook(createdAt,exportEntries,true);
+    url=URL.createObjectURL(workbook);
     const link=document.createElement('a');
-    link.href=url; link.download=`KMTrack_backup_${stamp}.zip`;
+    link.href=url; link.download=`KMTrack_with_photos_${stamp}.xlsx`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    const note=missingPhotos ? ` ${missingPhotos} referenced photo(s) were missing and are identified in manifest.json.` : '';
-    alert(`Backup ready: ${exportEntries.length} entries and ${exportedPhotos} photos.${note}`);
+    alert(`Workbook ready: ${exportEntries.length} entries. Available photos are embedded in their cells; missing photos are left blank.`);
   }catch(err){
-    alert(`Could not create the backup ZIP. ${err.message||err}`);
+    alert(`Could not create the workbook with photos. ${err.message||err}`);
   }finally{
     if(url) URL.revokeObjectURL(url);
     button.textContent=originalLabel;

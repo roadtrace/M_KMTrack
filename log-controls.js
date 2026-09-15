@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dialog.innerHTML = '<h2 id="export-format-title">Export inspections</h2><p id="export-scope"></p><div class="export-format-options"></div><form method="dialog"><button value="cancel">Cancel</button></form>';
   document.body.append(dialog);
   const options = dialog.querySelector('.export-format-options');
-  for(const [id,title,description] of [['export-btn','Excel file only','Inspection records without photo files'],['backup-btn','With photos (.zip)','Excel workbook and attached photos']]){
+  for(const [id,title,description] of [['export-btn','Excel file only','Inspection records without photo files'],['backup-btn','Excel with photos','Native in-cell photos for offline viewing']]){
     const button = document.getElementById(id); options.append(button);
     button.innerHTML = `<strong>${title}</strong><span>${description}</span>`;
     button.addEventListener('click',()=>dialog.close(),{capture:true});
