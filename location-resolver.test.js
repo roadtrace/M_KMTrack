@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict');
-const {createResolver}=require('./location-resolver.js');
+const {createResolver,isInterchangeMode}=require('./location-resolver.js');
 const calibration=require('./calibration.json');
 const row=(expressway,distance,km=10,bound='NB')=>({expressway,distance,km,bound});
 const interchange={site_id:'nlex_harbor_link_smart_connect',name:'Harbor Link (Smart Connect) Interchange'};
@@ -68,4 +68,18 @@ test('confirmed interchange name survives short geometry gaps and clears only af
   assert.equal(result.interchange.name,interchange.name);
   result=resolver.resolve({lat:15.003,lon:120.7,accuracy:8,timestamp:10000,candidates:[row('NLEX',.006,80.3)]});
   assert.equal(result.interchange,null);
+});
+
+test('through roads keep KM inside an interchange while departed ramps use interchange mode',()=>{
+  const base={confirmed:true,interchange:{name:'Dau Interchange',segment:'NB Entry Ramp'},result:{expressway:'NLEX',km:80,distance:.01}};
+  assert.equal(isInterchangeMode(base,8),false);
+  assert.equal(isInterchangeMode({...base,result:{...base.result,distance:.09}},8),true);
+  assert.equal(isInterchangeMode({...base,interchange:null,result:{...base.result,distance:.09}},8),false);
+});
+
+test('explicit ramp labels are retained with the confirmed interchange',()=>{
+  const resolver=createResolver();let result;
+  const labeled={site_id:'nlex_dau',name:'Dau Interchange',ramp:'NB Entry Ramp',seg_id:'nlex_dau_045'};
+  for(let i=0;i<3;i++) result=resolver.resolve({lat:15+i*.0001,lon:120.7,accuracy:8,timestamp:i*1000,candidates:[row('NLEX',.09,80)],interchange:labeled});
+  assert.deepEqual(result.interchange,{siteId:'nlex_dau',name:'Dau Interchange',segment:'NB Entry Ramp',segmentId:'nlex_dau_045'});
 });

@@ -121,14 +121,14 @@ test('Excel handler exports all without confirmation and filtered/selected rows 
   await control('export-btn').click();
   assert.equal(state.prompts.length,0);
   const all=await unzip(state.downloads[0]);
-  assert.match(all['xl/worksheets/sheet1.xml'].toString(),/A1:M4/);
+  assert.match(all['xl/worksheets/sheet1.xml'].toString(),/A1:N4/);
   control('entry-filter-from').value='2026-09-03';
     control('entry-filter-to').value='2026-09-03';
   context.selectedEntryIds.add('b');
   await control('export-btn').click();
   const subset=await unzip(state.downloads[1]);
   const sheet=subset['xl/worksheets/sheet1.xml'].toString();
-  assert.match(sheet,/A1:M2/);
+  assert.match(sheet,/A1:N2/);
   assert.match(sheet,/Cracks/);
   assert.doesNotMatch(sheet,/Potholes/);
   assert.equal(subset['xl/styles.xml'].toString(),all['xl/styles.xml'].toString());
@@ -143,7 +143,7 @@ test('photo workbook embeds native cell images using one filtered snapshot',asyn
   await control('backup-btn').click();
   assert.deepEqual(state.photos,['photo-a','photo-b']);
   const workbook=await unzip(state.downloads[0]);
-  assert.match(workbook['xl/worksheets/sheet1.xml'].toString(),/A1:M3/);
+  assert.match(workbook['xl/worksheets/sheet1.xml'].toString(),/A1:N3/);
   assert.match(workbook['xl/worksheets/sheet1.xml'].toString(),/<c r="K2" s="0" t="e" vm="1"><v>#VALUE!<\/v><\/c>/);
   assert.match(workbook['xl/worksheets/sheet1.xml'].toString(),/<c r="K3" s="0" t="e" vm="2"><v>#VALUE!<\/v><\/c>/);
   assert.ok(workbook['xl/metadata.xml']);

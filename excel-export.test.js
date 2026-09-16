@@ -36,6 +36,8 @@ test('photo export and import advertise and preserve one native-photo workbook',
 
 test('resolved interchange names persist through Excel export and import',()=>{
   assert.match(swipe,/Interchange \/ Exit/);
+  assert.match(swipe,/Interchange Segment/);
   assert.match(importer,/interchange:row\[12\]\|\|''/);
-  assert.match(importer,/expressway','interchange','bound/);
+  assert.match(importer,/interchangeSegment:row\[13\]\|\|''/);
+  assert.match(importer,/expressway','interchange','interchangeSegment','bound/);
 });

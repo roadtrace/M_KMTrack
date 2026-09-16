@@ -168,6 +168,8 @@
     letter-spacing:0.3px; line-height:1.4;
   }
   .kmpost .ramp-tag.show{display:inline-block;}
+  .kmpost.interchange-mode .kmvalue{font-size:clamp(18px,5.6vw,26px);line-height:1.18;white-space:normal;margin-top:8px;}
+  .kmpost.interchange-mode .kmunit{margin-top:8px;font-weight:700;color:#fff;}
   @media (max-width:380px){
     .kmpost{padding:11px 12px;}
     .kmpost-grid{gap:10px;}
@@ -1307,9 +1309,9 @@ button {
     </div>
     <div class="kmpost-grid">
       <div class="kmpost-current">
-        <div class="kmlabel">CURRENT KM STATION</div>
+        <div class="kmlabel" id="current-location-label">CURRENT KM STATION</div>
         <div class="kmvalue" id="km-value">--.---</div>
-        <div class="kmunit">kilometers (interpolated)</div>
+        <div class="kmunit" id="current-location-detail">kilometers (interpolated)</div>
       </div>
       <div class="nearby-asset" aria-live="polite">
         <div class="kmlabel">NEARBY BRIDGE</div>
@@ -1649,6 +1651,7 @@ function loadFromStorage(){
           km: (e.km === null || typeof e.km === 'number') ? e.km : null,
           expressway: typeof e.expressway === 'string' ? e.expressway : '',
           interchange: typeof e.interchange === 'string' ? e.interchange : '',
+          interchangeSegment: typeof e.interchangeSegment === 'string' ? e.interchangeSegment : '',
           bound: typeof e.bound === 'string' ? e.bound : '',
           lane: typeof e.lane === 'string' ? e.lane : '',
           photoId: typeof e.photoId === 'string' ? e.photoId : '',
@@ -2432,10 +2435,36 @@ function computeCorridorCandidates(lat,lon){
   return [...corridors].map(expressway=>computeKmStation(lat,lon,expressway)).filter(Boolean);
 }
 
+function corridorDepartureThresholdKm(accuracyMeters){
+  return KMTrackLocation.corridorDepartureThresholdKm(accuracyMeters);
+}
+
+function isInterchangeLocationMode(resolution=currentResolvedLocation,position=currentPos){
+  return !!position&&KMTrackLocation.isInterchangeMode(resolution,position.acc);
+}
+
+function interchangeSegmentLabel(resolution=currentResolvedLocation){
+  return resolution?.interchange?.segment||'Ramp / interchange roadway';
+}
+
 function resolvedLocationCanSave(){
   if(!currentPos||!currentPos.fresh||!currentResolvedLocation?.saveAllowed) return false;
   const result=currentResolvedLocation.result;
-  return !!result&&result.distance<=offNetworkThresholdKm(currentPos.acc);
+  return !!result&&(isInterchangeLocationMode()||result.distance<=offNetworkThresholdKm(currentPos.acc));
+}
+
+function resolvedEntrySnapshot(){
+  if(!resolvedLocationCanSave()) return null;
+  const result=currentResolvedLocation.result;
+  const interchangeMode=isInterchangeLocationMode();
+  return {
+    lat:currentPos.lat,lon:currentPos.lon,
+    km:interchangeMode?null:result.km,
+    expressway:result.expressway,
+    bound:userBound||'',
+    interchange:interchangeMode?currentResolvedLocation.interchange.name:'',
+    interchangeSegment:interchangeMode?interchangeSegmentLabel():''
+  };
 }
 
 function setGpsCaptureReady(ready){
@@ -2488,19 +2517,29 @@ function updateReadout(){
   const result=resolution?.result||null;
   const kmEl = document.getElementById('km-value');
   const tagEl = document.getElementById('segment-tag');
+  const post=kmEl.closest('.kmpost');
+  const locationLabel=document.getElementById('current-location-label');
+  const locationDetail=document.getElementById('current-location-detail');
 
   if(!result){
     kmEl.textContent = '--.---';
     updateMapKmStation();
     tagEl.textContent = calibData.length ? '--' : 'dataset not loaded';
     tagEl.classList.remove('faroff');
+    post.classList.remove('interchange-mode');
+    locationLabel.textContent='CURRENT KM STATION';
+    locationDetail.textContent='kilometers (interpolated)';
     updateBridgeReadout(currentPos.lat, currentPos.lon, null, true);
     return;
   }
 
   const isOffMappedNetwork = result.distance > offNetworkThresholdKm(currentPos.acc);
-  kmEl.textContent = isOffMappedNetwork ? '--.---' : formatKmStation(result.km);
-  updateMapKmStation();
+  const interchangeMode=isInterchangeLocationMode(resolution,currentPos);
+  post.classList.toggle('interchange-mode',interchangeMode);
+  locationLabel.textContent=interchangeMode?'CURRENT LOCATION':'CURRENT KM STATION';
+  locationDetail.textContent=interchangeMode?interchangeSegmentLabel(resolution):'kilometers (interpolated)';
+  kmEl.textContent = interchangeMode?resolution.interchange.name:(isOffMappedNetwork?'--.---':formatKmStation(result.km));
+  document.getElementById('map-km-station').textContent=interchangeMode?resolution.interchange.name:`KM ${kmEl.textContent}`;
   const displayBound = userBound || '?';
   if(!currentPos.fresh){
     tagEl.textContent = `⚠ GPS uncertain — holding ${result.expressway}`;
@@ -2508,6 +2547,9 @@ function updateReadout(){
   } else if(!resolution.confirmed){
     tagEl.textContent = `⚠ Confirming road — ${result.expressway}`;
     tagEl.classList.add('faroff');
+  } else if(interchangeMode){
+    tagEl.textContent = `${result.expressway} · ${displayBound}`;
+    tagEl.classList.remove('faroff');
   } else if(isOffMappedNetwork){
     tagEl.textContent = `⚠ Off mapped network (~${Math.round(result.distance*1000)}m from ${result.expressway})`;
     tagEl.classList.add('faroff');
@@ -2521,10 +2563,10 @@ function updateReadout(){
   if(currentPos.fresh&&resolution.confirmed&&!isOffMappedNetwork){
     detectBoundFromTrend(result.expressway, result.km);
   }
-  updateBridgeReadout(currentPos.lat, currentPos.lon, result, isOffMappedNetwork);
+  updateBridgeReadout(currentPos.lat, currentPos.lon, result, isOffMappedNetwork&&!interchangeMode);
   renderBoundToggle(result.expressway);
   updateBoundAutoStatus(result.expressway);
-  updateRampReadout(resolution.interchange);
+  updateRampReadout(interchangeMode?null:resolution.interchange);
   refreshCameraDraftFromLiveGPS();
 }
 
@@ -2542,14 +2584,9 @@ function refreshCameraDraftFromLiveGPS(){
   if(!cameraModal || !cameraModal.classList.contains('show')) return;
   if(pendingCaptureBlob) return;
   if(!resolvedLocationCanSave()) return;
-  const result=currentResolvedLocation.result;
-  const isOffMappedNetwork=result.distance>offNetworkThresholdKm(currentPos.acc);
-  cameraDraftEntry.lat = currentPos.lat;
-  cameraDraftEntry.lon = currentPos.lon;
-  cameraDraftEntry.km = isOffMappedNetwork ? null : result.km;
-  cameraDraftEntry.expressway = isOffMappedNetwork ? '' : result.expressway;
-  cameraDraftEntry.bound = isOffMappedNetwork ? '' : (userBound || '');
-  cameraDraftEntry.interchange = isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || '');
+  const snapshot=resolvedEntrySnapshot();
+  if(!snapshot) return;
+  Object.assign(cameraDraftEntry,snapshot);
   updateCameraOverlay(cameraDraftEntry);
 }
 
@@ -2726,23 +2763,13 @@ function logDefect(type, lane){
     return;
   }
 
-  const result=currentResolvedLocation.result;
-
-  // Use the exact same off-network rule as the live KM display.
-  // If the vehicle is off the mapped network, do NOT save the nearest
-  // calibration point's KM, expressway, or bound into the defect entry.
-  const isOffMappedNetwork = !result || result.distance > offNetworkThresholdKm(currentPos.acc);
+  const snapshot=resolvedEntrySnapshot();
 
   entries.push({
     id: newId(),
     type,
     timestamp: fullTimestamp(),
-    lat: currentPos.lat,
-    lon: currentPos.lon,
-    km: isOffMappedNetwork ? null : result.km,
-    expressway: isOffMappedNetwork ? '' : result.expressway,
-    bound: isOffMappedNetwork ? '' : (userBound || ''),
-    interchange: isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || ''),
+    ...snapshot,
     lane,
     photoId: '',
     photoFilename: '',
@@ -2894,7 +2921,7 @@ function currentEntryCameraData(entry){
   const rawLane = entry.lane || '';
   const lane = /^[1-4]$/.test(rawLane) ? `L${rawLane}` : (rawLane || '—');
   const location = entry.expressway
-    ? `${entry.expressway}${entry.bound ? ' · '+entry.bound : ''}${entry.interchange ? ' · '+entry.interchange : ''}`
+    ? `${entry.expressway}${entry.bound ? ' · '+entry.bound : ''}${entry.interchange ? ' · '+entry.interchange : ''}${entry.interchangeSegment ? ' · '+entry.interchangeSegment : ''}`
     : 'North Luzon Expressway';
   return { kmText, direction, lane, location };
 }
@@ -2907,7 +2934,7 @@ function formatCoordinate(value, positive, negative){
 function updateCameraOverlay(entry){
   const data = currentEntryCameraData(entry);
   cameraTimeEl.textContent = formatPhotoDate(new Date());
-  const station = data.kmText ? `KM ${data.kmText}` : 'OFF MAPPED NETWORK';
+  const station = data.kmText ? `KM ${data.kmText}` : entry.interchange ? (entry.interchangeSegment||'INTERCHANGE ROADWAY') : 'OFF MAPPED NETWORK';
   cameraMetaEl.textContent = `${station} · ${data.direction} · ${data.lane} · ${formatCoordinate(entry.lat,'N','S')}, ${formatCoordinate(entry.lon,'E','W')}`;
 }
 
@@ -2919,16 +2946,10 @@ function getCameraSnapshot(type){
     alert(currentPos ? 'GPS is uncertain or the road is not confirmed yet. Wait for a fresh, confirmed location before taking a photo.' : 'Waiting for GPS fix — please allow location access and wait a moment.');
     return null;
   }
-  const result=currentResolvedLocation.result;
-  const isOffMappedNetwork = !result || result.distance > offNetworkThresholdKm(currentPos.acc);
+  const snapshot=resolvedEntrySnapshot();
   return {
     type,
-    lat: currentPos.lat,
-    lon: currentPos.lon,
-    km: isOffMappedNetwork ? null : result.km,
-    expressway: isOffMappedNetwork ? '' : result.expressway,
-    bound: isOffMappedNetwork ? '' : (userBound || ''),
-    interchange: isOffMappedNetwork ? '' : (currentResolvedLocation.interchange?.name || ''),
+    ...snapshot,
     lane: ''
   };
 }
@@ -3027,7 +3048,7 @@ async function openCameraForEntryPhoto(index){
   cameraEditTargetIndex = index;
   cameraDraftEntry = {
     type: entry.type, lat: entry.lat, lon: entry.lon,
-    km: entry.km, expressway: entry.expressway, interchange:entry.interchange||'', bound: entry.bound,
+    km: entry.km, expressway: entry.expressway, interchange:entry.interchange||'', interchangeSegment:entry.interchangeSegment||'', bound: entry.bound,
     lane: entry.lane || ''
   };
   cameraErrorEl.classList.remove('show');
@@ -3256,7 +3277,7 @@ async function drawStampBand(ctx, w, h, entry, dateLineText){
   const maxTextW = w - contentX - edgePad;
 
   const data = currentEntryCameraData(entry);
-  const kmText = data.kmText ? `KM ${data.kmText}` : 'OFF MAPPED NETWORK';
+  const kmText = data.kmText ? `KM ${data.kmText}` : entry.interchange ? (entry.interchangeSegment||'INTERCHANGE ROADWAY') : 'OFF MAPPED NETWORK';
 
   const logo = await loadCameraLogo();
   const logoGap = Math.round(14*scale);
@@ -4029,7 +4050,7 @@ function renderLog(){
       </div>
       <time class="record-date" datetime="${xmlEscape(String(e.timestamp).replace(' ','T'))}" title="${xmlEscape(e.timestamp)}">${xmlEscape(shortDate)}</time>
       <div class="record-context"><span class="record-road">${xmlEscape(e.expressway||'—')}</span>
-      <span class="record-km">KM ${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}</span>
+      ${e.interchange&&e.km==null?`<span class="record-km">${xmlEscape(e.interchange)}</span>${e.interchangeSegment?`<span class="record-km">${xmlEscape(e.interchangeSegment)}</span>`:''}`:`<span class="record-km">KM ${e.km !== null && e.km !== undefined ? formatKmStation(e.km) : 'n/a'}</span>`}
       <span class="record-bound">${xmlEscape(e.bound||'—')}</span>
       <span class="record-lane">${xmlEscape(laneLabel)}</span></div>
       ${e.photoId ? `<div class="record-photo-actions">${photoActionsHtml}</div>` : ''}
@@ -4592,7 +4613,7 @@ async function buildInspectionWorkbook(createdAt, exportEntries = entries, inclu
     const photoHeight=includePhotos&&rowIndex>0&&photoByEntry.has(rowIndex-1)?' ht="75" customHeight="1"':'';
     return `<row r="${rowIndex+1}"${photoHeight}>${cells}</row>`;
   }).join('');
-  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:M${rows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="28" customWidth="1"/><col min="2" max="2" width="21" customWidth="1"/><col min="3" max="6" width="18" customWidth="1"/><col min="7" max="9" width="17" customWidth="1"/><col min="10" max="11" width="13" customWidth="1"/><col min="12" max="12" width="42" customWidth="1"/><col min="13" max="13" width="42" customWidth="1"/></cols><sheetData>${rowXml}</sheetData><autoFilter ref="A1:M${rows.length}"/></worksheet>`;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:N${rows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="28" customWidth="1"/><col min="2" max="2" width="21" customWidth="1"/><col min="3" max="6" width="18" customWidth="1"/><col min="7" max="9" width="17" customWidth="1"/><col min="10" max="11" width="13" customWidth="1"/><col min="12" max="12" width="42" customWidth="1"/><col min="13" max="14" width="42" customWidth="1"/></cols><sheetData>${rowXml}</sheetData><autoFilter ref="A1:N${rows.length}"/></worksheet>`;
   const files=[
     {name:'[Content_Types].xml',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`]),date:createdAt},
     {name:'_rels/.rels',blob:new Blob([`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`]),date:createdAt},

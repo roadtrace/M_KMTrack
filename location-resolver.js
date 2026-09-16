@@ -12,6 +12,16 @@
     return r*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));
   }
 
+  function corridorDepartureThresholdKm(accuracyMeters){
+    const accuracyBuffer=Number.isFinite(accuracyMeters)?Math.min(Math.max(accuracyMeters,0),40)/1000:0.015;
+    return 0.045+accuracyBuffer;
+  }
+
+  function isInterchangeMode(resolution,accuracyMeters){
+    return !!(resolution?.confirmed&&resolution.interchange&&resolution.result
+      &&resolution.result.distance>corridorDepartureThresholdKm(accuracyMeters));
+  }
+
   function createResolver(options={}){
     const startupFixes=options.startupFixes||3;
     const ambiguousStartupFixes=options.ambiguousStartupFixes||5;
@@ -25,10 +35,12 @@
 
     function normalizedInterchange(match){
       if(!match) return null;
-      const row=match.ramp||match;
+      const row=match.ramp&&typeof match.ramp==='object'?match.ramp:match;
       const name=String(row.interchange||row.name||'').trim();
       const siteId=String(row.site_id||row.siteId||name).trim();
-      return name?{siteId,name}:null;
+      const segment=String(row.ramp||row.seg_type||'').trim().replace(/_/g,' ');
+      const segmentId=String(row.seg_id||'').trim();
+      return name?{siteId,name,segment,segmentId}:null;
     }
 
     function updateInterchange(match,fix,time){
@@ -47,7 +59,10 @@
         const moved=distanceKm(confirmedInterchange.lastSeenFix,fix);
         if(elapsed>interchangeHoldMs&&moved>interchangeExitKm) confirmedInterchange=null;
       }
-      return confirmedInterchange?{siteId:confirmedInterchange.siteId,name:confirmedInterchange.name}:null;
+      return confirmedInterchange?{
+        siteId:confirmedInterchange.siteId,name:confirmedInterchange.name,
+        segment:confirmedInterchange.segment||'',segmentId:confirmedInterchange.segmentId||''
+      }:null;
     }
 
     function plausibleStep(fix,time,accuracy,speed){
@@ -122,5 +137,5 @@
     };
   }
 
-  return {createResolver,distanceKm};
+  return {createResolver,distanceKm,corridorDepartureThresholdKm,isInterchangeMode};
 });

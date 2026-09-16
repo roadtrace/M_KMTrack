@@ -32,11 +32,11 @@
 
   function inspectionWorkbookRows(entries, toDMM, kmToCsvNumber){
     return [
-      ['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename','Interchange / Exit'],
+      ['Type of Defect','Timestamp','Latitude','Longitude','Latitude (DMM)','Longitude (DMM)','Expressway','Direction','Lane','Km Station','Photo','Photo Filename','Interchange / Exit','Interchange Segment'],
       ...entries.map(e=>[
         e.type,e.timestamp,e.lat,e.lon,toDMM(e.lat,'N','S'),toDMM(e.lon,'E','W'),
         e.expressway||'',e.bound||'',e.lane||'',e.km===null||e.km===undefined?'':Number(kmToCsvNumber(e.km)),
-        e.photoId?'Yes':'No',e.photoFilename||'',e.interchange||''
+        e.photoId?'Yes':'No',e.photoFilename||'',e.interchange||'',e.interchangeSegment||''
       ])
     ];
   }
