@@ -67,8 +67,18 @@ html:root :is(.entry-filters,.map-entry-controls) input[type="date"]{
   overflow:hidden;text-align:center;text-align-last:center;padding-inline:4px;
 }
 html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-date-and-time-value{width:100%;min-width:0;text-align:center;}
-html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-datetime-edit{display:flex;width:100%;min-width:0;padding:0;justify-content:center;align-items:center;}
-html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-datetime-edit-fields-wrapper{display:flex;justify-content:center;align-items:center;}
+/* The inner edit box is height:auto, so `align-items:center` had nothing to
+   centre within and the date text pinned to the top of a fixed-height field.
+   Making both inner boxes full-height lets the existing centring take effect. */
+html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-datetime-edit{display:flex;width:100%;min-width:0;height:100%;box-sizing:border-box;padding:0;justify-content:center;align-items:center;}
+html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-datetime-edit-fields-wrapper{display:flex;height:100%;justify-content:center;align-items:center;}
+/* The native calendar glyph is not part of this design and, sitting in flow, it
+   steals width from the centred text (clipping it on the narrower map fields).
+   Overlay it invisibly instead, so the whole field still opens the picker. */
+html:root :is(.entry-filters,.map-entry-controls) input[type="date"]{position:relative;}
+html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-calendar-picker-indicator{
+  position:absolute;left:0;top:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;
+}
 
 html:root .app-tab-bar{border-radius:0;padding:4px 12px env(safe-area-inset-bottom);}
 html:root .app-tab-btn{border-radius:12px;}

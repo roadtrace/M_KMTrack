@@ -647,6 +647,14 @@ select,textarea,.edit-select{
 }
 ::placeholder{color:var(--ds-fg-subtle);}
 
+/* Filter-bar fields inherited the page colour, so beside the filled buttons
+   they read as borderless. Give them the field fill and their own text ink. */
+html:root :is(.entry-filters,.map-entry-controls) :is(input[type="date"],select){
+  background:var(--ds-card);
+  border-color:var(--ds-border-strong);
+  color:var(--ds-fg);
+}
+
 /* ---------- Specificity bridge ------------------------------------------
    The inline stylesheet carries `html[data-theme="light"] …` overrides that
    outrank a bare class selector. These restate the design-system treatment at
