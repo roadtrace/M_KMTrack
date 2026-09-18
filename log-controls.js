@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   exportMenu.type = 'button'; exportMenu.id = 'export-menu-btn';
   exportMenu.className = 'select-toggle-btn';
   exportMenu.innerHTML = `${icon('out')}<span>Export</span>`;
-  exportMenu.setAttribute('aria-haspopup','dialog'); header.append(exportMenu);
+  exportMenu.setAttribute('aria-haspopup','dialog');
+  // The export trigger now lives in the Tools tab; fall back to the log
+  // toolbar if that mount point is absent (older shell / tests).
+  (document.getElementById('tools-export-actions') || header).append(exportMenu);
   const dialog = document.createElement('dialog');
   dialog.className = 'sharing-dialog export-format-dialog';
   dialog.setAttribute('aria-labelledby','export-format-title');
@@ -22,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     button.innerHTML = `<strong>${title}</strong><span>${description}</span>`;
     button.addEventListener('click',()=>dialog.close(),{capture:true});
   }
-  document.querySelector('.export-actions').remove();
+  document.querySelector('.export-actions')?.remove();
   exportMenu.addEventListener('click',()=>{
     const scope = KMTrackEntryFilters.exportScope(entries,getLogFilters(),selectedEntryIds);
     const kind = selectedEntryIds.size ? 'selected' : Object.values(getLogFilters()).some(Boolean) ? 'filtered' : 'saved';
@@ -53,11 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
   importHistory.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
   importHistory.setAttribute('aria-label','Imported files');
   importHistory.title='Imported files';
-  header.append(importHistory);
+  const importMount=document.getElementById('tools-import-actions');
+  if(!importMount) header.append(importHistory);
   const list=document.getElementById('log-list');list.classList.add('inspection-record-list');
   const footer=document.createElement('div');footer.className='log-action-footer';
   const selectAll=document.getElementById('bulk-select-all-btn'),deleteSelected=document.getElementById('bulk-delete-btn');
-  footer.append(count,toggle,exportMenu,selectAll,deleteSelected);list.after(footer);
+  // exportMenu is mounted by the Tools tab (or the log toolbar as a fallback);
+  // Select / bulk-delete stay with the log they operate on.
+  footer.append(count,toggle,selectAll,deleteSelected);list.after(footer);
   document.getElementById('bulk-actions-bar').hidden=true;
   const legacyCount=document.querySelector('.count-bar');legacyCount.classList.add('log-result-count');legacyCount.hidden=true;
   document.getElementById('last-time').hidden=true;

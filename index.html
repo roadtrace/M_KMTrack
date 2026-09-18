@@ -13,7 +13,8 @@
     if(localStorage.getItem('kmtrack_theme_v1') === 'light') document.documentElement.dataset.theme = 'light';
   }catch(e){ /* theme preference is non-critical */ }
 </script>
-<link rel="apple-touch-icon" href="KMTrack_logo.png">
+<link rel="icon" type="image/svg+xml" href="kmtrack-mark.svg">
+<link rel="apple-touch-icon" href="kmtrack-apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <title>KMTrack — Road Inspection Log</title>
@@ -1034,7 +1035,7 @@ button {
 
   @media(max-width:600px){
     header{min-height:0;padding:env(safe-area-inset-top) 12px 5px;}
-    .header-logo{width:auto;height:48px;max-width:38vw;max-height:48px;}
+    .header-logo{width:auto;height:48px;max-width:54vw;max-height:48px;}
     .header-copy .sub{font-size:9px;}
     .dataset-drawer{width:calc(100% - 20px);}
     .dataset-drawer>summary{padding-left:18px;padding-right:18px;}
@@ -1234,6 +1235,7 @@ button {
 <link rel="stylesheet" href="sharing.css">
 <link rel="stylesheet" href="photo-viewer.css">
 <link rel="stylesheet" href="map-overlays.css">
+<link rel="stylesheet" href="design-system.css">
 </head>
 <body>
 
@@ -1241,88 +1243,68 @@ button {
 <div class="top-shell">
   <header>
     <div class="header-brand">
-      <img class="header-logo" src="KMTrack.png" alt="KMTrack">
+      <img class="header-logo" src="kmtrack-logo-on-dark.svg" alt="KMTrack">
       <div class="header-copy">
         <div class="sub" id="clock">-- -- --</div>
-        <div class="sub" id="storage-status" hidden></div>
       </div>
     </div>
-    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
   </header>
 </div>
-  <details class="dataset-drawer" id="dataset-drawer">
-    <summary>
-      <span class="dataset-state-dot" aria-hidden="true"></span>
-      <span class="dataset-state-label" id="dataset-state-label">Loading network data</span>
-      <span class="dataset-chevron" aria-hidden="true"></span>
-    </summary>
-    <div class="dataset-content">
-      <div class="dataset-panel">
-        <div class="dataset-panel-title">Network calibration data</div>
-        <div class="calib-hint" id="calib-status">Loading NLEX network alignment...</div>
-        <button class="calib-add" id="calib-reload">Reload dataset</button>
-      </div>
-      <div class="dataset-panel">
-        <div class="dataset-panel-title">Interchange line data</div>
-        <div class="calib-hint" id="ramp-status">Loading interchange line dataset...</div>
-        <button class="calib-add" id="ramp-reload">Reload dataset</button>
-      </div>
-    </div>
-  </details>
 
 <main>
 
-  <div class="readout">
-    <div class="readout-main">
-      <div class="field">
-        <div class="label">Latitude</div>
-        <div class="value" id="lat">--</div>
-      </div>
-      <div class="field">
-        <div class="label">Longitude</div>
-        <div class="value" id="lon">--</div>
-      </div>
-      <div class="field">
-        <div class="label">Accuracy</div>
-        <div class="value" id="acc">--</div>
-      </div>
-      <div class="field">
-        <div class="label">Points logged</div>
-        <div class="value" id="count-mini">0</div>
-      </div>
+  <section class="kmpost instrument-panel" id="instrument-panel" aria-label="Location and road match">
+    <div class="instrument-head">
       <div class="status warn" id="gps-status">Requesting GPS permission...</div>
-    </div>
-    <div class="bound-panel">
-      <div class="bound-panel-label">Bound</div>
-      <div class="bound-toggle" id="bound-toggle">
-        <span class="bound-hint" id="bound-hint">detecting segment...</span>
+      <div class="instrument-record" aria-live="polite">
+        <span class="instrument-record-value" id="count-mini">0</span>
+        <span class="eyebrow">saved</span>
       </div>
-      <div class="bound-auto-status" id="bound-auto-status"></div>
+      <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification"></button>
     </div>
-  </div>
-
-  <div class="kmpost">
-    <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification"></button>
     <div class="bridge-filter-menu" id="bridge-filter-menu" role="menu" hidden>
       <div class="bridge-filter-title">Bridge classification</div>
       <div id="bridge-filter-options"></div>
     </div>
-    <div class="kmpost-grid">
-      <div class="kmpost-current">
-        <div class="kmlabel" id="current-location-label">CURRENT KM STATION</div>
+
+    <div class="instrument-metrics">
+      <div class="metric">
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg><span id="current-location-label">CURRENT KM STATION</span></div>
         <div class="kmvalue" id="km-value">--.---</div>
         <div class="kmunit" id="current-location-detail">kilometers (interpolated)</div>
       </div>
-      <div class="nearby-asset" aria-live="polite">
-        <div class="kmlabel">NEARBY BRIDGE</div>
-        <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
-        <div class="nearby-asset-station" id="nearby-asset-station">--</div>
-        <div class="nearby-asset-distance" id="nearby-asset-distance"></div>
+
+      <div class="metric">
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg><span>Corridor</span></div>
+        <div class="segment-tag" id="segment-tag">--</div>
+        <div class="ramp-tag" id="ramp-tag"></div>
+      </div>
+
+      <div class="metric">
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg><span>Accuracy</span></div>
+        <div class="metric-value" id="acc">--</div>
+      </div>
+
+      <div class="metric">
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"></path><circle cx="12" cy="12" r="10"></circle></svg><span>Bound</span></div>
+        <div class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></div>
+        <div class="bound-auto-status" id="bound-auto-status"></div>
       </div>
     </div>
-    <div class="segment-tag" id="segment-tag">--</div>
-    <div class="ramp-tag" id="ramp-tag"></div>
-  </div>
+
+    <div class="nearby-asset" aria-live="polite">
+      <div class="kmlabel">Nearby bridge</div>
+      <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
+      <div class="nearby-asset-meta">
+        <span class="nearby-asset-station" id="nearby-asset-station">--</span>
+        <span class="nearby-asset-distance" id="nearby-asset-distance"></span>
+      </div>
+    </div>
+
+    <div class="instrument-foot">
+      <span class="coordinate-value"><span id="lat">--</span><span aria-hidden="true">, </span><span id="lon">--</span></span>
+    </div>
+  </section>
 
   <section class="block gps-pending" id="defect-section">
     <div class="defect-header">
@@ -1388,7 +1370,6 @@ button {
   <section class="block">
     <div class="log-header">
       <h2>Inspection log</h2>
-      <button type="button" class="select-toggle-btn" id="import-btn">Import</button>
       <button type="button" class="select-toggle-btn" id="select-toggle-btn">Select</button>
     </div>
     <div class="count-bar">
@@ -1416,9 +1397,6 @@ button {
         <label>Inspector<select id="entry-filter-inspector"><option value="">All inspectors</option></select></label>
       </div>
     </details>
-    <div id="import-status" role="status"></div>
-    <button type="button" id="import-history-btn" class="select-toggle-btn" hidden>Imported files</button>
-    <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
     <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none;">
       <button type="button" class="bulk-select-all-btn" id="bulk-select-all-btn">Select all</button>
       <button type="button" class="bulk-delete-btn" id="bulk-delete-btn" disabled>Delete selected (0)</button>
@@ -1462,14 +1440,94 @@ button {
   </div>
 </section>
 
+<section class="app-view tools-view" id="tools-view" role="tabpanel" aria-labelledby="tools-tab" hidden>
+  <div class="ds-view-head">
+    <span class="eyebrow">Local data control</span>
+    <h2>Tools</h2>
+    <p>KMTrack keeps field data on this device until you choose to export it.</p>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Export inspection log</div>
+    <p class="ds-card-hint" id="tools-export-hint">0 local records ready. Use Excel for review or a backup for a complete restore.</p>
+    <div class="ds-row" id="tools-export-actions"></div>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Import records</div>
+    <p class="ds-card-hint">Import KMTrack Excel exports or Photos ZIP archives from another device.</p>
+    <div class="ds-row" id="tools-import-actions">
+      <button type="button" class="select-toggle-btn" id="import-btn">Import</button>
+      <button type="button" id="import-history-btn" class="select-toggle-btn" hidden>Imported files</button>
+      <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
+    </div>
+    <div id="import-status" role="status"></div>
+  </div>
+</section>
+
+<section class="app-view settings-view" id="settings-view" role="tabpanel" aria-labelledby="settings-tab" hidden>
+  <div class="ds-view-head">
+    <span class="eyebrow">Instrument configuration</span>
+    <h2>Settings</h2>
+    <p>Make the instrument match your inspection protocol.</p>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Appearance</div>
+    <p class="ds-card-hint">Use the mode that stays legible in the cab.</p>
+    <div class="ds-row">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
+      <span class="ds-status-line">Switch between light and dark</span>
+    </div>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Network data</div>
+    <p class="ds-card-hint">Stationing and bridge matching read from these datasets on this device.</p>
+    <details class="dataset-drawer" id="dataset-drawer">
+      <summary>
+        <span class="dataset-state-dot" aria-hidden="true"></span>
+        <span class="dataset-state-label" id="dataset-state-label">Loading network data</span>
+        <span class="dataset-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="dataset-content">
+        <div class="dataset-panel">
+          <div class="dataset-panel-title">Network calibration data</div>
+          <div class="calib-hint" id="calib-status">Loading NLEX network alignment...</div>
+          <button class="calib-add" id="calib-reload">Reload dataset</button>
+        </div>
+        <div class="dataset-panel">
+          <div class="dataset-panel-title">Interchange line data</div>
+          <div class="calib-hint" id="ramp-status">Loading interchange line dataset...</div>
+          <button class="calib-add" id="ramp-reload">Reload dataset</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Storage</div>
+    <p class="ds-card-hint">Inspection records and preferences are stored on this device.</p>
+    <div class="ds-status-line"><span id="storage-status" hidden></span></div>
+  </div>
+</section>
+
 <nav class="app-tab-bar" role="tablist" aria-label="KMTrack sections">
   <button type="button" class="app-tab-btn active" id="inspection-tab" role="tab" aria-selected="true" aria-controls="inspection-view" data-app-view="inspection">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6M9 3h6v4H9z"></path><path d="M7 5H5v16h14V5h-2M8 11h8M8 15h8"></path></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="5" y1="12" y2="12"></line><line x1="19" x2="22" y1="12" y2="12"></line><line x1="12" x2="12" y1="2" y2="5"></line><line x1="12" x2="12" y1="19" y2="22"></line><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg>
     <span>Inspection</span>
   </button>
   <button type="button" class="app-tab-btn" id="map-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="map-view" data-app-view="map">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"></path><path d="M15 5.764v15"></path><path d="M9 3.236v15"></path></svg>
     <span>Map</span>
+  </button>
+  <button type="button" class="app-tab-btn" id="tools-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="tools-view" data-app-view="tools">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
+    <span>Tools</span>
+  </button>
+  <button type="button" class="app-tab-btn" id="settings-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="settings-view" data-app-view="settings">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <span>Settings</span>
   </button>
 </nav>
 
@@ -2339,17 +2397,25 @@ function updateOsmLocation(forceCenter){
   }
 }
 
+const APP_VIEW_IDS = {
+  inspection:'inspection-view',
+  map:'map-view',
+  tools:'tools-view',
+  settings:'settings-view'
+};
+
 function showAppView(viewName){
-  const showMap = viewName === 'map';
-  document.getElementById('inspection-view').hidden = showMap;
-  document.getElementById('map-view').hidden = !showMap;
+  Object.keys(APP_VIEW_IDS).forEach(name => {
+    const view = document.getElementById(APP_VIEW_IDS[name]);
+    if(view) view.hidden = name !== viewName;
+  });
   document.querySelectorAll('.app-tab-btn').forEach(button => {
     const active = button.dataset.appView === viewName;
     button.classList.toggle('active',active);
     button.setAttribute('aria-selected',active ? 'true' : 'false');
     button.tabIndex = active ? 0 : -1;
   });
-  if(showMap){
+  if(viewName === 'map'){
     initOsmMap();
     requestAnimationFrame(() => {
       osmMap?.invalidateSize(false);

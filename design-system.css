@@ -1,0 +1,973 @@
+/* ==========================================================================
+   KMTrack Design System
+   --------------------------------------------------------------------------
+   Field-instrument visual language: amber for action, teal for verification,
+   navy evidence surfaces, mono values for anything that must be exact.
+
+   This file is loaded LAST so it can retune the app's existing token layer
+   and component treatments without rewriting the inline stylesheet.
+
+   Deliberately NOT changed here:
+   - border-radius values (preserved per AGENTS.md / radius-system.css)
+   - inspection logic, storage, exports, GPS and camera behaviour
+   - placement of existing controls
+   ========================================================================== */
+
+/* ---------- Typefaces (vendored locally so the PWA stays offline-capable) -- */
+
+@font-face{
+  font-family:'Space Grotesk';
+  src:url('fonts/SpaceGrotesk-300_700-latin.woff2') format('woff2');
+  font-weight:300 700; font-style:normal; font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'Space Grotesk';
+  src:url('fonts/SpaceGrotesk-300_700-latinext.woff2') format('woff2');
+  font-weight:300 700; font-style:normal; font-display:swap;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face{
+  font-family:'DM Mono';
+  src:url('fonts/DMMono-400-latin.woff2') format('woff2');
+  font-weight:400; font-style:normal; font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'DM Mono';
+  src:url('fonts/DMMono-400-latinext.woff2') format('woff2');
+  font-weight:400; font-style:normal; font-display:swap;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face{
+  font-family:'DM Mono';
+  src:url('fonts/DMMono-500-latin.woff2') format('woff2');
+  font-weight:500; font-style:normal; font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'DM Mono';
+  src:url('fonts/DMMono-500-latinext.woff2') format('woff2');
+  font-weight:500; font-style:normal; font-display:swap;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* ---------- Design tokens ------------------------------------------------ */
+
+:root{
+  /* Evidence / surface ramp (dark is the default instrument mode) */
+  --ds-bg:            hsl(214 35% 11%);
+  --ds-bg-2:          hsl(214 34% 14%);
+  --ds-card:          hsl(214 30% 15%);
+  --ds-card-2:        hsl(214 27% 19%);
+  --ds-muted:         hsl(214 22% 22%);
+  --ds-sidebar:       hsl(214 40% 8%);
+
+  --ds-fg:            hsl(40 22% 92%);
+  --ds-fg-muted:      hsl(214 12% 68%);
+  --ds-fg-subtle:     hsl(214 14% 50%);
+
+  --ds-border:        hsl(214 19% 27%);
+  --ds-border-strong: hsl(214 19% 34%);
+
+  /* Amber advances the inspection; teal verifies it; red destroys it. */
+  --ds-primary:       hsl(43 96% 52%);
+  --ds-primary-strong:hsl(40 96% 46%);
+  --ds-primary-fg:    hsl(214 34% 14%);
+  --ds-secondary:     hsl(182 42% 49%);
+  --ds-accent:        hsl(186 27% 23%);
+  --ds-accent-fg:     hsl(183 49% 87%);
+  --ds-destructive:   hsl(2 70% 55%);
+  --ds-destructive-fg:hsl(40 22% 95%);
+
+  --ds-ring:          hsl(43 96% 52%);
+  --ds-shadow:        0 10px 32px rgba(5,10,15,.34);
+  --ds-shadow-sm:     0 8px 24px rgba(5,10,15,.22);
+
+  /* Radii intentionally inherit from the existing scale (radius-system.css). */
+
+  /* Type */
+  --font-ui:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  --font-readout:'DM Mono',ui-monospace,'Courier New',monospace;
+  --mono:var(--font-readout);
+  --sans:var(--font-ui);
+
+  /* The one radius added deliberately: the reference metric card's corner.
+     The rest of the scale still comes from radius-system.css. */
+  --radius-card:14px;
+
+  /* Legacy token names remapped onto the new ramp, so existing rules inherit */
+  --asphalt:var(--ds-bg);
+  --asphalt-2:var(--ds-bg-2);
+  --panel:var(--ds-card);
+  --panel-raised:var(--ds-card-2);
+  --surface-soft:var(--ds-muted);
+  --line-white:var(--ds-fg);
+  --text-muted:var(--ds-fg-muted);
+  --text-subtle:var(--ds-fg-subtle);
+  --border:var(--ds-border);
+  --border-strong:var(--ds-border-strong);
+  --line-yellow:var(--ds-primary);
+  --safety-red:var(--ds-destructive);
+}
+
+html[data-theme="light"]{
+  color-scheme:light;
+
+  --ds-bg:            hsl(42 25% 93%);
+  --ds-bg-2:          hsl(42 27% 90%);
+  --ds-card:          hsl(42 28% 97%);
+  --ds-card-2:        hsl(42 32% 99%);
+  --ds-muted:         hsl(40 16% 87%);
+  --ds-sidebar:       hsl(214 34% 16%);
+
+  --ds-fg:            hsl(214 34% 16%);
+  --ds-fg-muted:      hsl(214 13% 41%);
+  --ds-fg-subtle:     hsl(214 12% 52%);
+
+  --ds-border:        hsl(39 17% 80%);
+  --ds-border-strong: hsl(39 17% 70%);
+
+  --ds-primary:       hsl(43 96% 52%);
+  --ds-primary-strong:hsl(40 96% 46%);
+  --ds-primary-fg:    hsl(214 34% 14%);
+  --ds-secondary:     hsl(188 36% 31%);
+  --ds-accent:        hsl(183 49% 87%);
+  --ds-accent-fg:     hsl(188 46% 20%);
+  --ds-destructive:   hsl(2 66% 47%);
+  --ds-destructive-fg:hsl(40 25% 96%);
+
+  --ds-shadow:        0 8px 24px rgba(27,39,55,.10);
+  --ds-shadow-sm:     0 6px 18px rgba(27,39,55,.08);
+}
+
+/* ---------- Base type ---------------------------------------------------- */
+
+html,body{font-family:var(--font-ui);}
+html[data-theme="light"],html[data-theme="light"] body{color:var(--ds-fg);}
+
+/* Quiet the old flat washes in favour of the paper/ink base. */
+html[data-theme="light"] body{
+  background:var(--ds-bg);
+  background-attachment:scroll;
+}
+html:not([data-theme="light"]) body{background:var(--ds-bg);}
+
+/* Evidence values are always mono: coordinates, stations, timestamps. */
+.readout-main .field .value,
+.kmpost .kmvalue,
+.nearby-asset-station,
+.nearby-asset-distance,
+.log-entry .info .meta,
+#clock,.header-copy .sub,
+.photo-status,
+.camera-info .capture-time,
+.camera-info .capture-meta{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+
+/* Eyebrow: 10px, uppercase, wide tracking. Used for every field/status label. */
+.kmpost .kmlabel,
+.readout-main .field .label,
+.bound-panel-label,
+.header-copy .sub,
+.dataset-panel-title,
+.count-bar-left,
+.eyebrow{
+  font-family:var(--font-ui);
+  font-size:10px;
+  font-weight:700;
+  line-height:1.25;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+
+h2,.section-title{
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:-.03em;
+  color:var(--ds-fg);
+}
+
+/* ---------- Surfaces ----------------------------------------------------- */
+
+/* Every existing card adopts the quiet Base44 panel: hairline border,
+   card fill, one soft shadow. Borders carry the structure, not elevation. */
+.readout,.bound-panel,details.calib,.log-entry,.dataset-panel,
+.ds-card,.sharing-filters,.entry-filters,.map-entry-controls{
+  background:var(--ds-card);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg);
+  box-shadow:var(--ds-shadow-sm);
+}
+html[data-theme="light"] .readout,
+html[data-theme="light"] .bound-panel,
+html[data-theme="light"] details.calib,
+html[data-theme="light"] .log-entry,
+html[data-theme="light"] .dataset-panel,
+html[data-theme="light"] .ds-card{
+  background:var(--ds-card);
+  border-color:var(--ds-border);
+  box-shadow:var(--ds-shadow-sm);
+}
+
+/* ---------- Metric cells ------------------------------------------------- */
+
+/* Label above, mono value below, hairline separated — the Metric component. */
+.readout-main{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0;
+}
+.readout-main .field{
+  background:transparent;
+  border:0;
+  border-top:1px solid var(--ds-border);
+  border-radius:0;
+  padding:10px 2px;
+}
+.readout-main .field:nth-child(-n+2){border-top:0;}
+.readout-main .field .value{
+  font-size:15px;
+  font-weight:500;
+  color:var(--ds-fg);
+  margin-top:3px;
+}
+
+/* ---------- Instrument surface (dark evidence card) ---------------------- */
+
+/* The app's hero readout takes the design system's dark capture surface:
+   navy ground, amber hairline rings, hazard stripe along the bottom edge. */
+.kmpost{
+  position:relative;
+  overflow:hidden;
+  background:var(--ds-sidebar);
+  color:hsl(40 22% 92%);
+  border:1px solid hsl(214 19% 24%);
+  box-shadow:var(--ds-shadow);
+}
+.kmpost::before{
+  content:"";
+  position:absolute; top:-90px; right:-70px;
+  width:190px; height:190px;
+  border:1px solid hsl(43 96% 52% / .35);
+  border-radius:50%;
+  box-shadow:0 0 0 22px hsl(43 96% 52% / .06),0 0 0 44px hsl(43 96% 52% / .035);
+  pointer-events:none;
+}
+.kmpost::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:0; height:5px;
+  background:repeating-linear-gradient(135deg,hsl(43 96% 52%) 0 14px,transparent 14px 28px);
+  opacity:.85;
+  pointer-events:none;
+}
+.kmpost .kmlabel{color:hsl(43 96% 52% / .92);}
+.kmpost .kmvalue,
+.kmpost .nearby-asset-name,
+.kmpost .nearby-asset-station,
+.kmpost .kmunit,
+.kmpost .nearby-asset-distance,
+.kmpost .segment-tag,
+.kmpost .ramp-tag{color:hsl(40 22% 92%);}
+.kmpost .kmunit,
+.kmpost .nearby-asset-distance{color:hsl(214 12% 68%);}
+.kmpost .segment-tag,
+.kmpost .ramp-tag{
+  background:hsl(214 34% 14%);
+  border:1px solid hsl(214 19% 27%);
+}
+.kmpost.interchange-mode .kmvalue{color:var(--ds-primary);}
+
+/* ---------- Unified instrument panel ------------------------------------
+   The former .readout (lat/long/accuracy/points/bound) and .kmpost (station
+   + nearby bridge) are now one panel modelled on the reference metric card:
+   a status strip, a 2x2 metric grid, a bridge row, and a coordinate footer.
+   The element keeps the `kmpost` class because updateReadout() reads
+   `#km-value.closest('.kmpost')` to toggle interchange mode.
+   ------------------------------------------------------------------------ */
+
+.instrument-panel{
+  margin-top:10px;
+  padding:0;
+  background:var(--ds-card);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg);
+  box-shadow:var(--ds-shadow-sm);
+}
+/* Reference card: `panel overflow-hidden` — 14px corner, flush children. */
+.kmpost.instrument-panel,
+html[data-theme="light"] .kmpost.instrument-panel{
+  border-radius:var(--radius-card);
+  overflow:hidden;
+}
+/* The reference metric card is a quiet theme-aware surface: no rings and no
+   hazard stripe (those belong to the dark capture card in that system). */
+.instrument-panel::before,
+.instrument-panel::after{display:none;}
+
+/* Top strip. Reference header: `px-4 py-4 bg-[hsl(var(--muted)/.65)]`, and it
+   carries no bottom border — the tint alone separates it from the metrics. */
+.instrument-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px;
+  background:var(--ds-muted);
+  background:color-mix(in srgb, var(--ds-muted) 65%, transparent);
+  border-bottom:0;
+}
+.instrument-head .status{
+  flex:1 1 auto;
+  min-width:0;
+  justify-content:flex-start;
+}
+.instrument-record{
+  display:flex;
+  align-items:baseline;
+  gap:5px;
+  flex:0 0 auto;
+}
+.instrument-record-value{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:17px;
+  font-weight:500;
+  line-height:1;
+  color:var(--ds-fg);
+}
+.instrument-record .eyebrow{
+  font-size:9px;
+  letter-spacing:.12em;
+  color:var(--ds-fg-muted);
+}
+/* The filter button used to be pinned to the card corner. */
+.instrument-head .bridge-filter-toggle{
+  position:static;
+  flex:0 0 32px;
+  background:var(--ds-card-2);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg);
+}
+.instrument-panel .bridge-filter-menu{
+  top:52px;
+  right:12px;
+  bottom:12px;
+  background:var(--ds-card);
+  border-color:var(--ds-border);
+  color:var(--ds-fg);
+}
+.instrument-panel .bridge-filter-title{color:var(--ds-fg-muted);}
+.instrument-panel .bridge-filter-option:hover{background:var(--ds-muted);}
+.instrument-panel .bridge-filter-option.selected{
+  background:hsl(43 96% 52% / .16);
+  color:var(--ds-fg);
+}
+
+/* 2x2 metric grid with hairline separators. */
+.instrument-metrics{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+}
+.instrument-metrics .metric{
+  min-width:0;
+  padding:12px;
+}
+/* Reference cells: `px-3 py-3 first:pl-4`. The grid is `divide-x` only —
+   a vertical rule between columns and deliberately NO horizontal rule
+   between the metric rows. */
+.instrument-metrics .metric:first-child{padding-left:16px;}
+.instrument-metrics .metric:nth-child(even){border-left:1px solid var(--ds-border);}
+.instrument-metrics .kmlabel{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.5;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+/* Metric glyphs are the reference's own lucide icons at their own size:
+   gauge / route / navigation / compass, 14px, stroke-width 2. */
+.metric-icon{
+  width:14px;height:14px;flex:0 0 14px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+/* Tab glyphs are the reference's nav icons: locate-fixed / map / database /
+   settings, 19px, stroke-width 2. */
+.app-tab-btn svg{width:19px;height:19px;stroke-width:2;}
+/* Reference value line: `mt-1 truncate font-mono text-[13px] font-medium`
+   for every metric, stationing included. */
+.instrument-metrics .kmvalue,
+.instrument-metrics .metric-value{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:13px;
+  font-weight:500;
+  line-height:1.5;
+  margin-top:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:var(--ds-fg);
+}
+/* Interchange mode must not inflate the value beyond the reference scale. */
+.instrument-panel.interchange-mode .kmvalue{
+  font-size:13px;
+  line-height:1.5;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.instrument-metrics .kmunit{
+  margin-top:2px;
+  font-size:11px;
+  line-height:1.4;
+  color:var(--ds-fg-muted);
+}
+/* Corridor reads as a value, not a badge; .faroff keeps its warning meaning. */
+.instrument-metrics .segment-tag{
+  display:block;
+  margin-top:4px;
+  padding:0;
+  background:none;
+  border:0;
+  border-radius:0;
+  font-family:var(--font-ui);
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:0;
+  line-height:1.3;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  color:var(--ds-fg);
+}
+.instrument-metrics .segment-tag.faroff{
+  background:none;
+  color:hsl(35 72% 32%);
+}
+.instrument-metrics .ramp-tag{
+  background:var(--ds-accent);
+  border:1px solid hsl(182 42% 49% / .45);
+  color:var(--ds-accent-fg);
+  border-radius:var(--radius-sm);
+  padding:4px 8px;
+  font-size:11px;
+  margin-top:6px;
+}
+.instrument-metrics .bound-toggle{
+  flex-direction:row;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:5px;
+}
+.instrument-metrics button.bound-btn{
+  width:auto;
+  min-width:46px;
+  min-height:32px;
+  padding:5px 10px;
+  font-size:13px;
+  border:1px solid var(--ds-border);
+  background:var(--ds-card-2);
+  color:var(--ds-fg);
+  box-shadow:none;
+}
+.instrument-metrics button.bound-btn.active{
+  background:var(--ds-primary);
+  border-color:var(--ds-primary);
+  color:var(--ds-primary-fg);
+  box-shadow:none;
+}
+.instrument-metrics .bound-hint,
+.instrument-metrics .bound-auto-status{
+  margin-top:5px;
+  font-size:10px;
+  font-style:italic;
+  line-height:1.35;
+  color:var(--ds-fg-subtle);
+}
+
+/* Nearby bridge keeps its own row so the bridge feature is not lost. */
+.instrument-panel .nearby-asset{
+  border-left:0;
+  border-top:1px solid var(--ds-border);
+  padding:12px 16px;
+  display:block;
+}
+.instrument-panel .nearby-asset .kmlabel{
+  padding-right:0;
+  color:var(--ds-fg-muted);
+}
+.instrument-panel .nearby-asset-name{
+  font-size:15px;
+  font-weight:700;
+  line-height:1.3;
+  margin-top:3px;
+  color:var(--ds-fg);
+}
+.instrument-panel .nearby-asset-meta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:10px;
+  margin-top:3px;
+}
+.instrument-panel .nearby-asset-station{
+  font-size:12.5px;
+  font-weight:500;
+  margin-top:0;
+  color:var(--ds-fg);
+}
+.instrument-panel .nearby-asset-distance{
+  font-size:11px;
+  margin-top:0;
+  color:var(--ds-fg-muted);
+}
+
+/* Reference footer: `border-t px-4 py-3 font-mono text-[11px]`. */
+.instrument-foot{
+  border-top:1px solid var(--ds-border);
+  padding:12px 16px;
+}
+.instrument-foot .coordinate-value{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:11px;
+  font-weight:400;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+}
+
+/* The panel is theme-aware, so it must also outrank the inline light-theme
+   rules that force the old green km-post's light text colours. */
+html[data-theme="light"] .instrument-panel{color:var(--ds-fg);}
+html[data-theme="light"] .instrument-panel .kmlabel,
+html[data-theme="light"] .instrument-panel .kmunit,
+html[data-theme="light"] .instrument-panel .nearby-asset .kmlabel,
+html[data-theme="light"] .instrument-panel .nearby-asset-distance,
+html[data-theme="light"] .nearby-asset-distance,
+html[data-theme="light"] .instrument-head .eyebrow{
+  color:var(--ds-fg-muted);
+}
+html[data-theme="light"] .instrument-metrics .kmvalue,
+html[data-theme="light"] .instrument-metrics .metric-value,
+html[data-theme="light"] .instrument-metrics .segment-tag,
+html[data-theme="light"] .instrument-panel .nearby-asset-name,
+html[data-theme="light"] .instrument-panel .nearby-asset-station,
+html[data-theme="light"] .instrument-record-value{
+  color:var(--ds-fg);
+}
+html[data-theme="light"] .instrument-metrics .segment-tag.faroff{color:hsl(35 72% 32%);}
+
+/* ---------- Buttons ------------------------------------------------------ */
+
+/* Amber is reserved for the one action that moves an inspection forward. */
+button.defect-btn,.lane-btn,.select-toggle-btn,.export-btn,.calib-add,
+.bulk-actions-bar button,.camera-mode-btn,.map-locate-btn,.map-theme-toggle,
+.ds-btn{
+  font-family:var(--font-ui);
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+
+button.bound-btn,
+.select-toggle-btn,
+.export-btn,
+.calib-add,
+.bulk-select-all-btn{
+  background:var(--ds-card-2);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg);
+}
+button.bound-btn:hover,
+.select-toggle-btn:hover,
+.export-btn:hover{background:var(--ds-muted);}
+
+/* Primary: the amber action */
+#export-btn:not(:disabled),
+.export-btn:not(:disabled),
+button.bound-btn.active,
+.select-toggle-btn.active{
+  background:var(--ds-primary);
+  border-color:var(--ds-primary);
+  color:var(--ds-primary-fg);
+}
+#export-btn:not(:disabled):hover{background:var(--ds-primary-strong);}
+
+/* Destructive */
+.bulk-delete-btn:not(:disabled),
+.photo-remove-btn{
+  background:var(--ds-destructive);
+  border-color:var(--ds-destructive);
+  color:var(--ds-destructive-fg);
+}
+
+/* Export was painted safety-green in sharing.css; amber owns the action role.
+   `html:root` matches that rule's specificity and this file loads later. */
+html:root #export-menu-btn,
+html[data-theme="light"] #export-menu-btn{
+  background:var(--ds-primary);
+  border-color:var(--ds-primary);
+  color:var(--ds-primary-fg);
+}
+html:root #export-menu-btn:hover{background:var(--ds-primary-strong);}
+html:root #export-menu-btn:disabled{
+  background:var(--ds-muted);
+  border-color:var(--ds-border);
+  color:var(--ds-fg-subtle);
+  opacity:1;
+}
+
+/* Quiet / ghost */
+.export-btn:disabled,.calib-add:disabled{
+  background:var(--ds-muted);
+  color:var(--ds-fg-subtle);
+  border-color:var(--ds-border);
+  opacity:1;
+}
+
+/* ---------- Fields ------------------------------------------------------- */
+
+.field,input[type="text"],input[type="date"],input[type="number"],
+select,textarea,.edit-select{
+  background:var(--ds-bg);
+  border:1px solid var(--ds-border-strong);
+  color:var(--ds-fg);
+  font-family:var(--font-ui);
+}
+.field:focus,select:focus,input:focus,textarea:focus{
+  border-color:var(--ds-secondary);
+  box-shadow:0 0 0 3px hsl(188 36% 31% / .18);
+}
+::placeholder{color:var(--ds-fg-subtle);}
+
+/* ---------- Specificity bridge ------------------------------------------
+   The inline stylesheet carries `html[data-theme="light"] …` overrides that
+   outrank a bare class selector. These restate the design-system treatment at
+   equal-or-higher specificity so light mode matches dark mode.
+   ------------------------------------------------------------------------ */
+
+/* The defect focus select paints its own chevron + gradient; replace both. */
+.defect-focus-select,
+html[data-theme="light"] .defect-focus-select{
+  background-color:var(--ds-card-2);
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23707b87' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 8px center;
+  background-size:14px;
+  border-color:var(--ds-border);
+  border-radius:var(--radius-md);
+  color:var(--ds-fg);
+  box-shadow:none;
+}
+
+html[data-theme="light"] .category-camera-btn,
+html[data-theme="light"] .select-toggle-btn,
+html[data-theme="light"] .export-btn,
+html[data-theme="light"] .calib-add{
+  background:var(--ds-card-2);
+  border-color:var(--ds-border);
+  color:var(--ds-fg);
+  box-shadow:none;
+}
+html[data-theme="light"] .category-camera-btn:hover,
+html[data-theme="light"] .select-toggle-btn:hover{background:var(--ds-muted);}
+html[data-theme="light"] h2{color:var(--ds-fg);}
+html[data-theme="light"] .defect-focus-select{background-color:var(--ds-card-2);}
+
+/* ---------- Status pills ------------------------------------------------ */
+
+/* Compact, fully rounded, one clear tone. Never used to imply a road match
+   that has not actually been confirmed. */
+.status,.status-pill,.photo-status,.dataset-state-label{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 9px;
+  border-radius:var(--radius-full);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.status.ok,.status-fresh{
+  color:hsl(182 42% 62%);
+  background:hsl(186 27% 23%);
+}
+.status.warn,.status-warn{
+  color:hsl(43 96% 62%);
+  background:hsl(40 60% 18%);
+}
+.status.err,.status-bad{
+  color:hsl(2 70% 72%);
+  background:hsl(2 40% 20%);
+}
+html[data-theme="light"] .status.ok{color:hsl(188 46% 22%);background:hsl(183 49% 87%);}
+html[data-theme="light"] .status.warn{color:hsl(35 72% 26%);background:hsl(42 82% 86%);}
+html[data-theme="light"] .status.err{color:hsl(2 66% 32%);background:hsl(2 70% 92%);}
+
+/* ---------- Header ------------------------------------------------------- */
+
+/* The masthead stays a dark instrument surface in BOTH themes: the KMTrack
+   wordmark asset is white, so a cream header would erase the brand. */
+header,.top-shell header{
+  background:var(--ds-sidebar);
+  border-bottom:1px solid hsl(214 19% 24%);
+  box-shadow:none;
+}
+html[data-theme="light"] header{
+  background:var(--ds-sidebar);
+  border-bottom-color:hsl(214 19% 24%);
+}
+.header-copy .sub,
+html[data-theme="light"] header .sub{color:hsl(214 12% 68%);letter-spacing:.08em;}
+#storage-status:not([hidden]),
+html[data-theme="light"] #storage-status:not([hidden]){color:hsl(214 12% 68%);}
+
+.theme-toggle,.map-theme-toggle{
+  background:hsl(214 34% 14%);
+  border:1px solid hsl(214 19% 27%);
+  color:hsl(40 22% 92%);
+}
+.theme-toggle:hover,.map-theme-toggle:hover{background:hsl(214 27% 19%);}
+html[data-theme="light"] .theme-toggle,
+html[data-theme="light"] .map-theme-toggle{
+  background:hsl(214 34% 14%);
+  border-color:hsl(214 19% 27%);
+  color:hsl(40 22% 92%);
+}
+
+/* ---------- Dataset drawer ---------------------------------------------- */
+
+.dataset-drawer{
+  background:var(--ds-card);
+  border:1px solid var(--ds-border);
+  border-top:0;
+  box-shadow:var(--ds-shadow-sm);
+}
+.dataset-drawer>summary{color:var(--ds-fg);}
+.dataset-panel{background:var(--ds-bg-2);border:1px solid var(--ds-border);}
+.dataset-state-dot{background:var(--ds-fg-subtle);}
+.dataset-drawer.loaded .dataset-state-dot{background:var(--ds-secondary);}
+
+/* ---------- Defect capture ---------------------------------------------- */
+
+/* Category colour still identifies the defect type (a real field affordance);
+   the tokens are simply pulled into the instrument palette. */
+.category-label .category-label-text{color:var(--ds-fg);}
+.category-sub,.lane-btn.others-btn .others-sub{color:var(--ds-fg-muted);}
+
+.defect-gate{
+  background:var(--ds-accent);
+  border:1px solid var(--ds-border);
+  color:var(--ds-accent-fg);
+}
+html[data-theme="light"] #defect-section.gps-pending .defect-gate{
+  background:var(--ds-accent);
+  border-color:hsl(188 36% 31% / .28);
+  color:var(--ds-accent-fg);
+}
+
+.category-camera-btn{
+  background:var(--ds-card-2);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg-muted);
+}
+.category-camera-btn:hover{background:var(--ds-muted);color:var(--ds-fg);}
+
+/* ---------- Log ---------------------------------------------------------- */
+
+.log-entry{border:1px solid var(--ds-border);}
+.log-entry .info .type{color:var(--ds-fg);}
+.log-entry .info .meta{color:var(--ds-fg-muted);}
+.log-empty{color:var(--ds-fg-subtle);}
+.count-bar{color:var(--ds-fg-muted);border-color:var(--ds-border);}
+.log-entry.selected{border-color:var(--ds-primary);box-shadow:0 0 0 2px hsl(43 96% 52% / .25);}
+
+/* ---------- Tab bar ------------------------------------------------------ */
+
+/* Rectangular tray preserved; only the selected tab is highlighted.
+   Widened from two columns to four now that Tools and Settings exist. */
+.app-tab-bar{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px;
+  background:var(--ds-card);
+  border:1px solid var(--ds-border);
+  border-bottom:0;
+  box-shadow:var(--ds-shadow-sm);
+}
+html[data-theme="light"] .app-tab-bar{background:var(--ds-card);border-color:var(--ds-border);}
+.app-tab-btn{
+  min-width:0;
+  padding:3px 2px;
+  color:var(--ds-fg-muted);
+}
+.app-tab-btn span{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.app-tab-btn.active{
+  color:var(--ds-primary-fg);
+  background:var(--ds-primary);
+}
+html[data-theme="light"] .app-tab-btn{color:var(--ds-fg-muted);}
+html[data-theme="light"] .app-tab-btn.active{
+  background:var(--ds-primary);
+  color:var(--ds-primary-fg);
+}
+
+/* ---------- Map ---------------------------------------------------------- */
+
+.map-topbar{background:var(--ds-card);border-color:var(--ds-border);}
+.map-title{color:var(--ds-fg);}
+.map-status{color:var(--ds-fg-muted);}
+.map-entry-controls{background:var(--ds-card);border-color:var(--ds-border);}
+html[data-theme="light"] .map-topbar{background:var(--ds-card);}
+html[data-theme="light"] .map-status{color:var(--ds-fg-muted);}
+html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-toggle{
+  background:var(--ds-card-2);border-color:var(--ds-border);color:var(--ds-fg);
+}
+
+/* ---------- Tools & Settings views -------------------------------------- */
+
+.tools-view,.settings-view{
+  max-width:520px;
+  margin:0 auto;
+  padding:14px;
+}
+.ds-view-head{padding:4px 2px 12px;}
+.ds-view-head .eyebrow{display:block;margin-bottom:6px;}
+.ds-view-head h2{margin:0 0 4px;}
+.ds-view-head p{
+  margin:0;
+  font-size:13px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+}
+.ds-card{
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  margin-bottom:12px;
+}
+.ds-card-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ds-fg);
+  margin-bottom:2px;
+}
+.ds-card-title .ds-card-icon{
+  width:28px;height:28px;flex:0 0 28px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-sm);
+  background:var(--ds-accent);
+  color:var(--ds-accent-fg);
+}
+.ds-card-hint{
+  font-size:12.5px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+  margin:0 0 10px;
+}
+.ds-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.ds-row .export-btn,.ds-row .select-toggle-btn{min-height:42px;}
+.ds-field{margin-bottom:10px;}
+.ds-field:last-child{margin-bottom:0;}
+.ds-field label{
+  display:block;
+  margin-bottom:5px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.ds-note{
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:var(--radius-sm);
+  background:var(--ds-muted);
+  color:var(--ds-fg-muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.ds-status-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12.5px;
+  color:var(--ds-fg-muted);
+}
+
+/* The toggle was pinned to the masthead corner; inside a Settings card it
+   participates in normal flow. */
+.settings-view .theme-toggle,
+html[data-theme="light"] .settings-view .theme-toggle{
+  position:static;
+  width:42px;height:42px;
+  background:var(--ds-card-2);
+  border:1px solid var(--ds-border);
+  color:var(--ds-fg);
+  box-shadow:none;
+}
+.settings-view .theme-toggle:hover{background:var(--ds-muted);}
+
+/* The dataset drawer was a panel hanging off the masthead; inside Settings it
+   becomes an inline disclosure so it stops floating over the page. */
+.settings-view .dataset-drawer,
+html[data-theme="light"] .settings-view .dataset-drawer{
+  position:static;
+  margin:0;
+  width:auto;
+  background:var(--ds-bg-2);
+  border:1px solid var(--ds-border);
+  border-radius:var(--radius-md);
+  box-shadow:none;
+}
+.settings-view .dataset-drawer>summary{
+  min-height:0;
+  padding:11px 12px;
+  color:var(--ds-fg);
+}
+html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-fg);}
+.settings-view .dataset-content{
+  grid-template-columns:1fr;
+  padding:0 12px 12px;
+}
+.settings-view .dataset-panel{
+  background:var(--ds-card);
+  border-color:var(--ds-border);
+}
+.settings-view .dataset-panel-title{color:var(--ds-fg);}
+
+/* Import feedback lives with the import controls now. */
+#import-status:not(:empty){
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:var(--radius-sm);
+  background:var(--ds-muted);
+  color:var(--ds-fg-muted);
+  font-size:12px;
+  line-height:1.5;
+}
+#storage-status:not([hidden]){
+  margin:0;
+  color:var(--ds-fg-muted);
+  font-size:12.5px;
+  white-space:normal;
+}
+
+/* ---------- Motion & accessibility -------------------------------------- */
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+}

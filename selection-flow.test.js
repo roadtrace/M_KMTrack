@@ -13,7 +13,11 @@ test('first Select press enters mode without selecting entries',()=>{
 });
 
 test('Select stays text-based beside Export and becomes Cancel in selection mode',()=>{
-  assert.match(controls,/footer\.append\(count,toggle,exportMenu,selectAll,deleteSelected\)/);
+  // Export now lives in the Tools tab; Select and the bulk actions stay in the
+  // log footer because they operate on the log.
+  assert.match(controls,/footer\.append\(count,toggle,selectAll,deleteSelected\)/);
+  assert.match(controls,/getElementById\('tools-export-actions'\)/);
+  assert.doesNotMatch(controls,/footer\.append\([^)]*exportMenu/);
   assert.match(controls,/toggle\.textContent = selectMode \? 'Cancel' : 'Select'/);
   assert.match(controls,/toggle\.removeAttribute\('aria-checked'\)/);
   assert.match(css,/#select-toggle-btn\{[^}]*width:auto[^}]*font-size:12px/);

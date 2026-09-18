@@ -332,3 +332,260 @@ Location matching retains a confirmed corridor instead of selecting the globally
 When the vehicle remains close to a calibrated through-road inside an interchange footprint, the station card continues to show that corridor and KM—for example Segment 8.1 passing over Smart Connect or NLEX passing beneath it. When the confirmed vehicle track departs the calibrated corridor but remains on a supplied interchange line, the left side changes from **Current KM Station** to **Current Location**, displays the interchange/exit name, and intentionally omits KM. An explicit QGIS `ramp`/`seg_type` label is displayed and exported when available; otherwise the honest fallback is `Ramp / interchange roadway`, with the inspector-selected lane (such as Acce or Dece) providing the operational detail. Saved interchange records retain the confirmed corridor and bound while leaving KM blank. Excel adds backward-compatible `Interchange / Exit` and `Interchange Segment` columns.
 
 The supplied GeoPackage currently has no populated `from_node` or `to_node` values, only one populated `level`, and almost no corridor/bound/travel classification. Therefore the app does not infer graph connections from crossing lines. The conservative switching evidence above is deliberately limited to sustained motion near the supplied interchange geometry; authoritative node, level, and connected-corridor attributes are still required for deterministic ramp-by-ramp routing.
+
+## Design system layer and four-tab shell (2026-09-17)
+
+**This section supersedes the earlier "Gradient Identity Rule" and the green
+station treatment.** The change is an explicit, user-approved direction change
+based on a reference design system, not a reinstatement of the previously
+rejected flat restyle. It is recorded here deliberately, per the Do's list
+above.
+
+### Where the new styling lives
+
+The design system is implemented in a single new stylesheet,
+`design-system.css`, loaded **after** `radius-system.css`, `sharing.css`,
+`photo-viewer.css`, and `map-overlays.css`, so it is last in the cascade. It
+retunes the existing root token layer and restates component treatments at
+equal-or-higher specificity. It does **not** redefine the radius scale.
+
+An explicit "specificity bridge" block exists because the inline stylesheet
+carries `html[data-theme="light"] …` rules that outrank a bare class selector.
+Any future light-mode fix should be added to that block rather than inlined.
+
+### Palette
+
+Legacy token names are preserved and remapped onto the new ramp, so existing
+rules inherit automatically: `--asphalt`, `--asphalt-2`, `--panel`,
+`--panel-raised`, `--surface-soft`, `--line-white`, `--text-muted`,
+`--text-subtle`, `--border`, `--border-strong`, `--line-yellow`, `--safety-red`.
+
+| Token | Dark (default) | Light |
+| --- | --- | --- |
+| `--ds-bg` | `hsl(214 35% 11%)` | `hsl(42 25% 93%)` |
+| `--ds-bg-2` | `hsl(214 34% 14%)` | `hsl(42 27% 90%)` |
+| `--ds-card` | `hsl(214 30% 15%)` | `hsl(42 28% 97%)` |
+| `--ds-card-2` | `hsl(214 27% 19%)` | `hsl(42 32% 99%)` |
+| `--ds-muted` | `hsl(214 22% 22%)` | `hsl(40 16% 87%)` |
+| `--ds-sidebar` | `hsl(214 40% 8%)` | `hsl(214 34% 16%)` |
+| `--ds-fg` | `hsl(40 22% 92%)` | `hsl(214 34% 16%)` |
+| `--ds-fg-muted` | `hsl(214 12% 68%)` | `hsl(214 13% 41%)` |
+| `--ds-border` | `hsl(214 19% 27%)` | `hsl(39 17% 80%)` |
+| `--ds-primary` (amber) | `hsl(43 96% 52%)` | `hsl(43 96% 52%)` |
+| `--ds-secondary` (teal) | `hsl(182 42% 49%)` | `hsl(188 36% 31%)` |
+| `--ds-accent` | `hsl(186 27% 23%)` | `hsl(183 49% 87%)` |
+| `--ds-destructive` | `hsl(2 70% 55%)` | `hsl(2 66% 47%)` |
+
+**The Role Rule.** Amber advances an inspection, teal verifies it, red destroys
+it. Amber is reserved for the single primary action in a surface; `Export` was
+previously painted `--safety-green` in `sharing.css` and now takes amber.
+
+### Typography
+
+`--font-ui` is **Space Grotesk** (variable 300–700) and `--font-readout` is
+**DM Mono** (400/500), both self-hosted under `fonts/` with latin and latin-ext
+subsets and matching OFL license files. Coordinates, stations, timestamps and
+other evidence values are mono with tabular numerals. Field and status labels
+use a 10px uppercase eyebrow with `.16em` tracking. The earlier `Inter` face and
+its `@font-face` remain in place but are no longer the primary UI font.
+
+### Tab shell
+
+The bottom tray is now four columns — **Inspection | Map | Tools | Settings** —
+instead of two. The tray stays rectangular and only the selected tab is
+highlighted (amber). `showAppView()` is driven by an `APP_VIEW_IDS` map rather
+than the previous hardcoded two-view branch.
+
+Data controls were relocated into the new tabs, which supersedes the earlier
+"preserve current button locations" instruction for these specific controls:
+
+- **Tools** holds `Import`, the export trigger, `Imported files`, and import
+  status. The `#export-btn` / `#backup-btn` elements deliberately remain in the
+  markup inside `.export-actions`, because `log-controls.js` adopts them into
+  the export-format dialog; that script now mounts its export trigger into
+  `#tools-export-actions` and leaves Select and the bulk actions with the log
+  they operate on.
+- **Settings** holds the theme toggle, the network/interchange dataset drawer,
+  and storage status. The theme toggle is `position:static` inside its card; it
+  was previously pinned to the masthead corner.
+- The masthead keeps only the brand and the clock. It stays a **dark** surface
+  in both themes, because the `KMTrack.png` wordmark is white and would be
+  illegible on the light `--ds-card`.
+
+### Surfaces and preserved behaviour
+
+Cards are quiet panels — hairline border, card fill, one soft shadow. The
+KM-station card briefly used a dark evidence surface with amber rings and a
+hazard stripe; that treatment was removed when the panel was merged (see below),
+because the reference system reserves dark surfaces for its *capture* card, not
+for readout metrics.
+
+Deliberately preserved: the restored corner values and radius scale (protected
+by `AGENTS.md`; this layer never re-tunes radii), per-defect colour coding, and
+all GPS, camera, storage, import/export, and offline behaviour. The dimmed
+`gps-pending` appearance remains the pre-existing `opacity:.35` on
+`.defect-category`, unchanged by this layer.
+
+`sw.js` is bumped to `v145` and caches `design-system.css` plus the six new
+font files.
+
+### Merged instrument panel (2026-09-17)
+
+The former `.readout` (latitude, longitude, accuracy, points logged, bound) and
+`.kmpost` (station, nearby bridge) are now **one** panel,
+`section.kmpost.instrument-panel`, restyled after the reference metric card:
+
+1. **Status strip** — the road-match/GPS trust pill, today's saved count, and
+   the bridge-classification filter (previously pinned to the card corner).
+2. **2x2 metric grid** — a vertical rule between columns, a small line icon per
+   label, and no horizontal rule between rows — `CURRENT KM STATION` /
+   `CORRIDOR` / `ACCURACY` / `BOUND`.
+3. **Nearby bridge** row, kept as its own row so the bridge feature and its
+   classification filter are not lost in the merge.
+4. **Coordinate footer** in mono, carrying latitude and longitude.
+
+The panel is **theme-aware** (`--ds-card` / `--ds-border` / `--ds-fg`): light in
+light mode, dark in dark mode, matching the reference rather than the app's
+previous always-dark hero card.
+
+#### Exact reference measurements
+
+These values were read from the live reference app with `getComputedStyle`
+(390px viewport, matching state) rather than estimated, and the local panel
+copies them literally. The extra `--radius-card:14px` token exists solely for
+this card.
+
+| Element | Reference class | Resolved value |
+| --- | --- | --- |
+| Card | `panel overflow-hidden` | radius 14px, `1px` border, `--ds-card`, padding 0 |
+| Header | `px-4 py-4 bg-[hsl(var(--muted)/.65)]` | padding 16px, gap 16px, **no bottom border** |
+| Header tint | — | `hsl(var(--muted)/.65)` — the tint alone separates it from the metrics |
+| Metric cell | `min-w-0 px-3 py-3 first:pl-4` | padding 12px, first cell 16px left |
+| Cell separators | `grid grid-cols-2 divide-x` | vertical rule between columns only |
+| Metric label | `gap-1.5 text-[10px] font-bold uppercase tracking-wider` | 10px/700, tracking `.05em`, gap 6px, line-height 1.5 |
+| Metric value | `mt-1 truncate font-mono text-[13px] font-medium` | **13px**/500 DM Mono, line-height 1.5, margin-top 4px |
+| Footer | `border-t px-4 py-3 font-mono text-[11px]` | 11px DM Mono, padding 12px 16px, `1px` top border |
+
+**The No-Row-Separator Rule.** The reference grid uses `divide-x` and *not*
+`divide-y`: the vertical rule between the two columns must be kept, but there is
+deliberately **no horizontal rule between the top and bottom metric rows**.
+Do not add `border-top` to the second row of cells.
+
+#### Iconography
+
+Every glyph is taken verbatim from the reference app, which is built on
+**lucide**. The path data below was extracted from its live DOM; these are not
+redrawn approximations. All use `viewBox="0 0 24 24"`, `fill:none`,
+`stroke:currentColor`, `stroke-width:2`, round caps and joins.
+
+| Where | lucide name | Size |
+| --- | --- | --- |
+| Metric — stationing | `navigation` | 14px |
+| Metric — corridor | `route` | 14px |
+| Metric — accuracy | `gauge` | 14px |
+| Metric — bound | `compass` | 14px |
+| Tab — Inspection | `locate-fixed` | 19px |
+| Tab — Map | `map` | 19px |
+| Tab — Tools | `database` | 19px |
+| Tab — Settings | `settings` | 19px |
+
+Reference glyphs not yet used locally, available if wanted: `signal` (20px,
+status tile), `refresh-cw` (17px), `camera` (21px), `chevron-right` (18px),
+`shield-check` (14px), `clipboard-list` (21px), `crosshair` (23px, sw 2.5),
+`layers` / `user-round` / `activity` (16px).
+
+Every metric value — stationing included — is 13px mono. The stationing number
+is no longer the oversized hero figure it was in the pre-merge card.
+
+**Intentional deviations from the reference.** Two things differ on purpose,
+because the reference has no equivalent and the information is load-bearing:
+
+- The **nearby bridge** row, so bridge data and its classification filter
+  survive the merge.
+- The **station unit caption** (`#current-location-detail`), which reads
+  `kilometers (interpolated)` and becomes the interchange segment label in
+  interchange mode. It is styled at the muted 11px caption scale. Hiding it
+  would match the reference more literally but lose that context.
+
+The metric **cell order** also still differs: the reference runs
+`ACCURACY | CORRIDOR` over `STATION | BOUND`, while this app keeps stationing
+first because KM is the field-critical reading. Swapping the four cells in the
+markup is all that is needed to match the reference order exactly.
+
+Structural contracts this markup must keep, because the JavaScript depends on
+them:
+
+- The element keeps the `kmpost` class — `updateReadout()` calls
+  `#km-value.closest('.kmpost')` to toggle `interchange-mode`.
+- `#bound-toggle` must contain **only** dynamic content: `renderBoundToggle()`
+  overwrites its `innerHTML`, so the `BOUND` label lives outside it.
+- `#count-mini` remains in the DOM (in the status strip) because
+  `renderEntryCount`-style code writes to it directly; "points logged" is no
+  longer shown separately since the masthead already reports the same total.
+
+`instrument-panel.test.js` guards these contracts.
+
+## Brand identity — logo replacement (2026-09-17)
+
+**This supersedes the earlier instruction to treat the logo assets as
+immutable.** The replacement was explicitly commissioned by the product owner.
+`KMTrack.png` and `KMTrack_logo.png` are deliberately **retained** in the repo
+rather than deleted, so the previous identity can be restored or reused.
+
+### The mark
+
+An amber instrument tile carrying a **road running to a vanishing point**: a
+navy tapered road body with amber centre dashes cut out of it, so the tile
+colour reads as the painted centreline.
+
+Amber `#F5B400` on navy `#1B2737`, both taken from the existing design tokens
+(`--ds-primary`, `--ds-sidebar`). Tile corner is `13/48` of the tile, which
+keeps it in the same squircle family as `--radius-card`.
+
+The road geometry is: body `M21.6 11.2H26.4L35.2 38.8H12.8Z`, with three
+round-capped dashes on `x=24` at `y 33.8–37.4` (w 3.0), `25.6–28.6` (w 2.1)
+and `18.4–20.2` (w 1.4), all on a 48×48 grid.
+
+### The wordmark
+
+`KMTRACK`, outlined to paths so the files carry **no font dependency**. This
+matters: an SVG loaded through `<img>` cannot load a webfont, so `<text>` in an
+image-loaded logo would silently fall back to a system font. The outlines were
+generated from the real face with `fontkit`, not drawn by hand.
+
+### Assets
+
+| File | Use |
+| --- | --- |
+| `kmtrack-mark.svg` | Rounded tile mark — favicon, app icon, avatar |
+| `kmtrack-logo-on-dark.svg` | Horizontal lockup, cream wordmark — the masthead |
+| `kmtrack-logo-on-light.svg` | Horizontal lockup, navy wordmark — light surfaces |
+| `kmtrack-icon-192.png` / `-512.png` | PWA icons, full-bleed and maskable-safe |
+| `kmtrack-apple-touch-icon.png` | 180px Apple touch icon |
+
+The PWA icons are **full-bleed** (no transparent corners) with the road scaled
+to 0.78 and centred, holding it inside the 80% maskable safe circle so any
+platform mask crops it cleanly. The rounded tile is used only where
+transparency is safe.
+
+### Accepted trade-off: the road mark reads as an "A"
+
+This was measured, not assumed, and the owner chose the road mark with the
+finding in hand — so **this is a decision, not a defect. Do not "fix" it
+unprompted.**
+
+Four rounds of variants were rendered and reviewed:
+
+- Any symmetric narrow-top/wide-bottom shape in the tile reads as the letter
+  **"A"** — the road body, an outline-only variant, and a version with a
+  horizon bar all did.
+- Parallel-edged road pictograms read as a **ladder or barcode**.
+- A filled road band reads as a **stripe**; a curved road reads as a
+  **squiggle**.
+- A lane arrow and a reticle were the only pictograms that stayed legible at
+  16px, but both are generic; a **"K" monogram** was also built and reviewed
+  and had no failure mode, but the owner preferred the road.
+
+If the mark is ever revisited, expect these same perceptual failures.
+
+
