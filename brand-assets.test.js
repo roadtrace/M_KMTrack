@@ -31,10 +31,15 @@ test('the wordmark is outlined, not live text', () => {
 });
 
 test('the app shell uses the new marks', () => {
-  assert.match(html, /src="kmtrack-logo-on-dark\.svg"/);
+  // The header uses the MARK plus a text wordmark, because the map swaps that
+  // text for the live station / coordinates / accuracy. The outlined lockups
+  // remain brand assets but are no longer referenced by the shell.
+  assert.match(html, /class="header-logo" src="kmtrack-mark\.svg"/);
+  assert.match(html, /id="header-wordmark"/);
   assert.match(html, /rel="icon"[^>]*href="kmtrack-mark\.svg"/);
   assert.match(html, /apple-touch-icon[^>]*href="kmtrack-apple-touch-icon\.png"/);
   assert.doesNotMatch(html, /src="KMTrack\.png"/);
+  assert.doesNotMatch(html, /src="kmtrack-logo-on-dark\.svg"/);
 });
 
 test('the manifest points at the new PWA icons', () => {

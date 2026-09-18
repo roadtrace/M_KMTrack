@@ -55,9 +55,14 @@ test('cell order matches the reference: accuracy, corridor, station, bound',()=>
   const order = ['Accuracy','Corridor','metric-station','Bound'].map((m)=>grid.indexOf(m));
   assert.ok(order.every((i)=>i>=0),'all four metric cells must be present');
   assert.deepEqual(order,[...order].sort((a,b)=>a-b),'cells must appear in reference order');
-  // Stationing is the one value larger than the reference scale.
-  assert.match(design,/\.instrument-metrics \.metric-station \.kmvalue[\s\S]*?font-size:clamp\(/);
-  assert.match(design,/\.instrument-metrics \.metric-value\{[^}]*font-size:13px/);
+  // Every value uses the reference's ONE value scale: `mt-1 truncate font-mono
+  // text-[13px] font-medium`. No metric gets its own size.
+  assert.match(design,/\.instrument-metrics \.kmvalue,\n\.instrument-metrics \.metric-value,\n\.instrument-metrics \.segment-tag\{[\s\S]{0,320}?font-size:13px/);
+  assert.doesNotMatch(design,/\.metric-station \.kmvalue[\s\S]{0,80}?font-size:clamp\(/);
+  // The interchange row sits BELOW the metric grid, full width.
+  assert.ok(grid.indexOf('instrument-interchange') > grid.indexOf('Bound'),'interchange row is below the grid');
+  assert.match(design,/\.instrument-interchange\{[\s\S]{0,240}?border-top:1px solid var\(--ds-border\)/);
+  assert.match(design,/\.instrument-interchange:not\(:has\(\.ramp-tag\.show\)\)\{display:none;\}/);
 });
 
 test('#bound-toggle keeps only dynamic content',()=>{

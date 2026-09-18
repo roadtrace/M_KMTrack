@@ -5,6 +5,14 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const MAX_BYTES=250*1024*1024, MAX_ENTRIES=10000;
+  /* Reuse the canonical entry model — the browser global, or require() under
+   * Node — so the lane rule and the sync fields cannot drift from the app. */
+  const entryModel=(function(){
+    try{ if(typeof module==='object'&&module.exports) return require('./entry-model.js'); }catch(e){ /* browser */ }
+    if(typeof KMTrackEntry!=='undefined') return KMTrackEntry;
+    return null;
+  })();
+  const SYNC_STATUS=(entryModel&&entryModel.SYNC_STATUS)||{PENDING:'pending'};
   const textFields=['type','timestamp','expressway','interchange','interchangeSegment','bound','lane','photoFilename','photoTimestamp','inspector','notes'];
   function normalize(row){
     if(!row || typeof row!=='object' || Array.isArray(row)) throw Error('Invalid inspection record.');
@@ -21,11 +29,23 @@
       result[field]=String(row[field]||'');
       if(result[field].length>4000) throw Error('Inspection text is too long.');
     }
+    /* `lane` is left exactly as imported so the legacy contract and the
+     * fingerprint are untouched; the structured pair is derived alongside it. */
+    const lane=entryModel?entryModel.laneFields(result.lane):{lane_number:null,lane_other:''};
     return {...result,lat:row.lat,lon:row.lon,km:row.km??null,
       id:typeof row.id==='string'?row.id:'',originId:typeof row.originId==='string'?row.originId:'',
       photoId:typeof row.photoId==='string'?row.photoId:'',
       archivePhotoPath:typeof row.archivePhotoPath==='string'?row.archivePhotoPath:'',
-      photoAvailable:row.photoAvailable===true};
+      photoAvailable:row.photoAvailable===true,
+      lane_number:lane.lane_number,lane_other:lane.lane_other,
+      photo_path:typeof row.photo_path==='string'?row.photo_path:'',
+      user_id:typeof row.user_id==='string'?row.user_id:'',
+      team:typeof row.team==='string'?row.team:'',
+      created_at:typeof row.created_at==='string'?row.created_at:'',
+      updated_at:typeof row.updated_at==='string'?row.updated_at:'',
+      /* Imported history starts as pending work; the future queue upserts by
+       * UUID, so re-sending it can never duplicate a cloud row. */
+      sync_status:SYNC_STATUS.PENDING};
   }
   // Legacy workbooks round KM to three decimals and have no stable IDs.
   function fingerprint(row){

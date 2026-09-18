@@ -361,11 +361,16 @@ html[data-theme="light"] .kmpost.instrument-panel{
   fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;
 }
-/* Anchored to the bridge row and opening downward, clear of the row it
-   belongs to. The panel no longer clips, so it can extend past the card. */
 .instrument-panel .nearby-asset{position:relative;}
-.instrument-panel .bridge-filter-menu{
-  top:calc(100% + 6px);
+/* Anchored to the bridge row and opening just below it.
+   `html:root` is required: sharing.css sets `html:root .bridge-filter-menu
+   {top:52px}`, which outranks a bare `.instrument-panel` chain and left the
+   menu opening 52px down — i.e. INSIDE the row it belongs to.
+
+   `max-height` here is only a fallback. The real cap is measured at open time by
+   `fitBridgeFilterMenu()`, because it depends on where the defect buttons land. */
+html:root .instrument-panel .bridge-filter-menu{
+  top:calc(100% + 8px);
   right:0;
   bottom:auto;
   left:auto;
@@ -420,10 +425,11 @@ html[data-theme="light"] .kmpost.instrument-panel{
 /* Tab glyphs are the reference's nav icons: locate-fixed / map / database /
    settings, 19px, stroke-width 2. */
 .app-tab-btn svg{width:19px;height:19px;stroke-width:2;}
-/* Reference value line: `mt-1 truncate font-mono text-[13px] font-medium`
-   for every metric, stationing included. */
+/* Reference Metric: every value is `mt-1 truncate font-mono text-[13px]
+   font-medium`. No metric — stationing included — gets its own scale. */
 .instrument-metrics .kmvalue,
-.instrument-metrics .metric-value{
+.instrument-metrics .metric-value,
+.instrument-metrics .segment-tag{
   font-family:var(--font-readout);
   font-variant-numeric:tabular-nums;
   font-size:13px;
@@ -435,47 +441,53 @@ html[data-theme="light"] .kmpost.instrument-panel{
   text-overflow:ellipsis;
   color:var(--ds-fg);
 }
-/* Stationing is the one value deliberately larger than the reference scale:
-   it is the field-critical reading on this panel. */
-.instrument-metrics .metric-station .kmvalue,
-.instrument-panel.interchange-mode .kmvalue{
-  font-size:clamp(18px,5.4vw,21px);
-  font-weight:500;
-  line-height:1.2;
-  margin-top:3px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-/* Corridor reads as a value, not a badge; .faroff keeps its warning meaning. */
+/* Corridor reads as a value, not a badge. `.faroff` keeps its warning colour. */
 .instrument-metrics .segment-tag{
   display:block;
-  margin-top:4px;
   padding:0;
   background:none;
   border:0;
   border-radius:0;
-  font-family:var(--font-ui);
-  font-size:14px;
-  font-weight:700;
   letter-spacing:0;
-  line-height:1.3;
-  white-space:normal;
-  overflow-wrap:anywhere;
-  color:var(--ds-fg);
 }
 .instrument-metrics .segment-tag.faroff{
   background:none;
   color:hsl(35 72% 32%);
 }
-.instrument-metrics .ramp-tag{
-  background:var(--ds-accent);
-  border:1px solid hsl(182 42% 49% / .45);
-  color:var(--ds-accent-fg);
-  border-radius:var(--radius-sm);
-  padding:4px 8px;
-  font-size:11px;
-  margin-top:6px;
+/* Reference: a full-width row under the grid —
+   `flex items-center gap-2 border-t border-[hsl(var(--border))] px-4 py-3
+    text-xs`, a 14px icon, a muted label and the name pushed right in bold. */
+.instrument-interchange{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  border-top:1px solid var(--ds-border);
+  padding:12px 16px;
+  font-size:12px;
+  line-height:1.4;
+}
+/* updateRampReadout() marks the name as shown; the whole row follows it. */
+.instrument-interchange:not(:has(.ramp-tag.show)){display:none;}
+.instrument-interchange .interchange-icon{color:var(--ds-secondary);}
+.instrument-interchange span{color:var(--ds-fg-muted);}
+.instrument-interchange .ramp-tag{
+  margin-top:0;
+  margin-left:auto;
+  /* The inline sheet paints .kmpost .ramp-tag as an accent CHIP. Every one of
+     those has to be reset or the name renders as a filled pill. */
+  padding:0;
+  background:none;
+  border:0;
+  border-radius:0;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:700;
+  color:var(--ds-fg);
 }
 .instrument-metrics .bound-toggle{
   flex-direction:row;
@@ -559,6 +571,10 @@ html[data-theme="light"] .kmpost.instrument-panel{
 
 /* Reference footer: `border-t px-4 py-3 font-mono text-[11px]`. */
 .instrument-foot{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:baseline;
+  gap:8px;
   border-top:1px solid var(--ds-border);
   padding:12px 16px;
 }
@@ -569,6 +585,170 @@ html[data-theme="light"] .kmpost.instrument-panel{
   font-weight:400;
   line-height:1.5;
   color:var(--ds-fg-muted);
+}
+/* The header is global now, so the map fills the viewport minus the tab tray AND
+   the header. The header's height moves with the safe-area inset and the logo,
+   so it is measured into --app-header-h rather than hard-coded here. */
+.map-view{
+  height:calc(100dvh - var(--app-header-h,0px) - 56px - env(safe-area-inset-bottom));
+}
+
+/* The date/time and saved count live here now, not in the header. Children are
+   `flex:0 0 auto` so fitInstrumentFoot() measures true intrinsic widths rather
+   than flex-squeezed ones. */
+.instrument-foot > *{flex:0 0 auto;min-width:0;}
+.foot-clock{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:11px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+  white-space:nowrap;
+}
+.foot-saved[hidden]{display:none;}
+
+/* ---------- Global header ------------------------------------------------
+   Shown on every tab. The brand is the mark plus a TEXT wordmark rather than the
+   outlined lockup, because the map swaps that text for the live station /
+   coordinates / accuracy. */
+.top-shell{position:sticky;top:0;z-index:30;}
+/* Exact reference header markup:
+     flex items-center justify-between border-b border-[hsl(var(--border))]
+     bg-[hsl(var(--background)/.93)] px-4 pb-3 pt-3 backdrop-blur   +  .safe-top
+   Every one of those had to be set explicitly: the inline sheet paints an
+   opaque navy gradient with rounded bottom corners and a shadow, and background
+   / border-radius / box-shadow only reset when declared. */
+/* `html:root` is required, not optional. Two legacy rules outrank a bare
+   `.top-shell header` chain:
+     - index.html `html[data-theme="light"] header{background: …gradient…}` (0,1,2)
+     - radius-system.css `html:root header{border-radius:0 0 24px 24px}` (0,1,2)
+   Both styled the old dark masthead. Without the prefix the light theme keeps
+   its navy gradient and the rounded bottom corners. */
+html:root .top-shell header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:0;
+  border-bottom:1px solid var(--ds-border);
+  background:color-mix(in srgb, var(--ds-bg) 93%, transparent);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-radius:0;
+  box-shadow:none;
+  padding:12px 16px;
+  padding-top:max(12px, env(safe-area-inset-top));
+}
+.header-brand{
+  display:flex;
+  /* The inline sheet makes this a centred COLUMN (logo above the clock). The
+     header is one left-aligned row, so every one of those has to be reset —
+     declaring only `display` leaves the column direction in place. */
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  width:auto;
+  gap:12px;
+  min-width:0;
+  flex:0 1 auto;
+}
+.header-logo{
+  width:40px;
+  height:40px;
+  max-width:none;
+  flex:0 0 40px;
+  object-position:left center;
+}
+/* Reference Brand: `text-[17px] font-bold leading-none tracking-[-.05em]` with
+   the second half in --primary. The header follows the theme, so this is
+   token-driven rather than hard-coded white. */
+.header-wordmark{
+  font-family:var(--font-ui);
+  font-size:17px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:-.05em;
+  color:var(--ds-fg);
+  white-space:nowrap;
+}
+.header-track{color:var(--ds-primary);}
+.header-wordmark[hidden]{display:none;}
+.header-context{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.header-context[hidden]{display:none;}
+.header-context .map-title{
+  font-family:var(--font-readout);
+  font-size:15px;
+  font-weight:500;
+  line-height:1.3;
+  color:var(--ds-fg);
+}
+.header-context .map-status{
+  font-family:var(--font-readout);
+  font-size:11px;
+  line-height:1.3;
+  color:var(--ds-fg-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* Reference right-hand group: `flex items-center gap-2`. */
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+/* Reference `.status-pill .status-bad` — the off-network tone — verbatim. */
+.header-net{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;
+  padding:5px 9px;
+  border-radius:999px;
+  font-family:var(--font-ui);
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+  color:hsl(2 65% 37%);
+  background:hsl(2 71% 91%);
+}
+html[data-theme="dark"] .header-net{
+  color:hsl(2 82% 79%);
+  background:hsl(2 34% 22%);
+}
+.header-net[hidden]{display:none;}
+.header-net .net-dot{font-size:9px;line-height:1;}
+/* Reference `.btn .btn-ghost !min-h-9 !px-2` — transparent, no border, 36px. */
+.header-refresh{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:36px;
+  padding:0 8px;
+  border:1px solid transparent;
+  border-radius:10px;
+  background:transparent;
+  color:var(--ds-fg-muted);
+  font-weight:700;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.header-refresh:active{opacity:.6;}
+.header-refresh:disabled{opacity:.42;cursor:progress;}
+.header-refresh::before{
+  content:'';
+  width:17px;
+  height:17px;
+  background-color:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-3.1-6.8'/%3E%3Cpath d='M21 4v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-3.1-6.8'/%3E%3Cpath d='M21 4v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
 /* The panel is theme-aware, so it must also outrank the inline light-theme
@@ -745,19 +925,16 @@ html[data-theme="light"] .status.ok{color:hsl(188 46% 22%);background:hsl(183 49
 html[data-theme="light"] .status.warn{color:hsl(35 72% 26%);background:hsl(42 82% 86%);}
 html[data-theme="light"] .status.err{color:hsl(2 66% 32%);background:hsl(2 70% 92%);}
 
-/* ---------- Header ------------------------------------------------------- */
+/* ---------- Header -------------------------------------------------------
 
-/* The masthead stays a dark instrument surface in BOTH themes: the KMTrack
-   wordmark asset is white, so a cream header would erase the brand. */
-header,.top-shell header{
-  background:var(--ds-sidebar);
-  border-bottom:1px solid hsl(214 19% 24%);
-  box-shadow:none;
-}
-html[data-theme="light"] header{
-  background:var(--ds-sidebar);
-  border-bottom-color:hsl(214 19% 24%);
-}
+   Superseded. The header now FOLLOWS the theme, exactly like the reference
+   (`bg-[hsl(var(--background)/.93)]`), and is styled in one place: the
+   "Global header" block near the top of this file.
+
+   A rule used to force a dark navy masthead in BOTH themes here, because the
+   brand was then a white SVG wordmark that a cream header would have erased.
+   The brand is now the mark plus themed text, so that no longer applies — do
+   not re-add it. */
 .header-copy .sub,
 html[data-theme="light"] header .sub{color:hsl(214 12% 68%);letter-spacing:.08em;}
 #storage-status:not([hidden]),
@@ -1029,32 +1206,243 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   stroke-linecap:round;stroke-linejoin:round;
 }
 
-/* Select pairs with the records chip in the Log tab's head: `[N records]` on the
-   left, `[Select]` on the right. It used to live in the removed
-   `.log-action-footer` panel, then floated alone on a row of its own. */
+/* `[hidden]` alone loses to these components' `display` declarations, which
+   would leave the sync chip rendering as an empty dot and the "Imported files"
+   button showing with no history behind it. */
+.ds-chip[hidden],.ds-btn[hidden]{display:none;}
+
+/* Sync indicator. Deliberately quiet: it is only rendered when there is
+   something actionable (a failure, or pending work with a live transport), so
+   it stays out of the way while everything is simply saved on this device. */
+.ds-chip-sync{gap:7px;font-size:11px;}
+.ds-chip-sync .sync-dot{
+  width:7px;height:7px;flex:0 0 7px;
+  border-radius:var(--radius-full);
+  background:var(--ds-fg-subtle);
+}
+.ds-chip-sync.is-error{color:var(--ds-destructive);}
+.ds-chip-sync.is-error .sync-dot{background:var(--ds-destructive);}
+
+/* Title and records chip share one row, chip flushed right. Measured with real
+   text metrics: the title runs 182px and the chip 99px idle / 129px selecting,
+   against 358px available at 390px — so this holds at phone widths without the
+   chip wrapping to its own line. */
 .log-head-row{
   display:flex;
-  flex-wrap:wrap;
-  align-items:center;
+  align-items:baseline;
+  justify-content:space-between;
   gap:12px;
-  justify-content:flex-start;
+  min-width:0;
 }
+.log-head-row h2{min-width:0;}
 .log-head-row .ds-chip{margin-top:0;}
+
+/* Capture tab: the register is capped, so offer the way to the full list. */
+.log-view-all{
+  width:100%;
+  min-height:42px;
+  margin-top:8px;
+  border:1px dashed var(--ds-border-strong);
+  border-radius:var(--radius-control);
+  background:transparent;
+  color:var(--ds-fg-muted);
+  font-family:var(--font-ui);
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.log-view-all:hover{color:var(--ds-fg);border-color:var(--ds-fg-muted);}
+
+/* Rows use the app's own long-standing geometry (title, timestamp right, context
+   below) with the per-defect left border carrying the colour coding. The
+   reference record-card row — a type-coloured glyph tile in a leading column —
+   was tried and rejected by the owner; do not reinstate it. */
+
+/* ---------- Capture tab: the record card --------------------------------
+   The header, the date filters and the rows become ONE card separated by
+   hairlines, instead of three floating blocks. Rows keep their per-row
+   swipe-clipping wrapper, so swipe, selection and the list observer are
+   untouched — only the visual shell changes.
+
+   The defect indication is the row's existing left border, which already
+   carries the app's own colours: --line-yellow as the default (Potholes has no
+   type class), --safety-orange, #c9c9c9, #c1707a.
+
+   Only the Capture tab is carded. The Log tab keeps its plain list. */
+.inspection-view #log-register{
+  border:1px solid var(--ds-border);
+  border-radius:var(--radius-card);
+  background:var(--ds-card);
+  overflow:hidden;
+}
+.inspection-view .log-header{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:2px 12px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--ds-border);
+  background:color-mix(in srgb, var(--ds-muted) 65%, transparent);
+}
+/* The Capture card has NO filter row — filtering belongs to the Log tab's full
+   register. `visibleEntries()` therefore ignores the filters on this mount, so a
+   filter set over there cannot leave this card showing a subset the user has no
+   way to clear from here. */
+.inspection-view .log-date-filters{display:none;}
+.inspection-view .inspection-record-list{
+  gap:0;
+  padding:0;
+}
+/* Rows go full-bleed; the card owns the radius and the clipping.
+   `html:root` is required: sharing.css and radius-system.css both style these
+   with html:root[data-theme] selectors that outrank a bare class chain. */
+html:root .inspection-view .inspection-record-list .swipe-row{
+  margin:0;
+  border-radius:0;
+}
+/* Only the non-left edges are reset — border-left stays exactly as sharing.css
+   sets it, so the per-defect colours survive. Setting the `border-left`
+   shorthand here would repaint every row yellow. */
+html:root .inspection-view .inspection-record-list .log-entry{
+  border-top:0;
+  border-right:0;
+  border-bottom:0;
+  border-left-width:4px;
+  border-radius:0;
+  box-shadow:none;
+  background:transparent;
+}
+/* Hairline between rows, none above the first. */
+html:root .inspection-view .inspection-record-list .swipe-row + .swipe-row .log-entry{
+  border-top:1px solid var(--ds-border);
+}
+/* "View all" is the card's footer. */
+.inspection-view .inspection-record-list .log-view-all{
+  width:100%;
+  margin:0;
+  border:0;
+  border-top:1px solid var(--ds-border);
+  border-radius:0;
+}
+/* The count badge is appended INSIDE the h2, so the heading itself is the
+   column that stacks the eyebrow above the big numeral. */
+.inspection-view .log-header h2{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+  grid-column:1;
+  grid-row:1;
+  margin:0;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.16em;
+  line-height:1.3;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+/* Select starts inside this header in the markup; log-controls.js relocates it
+   to the Log tab's head at DOMContentLoaded. Hidden until it moves so it cannot
+   flash as a stray grid item. */
+.inspection-view .log-header #select-toggle-btn{display:none;}
+.inspection-view .log-count-badge{
+  grid-column:1;
+  grid-row:2;
+  display:block;
+  align-self:start;
+  min-width:0;
+  height:auto;
+  padding:0;
+  border-radius:0;
+  background:none;
+  box-shadow:none;
+  transform:none;
+  font-family:var(--font-ui);
+  font-size:30px;
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:-.04em;
+  color:var(--ds-fg);
+}
+.inspection-view .log-header::after{
+  content:'';
+  grid-column:2;
+  grid-row:1 / 3;
+  width:34px;
+  height:34px;
+  border-radius:var(--radius-sm);
+  background-color:var(--ds-card-2);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b6776' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='8' height='4' x='8' y='2' rx='1'/%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M12 11h4M12 16h4M8 11h.01M8 16h.01'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:18px;
+}
+/* Select rides at the right end of the Export/Import data row. Measured: the
+   three buttons need 285px against 362px available at 390px (287px in selection
+   mode with "Cancel" / "Export selected"), so they share one line with room. */
 .log-select-actions{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   gap:8px;
-  flex:0 0 auto;
   margin-left:auto;
 }
-.log-select-actions #selection-count{
-  font-size:12px;
-  color:var(--ds-fg-muted);
+
+/* Revealed by clicking Select: the bulk actions get a row BELOW the data row,
+   flushed to the same right edge. It must sit BELOW — above, the new row would
+   push the Export/Import row (and Cancel) 44px down the moment Select is
+   pressed, so the control you just tapped would jump. */
+.log-bulk-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin:8px 0 0;
 }
-/* Normally the badge already carries the count; only surface this when it is
-   reporting a selection. */
-.log-select-actions:not(.selection-mode) #selection-count{display:none;}
+/* `[hidden]` loses to the `display:flex` above. */
+.log-bulk-actions[hidden]{display:none;}
+/* Bulk controls. These lost their geometry when the `.log-action-footer` panel
+   was removed — `sharing.css` styled them only *inside* that container, so they
+   fell back to raw native buttons (square corners, 1px/6px padding, default
+   13.3px type, and a 2px outset bevel on Delete). Restored to match the
+   Select/Cancel button they sit beside, which uses --radius-md. */
+/* Bulk controls. These sit in `#log-bulk-actions` now, but they have moved
+   between mounts twice and each time silently lost their geometry when the
+   previous mount's scoped rule stopped matching. Target them by ID only, so the
+   styling cannot be orphaned by a future re-parenting.
+
+   Without this they fall back to raw native buttons: square corners, 1px/6px
+   padding, default 13.3px type, and a 2px outset bevel on Delete. */
+#bulk-select-all-btn,#bulk-delete-btn{
+  min-height:44px;
+  padding:0 16px;
+  border:1px solid var(--ds-border);
+  border-radius:var(--radius-md);
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+#bulk-select-all-btn{
+  background:var(--ds-card-2);
+  color:var(--ds-fg);
+}
+#bulk-select-all-btn:hover{background:var(--ds-muted);}
+#bulk-delete-btn:not(:disabled){
+  background:var(--ds-destructive);
+  border-color:var(--ds-destructive);
+  color:var(--ds-destructive-fg);
+}
+#bulk-delete-btn:disabled{
+  background:var(--ds-muted);
+  border-color:var(--ds-border);
+  color:var(--ds-fg-subtle);
+  cursor:not-allowed;
+}
 /* Select is mounted only in the Log tab's head, so the Capture tab's register
    header shows nothing but its heading and badge — no hiding rule needed. */
 /* In the Log tab the title and count live in the view head (Base44 style), so

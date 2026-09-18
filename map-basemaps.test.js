@@ -2,9 +2,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-test('map theme stays in the topbar and filter menu contains type and date reset',()=>{
+test('map has no topbar of its own and the filter menu holds type and date reset',()=>{
   const html=fs.readFileSync(require.resolve('./index.html'),'utf8');
-  assert.match(html, /class="map-topbar">[\s\S]*?id="map-theme-toggle"[\s\S]*?<div id="osm-map"/);
+  // The map's station / status moved into the GLOBAL header, so the map view goes
+  // straight to the canvas, and the map's own dark/light toggle is gone.
+  assert.match(html, /id="map-view"[\s\S]{0,200}?<div id="osm-map"/);
+  assert.doesNotMatch(html, /class="map-topbar"/);
+  assert.doesNotMatch(html, /id="map-theme-toggle"/);
+  // They live in the header now, alongside the brand.
+  assert.match(html, /id="header-map-context"[\s\S]{0,200}?id="map-km-station"[\s\S]{0,200}?id="map-status"/);
   const floating=html.match(/class="map-floating-actions"[\s\S]*?<\/div>/)[0];
   assert.match(floating,/id="map-locate-btn"/);
   assert.doesNotMatch(floating,/map-theme-toggle/);

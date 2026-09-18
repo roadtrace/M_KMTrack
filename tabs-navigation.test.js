@@ -69,21 +69,20 @@ test('the Select panel is gone and Select pairs with the records chip',()=>{
   // The old full-width `.log-action-footer` card under the list is removed.
   assert.doesNotMatch(controls,/className='log-action-footer'/);
   assert.doesNotMatch(controls,/list\.after\(footer\)/);
-  assert.match(controls,/actions\.append\(count,toggle,selectAll,deleteSelected\)/);
   // Mounted into the Log tab's head, in the same row as the records chip, so it
   // no longer floats alone on its own row.
   assert.match(controls,/getElementById\('log-select-actions'\)/);
   assert.match(html,/id="log-select-actions"/);
-  // Appended straight into the mount (which is itself the flex item), so
-  // `margin-left:auto` actually pushes Select to the right. `actions` must stay
+  // Mounted into the Export/Import data row and pushed to its right edge. The
+  // bulk actions mount separately, on their own row above. `actions` must stay
   // in scope because sync() toggles `selection-mode` on it.
   assert.match(controls,/let actions=selectMount;/);
-  assert.match(controls,/actions\.append\(count,toggle,selectAll,deleteSelected\)/);
+  assert.match(controls,/actions\.append\(toggle\)/);
   assert.match(html,/class="ds-row log-select-actions" id="log-select-actions"/);
   assert.match(design,/\.log-head-row\{/);
   assert.match(design,/\.log-head-row \.ds-chip\{margin-top:0;\}/);
-  // Idle, only Select shows — the badge already carries the count.
-  assert.match(design,/\.log-select-actions:not\(\.selection-mode\) #selection-count\{display:none;\}/);
+  // The chip itself reports the selection, so there is no separate count span.
+  assert.doesNotMatch(controls,/selection-count/);
 });
 
 test('the Log head carries only the title, chip and Select',()=>{

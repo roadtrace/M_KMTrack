@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const source = document.querySelector('.sharing-filters');
   const toggle = document.getElementById('select-toggle-btn');
   toggle.textContent = 'Select';
-  const count = document.createElement('span'); count.id='selection-count'; count.setAttribute('role','status');
   const sourceFields = source.querySelector('.sharing-filter-fields');
   filterOptions.insertBefore(sourceFields,document.getElementById('entry-filter-clear'));
   source.remove();
@@ -72,13 +71,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // already the `.log-select-actions` flex item, so the count/toggle go straight
   // into it; older shells without the mount get a wrapper in the toolbar.
   // `actions` must stay in scope: sync() toggles `selection-mode` on it.
+  // Select joins Export and Import in the data row, flushed right. The bulk
+  // actions get a row of their own ABOVE that one, revealed on click.
   const selectMount=document.getElementById('log-select-actions');
+  const bulkMount=document.getElementById('log-bulk-actions');
   let actions=selectMount;
   if(!actions){
     actions=document.createElement('div');actions.className='log-select-actions';
     header.append(actions);
   }
-  actions.append(count,toggle,selectAll,deleteSelected);
+  actions.append(toggle);
+  (bulkMount || actions).append(selectAll,deleteSelected);
   document.getElementById('bulk-actions-bar').hidden=true;
   const legacyCount=document.querySelector('.count-bar');legacyCount.classList.add('log-result-count');legacyCount.hidden=true;
   document.getElementById('last-time').hidden=true;
@@ -94,11 +97,17 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle.setAttribute('aria-label',selectMode ? 'Cancel entry selection' : 'Select multiple entries');
     toggle.textContent = selectMode ? 'Cancel' : 'Select';
     toggle.title = toggle.getAttribute('aria-label'); toggle.disabled = !visible.length;
-    count.textContent = n ? `${n} selected` : `${visible.length} ${visible.length === 1 ? 'entry' : 'entries'}`;
+    /* The records chip IS the selection readout, so there is no separate
+       "N selected" text competing with it. "records" is dropped while selecting
+       so the chip still fits beside the title without wrapping — measured at
+       371px needed vs 358px available when the word is kept. */
     const chip=document.getElementById('log-records-chip');
-    if(chip) chip.textContent = `${visible.length} ${visible.length === 1 ? 'record' : 'records'}`;
+    if(chip) chip.textContent = selectMode
+      ? `${n} of ${visible.length} selected`
+      : `${visible.length} ${visible.length === 1 ? 'record' : 'records'}`;
     badge.textContent=visible.length.toLocaleString('en-US');
     badge.setAttribute('aria-label',`${visible.length} ${Object.values(getLogFilters()).some(Boolean)?'filtered ':''}${visible.length===1?'entry':'entries'}`);
+    if(bulkMount) bulkMount.hidden=!selectMode;
     selectAll.hidden=!selectMode;
     deleteSelected.hidden=!selectMode;
     deleteSelected.textContent=`Delete (${n})`;

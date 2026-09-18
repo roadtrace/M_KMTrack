@@ -13,9 +13,10 @@ test('first Select press enters mode without selecting entries',()=>{
 });
 
 test('Select stays text-based beside Export and becomes Cancel in selection mode',()=>{
-  // The `.log-action-footer` panel was removed; Select and the bulk actions
-  // now live in the register toolbar instead.
-  assert.match(controls,/actions\.append\(count,toggle,selectAll,deleteSelected\)/);
+  // The `.log-action-footer` panel was removed; Select now rides at the right of
+  // the Export/Import data row, with the bulk actions on their own row above it.
+  assert.match(controls,/actions\.append\(toggle\)/);
+  assert.match(controls,/\(bulkMount \|\| actions\)\.append\(selectAll,deleteSelected\)/);
   // No footer panel is built any more (the comment mentioning it is fine).
   assert.doesNotMatch(controls,/className='log-action-footer'/);
   assert.doesNotMatch(controls,/list\.after\(footer\)/);

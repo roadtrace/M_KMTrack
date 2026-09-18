@@ -51,7 +51,8 @@ KMTrack turns a device's live location into road-network inspection context—in
 - Network and structure datasets: `calibration.json` and `bridges.json`.
 - Product marks: `kmtrack-mark.svg` and the two `kmtrack-logo-on-*.svg` lockups, plus the PWA icon PNGs. `KMTrack.png` and `KMTrack_logo.png` are retained as prior-identity assets.
 - Import/export contract and operational limits: `SHARING.md`.
-- UI constraints approved through prior iteration: `AGENTS.md` and `BORDER_RADIUS_RULES.md`.
+- Working rules and process: `AGENTS.md`. There is no design baseline to
+  preserve, and no separate radius rules file — both were retired on 2026-09-18.
 - No testimonials, performance benchmarks, customer claims, or formal accessibility certification are established; future work must not fabricate them.
 
 ## Product Principles

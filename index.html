@@ -1239,18 +1239,24 @@ button {
 </head>
 <body>
 
-<div class="app-view inspection-view" id="inspection-view" role="tabpanel" aria-labelledby="inspection-tab">
 <div class="top-shell">
   <header>
     <div class="header-brand">
-      <img class="header-logo" src="kmtrack-logo-on-dark.svg" alt="KMTrack">
-      <div class="header-copy">
-        <div class="sub" id="clock">-- -- --</div>
+      <img class="header-logo" src="kmtrack-mark.svg" alt="">
+      <span class="header-wordmark" id="header-wordmark">KM<span class="header-track">TRACK</span></span>
+      <div class="header-context" id="header-map-context" hidden>
+        <div class="map-title" id="map-km-station">KM --.---</div>
+        <div class="map-status" id="map-status">Waiting for GPS location…</div>
       </div>
+    </div>
+    <div class="header-actions">
+      <span class="header-net" id="net-status" hidden><span class="net-dot" aria-hidden="true">●</span>Off network</span>
+      <button type="button" class="header-refresh" id="net-refresh" aria-label="Re-check connection" title="Re-check connection"></button>
     </div>
   </header>
 </div>
 
+<div class="app-view inspection-view" id="inspection-view" role="tabpanel" aria-labelledby="inspection-tab">
 <main>
 
   <section class="kmpost instrument-panel" id="instrument-panel" aria-label="Location and road match">
@@ -1267,7 +1273,6 @@ button {
       <div class="metric">
         <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg><span>Corridor</span></div>
         <div class="segment-tag" id="segment-tag">--</div>
-        <div class="ramp-tag" id="ramp-tag"></div>
       </div>
 
       <div class="metric metric-station">
@@ -1280,6 +1285,12 @@ button {
         <div class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></div>
         <div class="bound-auto-status" id="bound-auto-status"></div>
       </div>
+    </div>
+
+    <div class="instrument-interchange">
+      <svg class="metric-icon interchange-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
+      <span>Interchange identity</span>
+      <strong class="ramp-tag" id="ramp-tag"></strong>
     </div>
 
     <div class="nearby-asset" aria-live="polite">
@@ -1302,6 +1313,7 @@ button {
 
     <div class="instrument-foot">
       <span class="coordinate-value"><span id="lat">--</span><span aria-hidden="true">, </span><span id="lon">--</span></span>
+      <span class="foot-clock"><span id="clock"></span><span class="foot-saved" id="clock-saved"></span></span>
     </div>
   </section>
 
@@ -1369,7 +1381,7 @@ button {
   <div id="log-host-inspection">
   <section class="block" id="log-register">
     <div class="log-header">
-      <h2>Inspection log</h2>
+      <h2>Today's record</h2>
       <button type="button" class="select-toggle-btn" id="select-toggle-btn">Select</button>
     </div>
     <div class="count-bar">
@@ -1409,13 +1421,6 @@ button {
 </div>
 
 <section class="app-view map-view" id="map-view" role="tabpanel" aria-labelledby="map-tab" hidden>
-  <div class="map-topbar">
-    <div class="map-topbar-copy">
-      <div class="map-title" id="map-km-station">KM --.---</div>
-      <div class="map-status" id="map-status">Waiting for GPS location…</div>
-    </div>
-    <button type="button" class="map-theme-toggle" id="map-theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
-  </div>
   <div id="osm-map" aria-label="OpenStreetMap showing the current inspection location"></div>
   <div id="map-bound-legend" class="map-bound-legend" aria-label="Map legend"></div>
   <div class="map-entry-controls" aria-label="Map entry display options">
@@ -1443,14 +1448,17 @@ button {
 
 <section class="app-view log-view" id="log-view" role="tabpanel" aria-labelledby="log-tab" hidden>
   <div class="ds-view-head">
-    <h2>Inspection log</h2>
     <div class="log-head-row">
+      <h2>Inspection log</h2>
       <span class="ds-chip">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
         <span id="log-records-chip" role="status">0 records</span>
       </span>
-      <div class="ds-row log-select-actions" id="log-select-actions"></div>
     </div>
+    <span class="ds-chip ds-chip-sync" id="sync-status-chip" hidden>
+      <span class="sync-dot" aria-hidden="true"></span>
+      <span id="sync-status-text" role="status"></span>
+    </span>
   </div>
 
   <div class="log-data-row">
@@ -1460,7 +1468,11 @@ button {
       <button type="button" id="import-history-btn" class="ds-btn ds-btn-quiet" hidden>Imported files</button>
       <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
     </div>
+    <div class="ds-row log-select-actions" id="log-select-actions"></div>
   </div>
+
+  <div class="ds-row log-bulk-actions" id="log-bulk-actions" hidden></div>
+
   <p class="log-data-hint">Import .xlsx exports or Photos .zip archives.</p>
   <div id="import-status" role="status"></div>
 
@@ -1545,6 +1557,8 @@ button {
   </button>
 </nav>
 
+<script src="./entry-model.js"></script>
+<script src="./sync-queue.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="./swipe-actions.js"></script>
 <script src="./entry-filters.js"></script>
@@ -1699,6 +1713,72 @@ function testStorageWritable(){
   }
 }
 
+// ---------- Sync seam (no backend yet) ----------
+// A queue with no transport: ready() is false, so nothing is ever sent. The
+// Supabase client is added later by passing `{transport}` here — the entry
+// model, the queue and the indicator all stay unchanged.
+const syncQueue = KMTrackSync.createQueue({});
+
+/* Unobtrusive by design: the indicator only speaks up when there is something
+ * actionable. Until a transport exists a local record is not "waiting" for
+ * anything, so it stays hidden. */
+function updateSyncStatus(){
+  const chip = document.getElementById('sync-status-chip');
+  const text = document.getElementById('sync-status-text');
+  if(!chip || !text) return;
+  const counts = KMTrackSync.summary(entries);
+  const showFailed = counts.failed > 0;
+  const showPending = counts.pending > 0 && syncQueue.ready();
+  if(!showFailed && !showPending){ chip.hidden = true; return; }
+  chip.hidden = false;
+  chip.classList.toggle('is-error', showFailed);
+  text.textContent = showFailed
+    ? `${counts.failed} failed to sync`
+    : `${counts.pending} waiting to sync`;
+}
+
+// ---------- Header: connection status + refresh ----------
+// The pill shows only when the browser reports no connection. Refresh re-checks
+// that and drains the sync queue, which is inert until a transport is supplied —
+// so today it effectively just re-tests the connection.
+function updateNetStatus(){
+  const pill = document.getElementById('net-status');
+  if(pill) pill.hidden = navigator.onLine !== false;
+}
+
+async function refreshConnection(){
+  const button = document.getElementById('net-refresh');
+  if(button) button.disabled = true;
+  try{
+    updateNetStatus();
+    const result = await syncQueue.drain(entries);
+    if(result && result.ok && (result.uploaded || result.failed)) saveEntries();
+    updateSyncStatus();
+  }catch(e){
+    // The queue never throws; this is a backstop so a tap can never break the UI.
+    console.warn('Refresh failed', e);
+  }finally{
+    if(button) button.disabled = false;
+  }
+}
+
+window.addEventListener('online', updateNetStatus);
+window.addEventListener('offline', updateNetStatus);
+document.getElementById('net-refresh').addEventListener('click', refreshConnection);
+updateNetStatus();
+
+/* The map fills the viewport minus the tab tray and the header. The header is
+   global now, and its height moves with the safe-area inset and the logo, so it
+   is measured into --app-header-h rather than hard-coded in the stylesheet. */
+function syncHeaderHeight(){
+  const bar = document.querySelector('.top-shell header');
+  if(!bar) return;
+  document.documentElement.style.setProperty('--app-header-h', `${bar.offsetHeight}px`);
+}
+window.addEventListener('resize', syncHeaderHeight);
+window.addEventListener('orientationchange', syncHeaderHeight);
+syncHeaderHeight();
+
 function loadFromStorage(){
   storageAvailable = testStorageWritable();
   if(!storageAvailable) return;
@@ -1706,31 +1786,16 @@ function loadFromStorage(){
     const savedEntries = localStorage.getItem(STORAGE_KEY_ENTRIES);
     if(savedEntries){
       const parsed = JSON.parse(savedEntries);
-      // Normalize: guard against a corrupted/non-array save, drop any
-      // malformed entries, and backfill fields introduced after some
-      // entries were already saved (photoId/photoFilename/photoTimestamp),
-      // so older logs don't break the photo UI or CSV export.
-      let addedStableIds = false;
-      entries = (Array.isArray(parsed) ? parsed : [])
-        .filter(e => e && typeof e === 'object' && typeof e.lat === 'number' && typeof e.lon === 'number')
-        .map(e => ({
-          ...e,
-          id: typeof e.id === 'string' && e.id ? e.id : (addedStableIds = true, newId()),
-          type: typeof e.type === 'string' && e.type ? e.type : 'Others',
-          timestamp: typeof e.timestamp === 'string' && e.timestamp ? e.timestamp : fullTimestamp(),
-          lat: e.lat,
-          lon: e.lon,
-          km: (e.km === null || typeof e.km === 'number') ? e.km : null,
-          expressway: typeof e.expressway === 'string' ? e.expressway : '',
-          interchange: typeof e.interchange === 'string' ? e.interchange : '',
-          interchangeSegment: typeof e.interchangeSegment === 'string' ? e.interchangeSegment : '',
-          bound: typeof e.bound === 'string' ? e.bound : '',
-          lane: typeof e.lane === 'string' ? e.lane : '',
-          photoId: typeof e.photoId === 'string' ? e.photoId : '',
-          photoFilename: typeof e.photoFilename === 'string' ? e.photoFilename : '',
-          photoTimestamp: typeof e.photoTimestamp === 'string' ? e.photoTimestamp : ''
-        }));
-      if(addedStableIds) localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
+      // KMTrackEntry owns the record shape. normalizeAll drops malformed rows
+      // (as before) and backfills every field added since v1 — photo metadata,
+      // the structured lane pair, the permanent UUID, created_at/updated_at and
+      // sync_status — so existing logs keep loading without alteration.
+      const before = Array.isArray(parsed) ? parsed : [];
+      entries = KMTrackEntry.normalizeAll(before);
+      // Only rewrite when the migration actually changed something.
+      if(JSON.stringify(entries) !== JSON.stringify(before)){
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
+      }
     }
     const savedBound = localStorage.getItem(STORAGE_KEY_BOUND);
     if(savedBound) userBound = savedBound;
@@ -2243,13 +2308,34 @@ async function loadBridgeDataset(){
 }
 loadBridgeDataset();
 
+// The bridge dropdown is an overlay, so it may leave the instrument card — but
+// it must never run past the defect buttons below. Crop it to the space that is
+// actually free, leave a gap, and let the rest scroll.
+const BRIDGE_MENU_GAP = 16;
+function fitBridgeFilterMenu(){
+  const menu = document.getElementById('bridge-filter-menu');
+  const firstLaneRow = document.querySelector('#defect-section .lane-btn-row');
+  if(!menu || !firstLaneRow || menu.hidden) return;
+  menu.style.maxHeight = 'none';
+  const top = menu.getBoundingClientRect().top;
+  const limit = firstLaneRow.getBoundingClientRect().top - BRIDGE_MENU_GAP;
+  const natural = menu.scrollHeight;
+  const available = Math.floor(limit - top);
+  menu.style.maxHeight = `${Math.min(natural, available)}px`;
+  menu.style.overflowY = natural > available ? 'auto' : 'hidden';
+}
+window.addEventListener('resize', fitBridgeFilterMenu);
+
 document.getElementById('bridge-filter-toggle').addEventListener('click', (event) => {
   event.stopPropagation();
   const menu = document.getElementById('bridge-filter-menu');
   const willOpen = menu.hidden;
   menu.hidden = !willOpen;
   event.currentTarget.setAttribute('aria-expanded',willOpen ? 'true' : 'false');
-  if(willOpen) menu.querySelector('.selected')?.focus();
+  if(willOpen){
+    fitBridgeFilterMenu();
+    menu.querySelector('.selected')?.focus();
+  }
 });
 document.getElementById('bridge-filter-options').addEventListener('click', (event) => {
   const option = event.target.closest('.bridge-filter-option');
@@ -2277,7 +2363,35 @@ function tickClock(){
     hour:'numeric', minute:'2-digit', hour12:true
   });
   const savedText = storageAvailable ? `${entries.length} saved` : 'storage blocked';
-  document.getElementById('clock').textContent = `${dateText} · ${timeText} · ${savedText}`;
+  const clock = document.getElementById('clock');
+  if(clock) clock.textContent = `${dateText} · ${timeText}`;
+  const saved = document.getElementById('clock-saved');
+  if(saved) saved.textContent = ` · ${savedText}`;
+  fitInstrumentFoot();
+}
+
+/* The instrument footer carries the coordinates, the date/time and the saved
+   count on one line. "· N saved" is the least important of the three, so it is
+   dropped whenever the row cannot fit it. Measured rather than guessed, because
+   the date string length moves with the month and the locale. */
+function fitInstrumentFoot(){
+  const foot = document.querySelector('.instrument-foot');
+  const coords = foot && foot.querySelector('.coordinate-value');
+  const clockBox = foot && foot.querySelector('.foot-clock');
+  const saved = document.getElementById('clock-saved');
+  if(!foot || !coords || !clockBox || !saved) return;
+  // tickClock fires every second regardless of which tab is showing. While the
+  // Capture view is hidden this element has no layout, clientWidth is 0, and
+  // every comparison "fails" — which would hide the count and leave it hidden
+  // until a tick happened to land while the tab was visible. Leave it alone.
+  if(!foot.clientWidth) return;
+  saved.hidden = false;
+  // Children are `flex:0 0 auto`, so these are intrinsic widths, not squeezed
+  // ones. 8px matches the flex gap.
+  const needed = coords.getBoundingClientRect().width
+    + clockBox.getBoundingClientRect().width
+    + parseFloat(getComputedStyle(foot).columnGap || '0');
+  if(needed > foot.clientWidth) saved.hidden = true;
 }
 setInterval(tickClock, 1000);
 tickClock();
@@ -2419,14 +2533,40 @@ const APP_VIEW_IDS = {
   settings:'settings-view'
 };
 
-// The register is ONE DOM node shared by the Inspection and Log tabs. It is
+// The register is ONE DOM node shared by the Capture and Log tabs. It is
 // re-parented on tab switch rather than duplicated, so its rows, selection
 // state, swipe handlers and MutationObservers are never forked.
+//
+// The two tabs show different AMOUNTS of it: Capture shows only the newest few
+// (enough to delete a mistake on the spot), Log shows the full register and owns
+// the search. The cap is applied per-mount in renderLog(), not by a second list.
+const CAPTURE_RECENT_LIMIT = 10;
+let logRegisterView = 'inspection';
+
 function mountLogRegister(viewName){
   if(viewName !== 'log' && viewName !== 'inspection') return;
   const block = document.getElementById('log-register');
   const host = document.getElementById(viewName === 'log' ? 'log-host-log' : 'log-host-inspection');
-  if(block && host && block.parentElement !== host) host.appendChild(block);
+  const moved = !!(block && host && block.parentElement !== host);
+  if(moved) host.appendChild(block);
+  if(moved || logRegisterView !== viewName){
+    logRegisterView = viewName;
+    // Re-render so this mount gets the right amount of list.
+    renderLog();
+  }
+}
+
+/* The header is global. On the map it trades the "KMTRACK" wordmark for the live
+   station / coordinates / accuracy that used to sit in the map's own topbar;
+   every other tab shows the wordmark. The elements themselves never move, so
+   `updateOsmLocation()` and the station writers keep working untouched. */
+function syncHeaderContext(viewName){
+  const wordmark = document.getElementById('header-wordmark');
+  const context = document.getElementById('header-map-context');
+  if(!wordmark || !context) return;
+  const isMap = viewName === 'map';
+  wordmark.hidden = isMap;
+  context.hidden = !isMap;
 }
 
 function showAppView(viewName){
@@ -2435,6 +2575,9 @@ function showAppView(viewName){
     if(view) view.hidden = name !== viewName;
   });
   mountLogRegister(viewName);
+  syncHeaderContext(viewName);
+  // The footer fit is skipped while this view is hidden, so re-check it on show.
+  fitInstrumentFoot();
   document.querySelectorAll('.app-tab-btn').forEach(button => {
     const active = button.dataset.appView === viewName;
     button.classList.toggle('active',active);
@@ -2686,7 +2829,7 @@ function updateRampReadout(interchange){
     rampEl.textContent = '';
     return;
   }
-  rampEl.textContent = `⤴ ${interchange.name}`;
+  rampEl.textContent = interchange.name;
   rampEl.classList.add('show');
 }
 
@@ -2854,8 +2997,7 @@ function logDefect(type, lane){
 
   const snapshot=resolvedEntrySnapshot();
 
-  entries.push({
-    id: newId(),
+  entries.push(KMTrackEntry.createEntry({
     type,
     timestamp: fullTimestamp(),
     ...snapshot,
@@ -2863,7 +3005,7 @@ function logDefect(type, lane){
     photoId: '',
     photoFilename: '',
     photoTimestamp: ''
-  });
+  }));
 
   saveEntries();
   renderLog();
@@ -3548,7 +3690,7 @@ async function captureContinuousLane(laneValue){
     const cb = label.querySelector('.continuous-lane-trigger');
     if(cb) cb.disabled = true;
   });
-  cameraDraftEntry.lane = laneValue;
+  KMTrackEntry.setLane(cameraDraftEntry, laneValue);
   updateCameraOverlay(cameraDraftEntry);
   try{
     const result = await buildStampedPhotoBlob(cameraDraftEntry);
@@ -3556,14 +3698,13 @@ async function captureContinuousLane(laneValue){
     const photoId = newId();
     await putPhoto(photoId, result.blob);
     await putPhoto(photoId + ':raw', result.rawBlob);
-    entries.push({
+    entries.push(KMTrackEntry.createEntry({
       ...cameraDraftEntry,
-      id: newId(),
       timestamp: fullTimestamp(),
       photoId,
       photoFilename: result.filename,
       photoTimestamp: formatPhotoDate(result.stamp)
-    });
+    }));
     saveEntries();
     playConfirmSound();
     renderLog();
@@ -3682,7 +3823,7 @@ async function saveCapturedPhoto(){
       const entry = entries[idx];
       const oldPhotoId = entry ? entry.photoId : '';
       if(entry){
-        entry.lane = cameraDraftEntry.lane || entry.lane;
+        KMTrackEntry.setLane(entry, cameraDraftEntry.lane || entry.lane);
         entry.photoId = photoId;
         entry.photoFilename = pendingCaptureFilename;
         entry.photoTimestamp = formatPhotoDate(pendingCaptureStamp);
@@ -3697,14 +3838,13 @@ async function saveCapturedPhoto(){
         await deletePhoto(oldPhotoId + ':raw');
       }
     } else {
-      entries.push({
+      entries.push(KMTrackEntry.createEntry({
         ...cameraDraftEntry,
-        id: newId(),
         timestamp: fullTimestamp(),
         photoId,
         photoFilename: pendingCaptureFilename,
         photoTimestamp: formatPhotoDate(pendingCaptureStamp)
-      });
+      }));
       saveEntries();
       playConfirmSound();
       clearCaptureReview();
@@ -3871,7 +4011,13 @@ let selectedEntryIds = new Set();
 function getLogFilters(){
   return {from:document.getElementById('entry-filter-from').value,to:document.getElementById('entry-filter-to').value,type:document.getElementById('entry-filter-type').value,source:document.getElementById('entry-filter-source').value,inspector:document.getElementById('entry-filter-inspector').value};
 }
-function visibleEntries(){ return KMTrackEntryFilters.filterEntries(entries,getLogFilters()); }
+function visibleEntries(){
+  // The Capture card has no filter row, so it shows every record. Leaving an
+  // active Log-tab filter applied here would show a subset the user cannot clear
+  // from that tab, with a count that silently disagrees with the title.
+  if(logRegisterView === 'inspection') return entries;
+  return KMTrackEntryFilters.filterEntries(entries,getLogFilters());
+}
 function syncEntryFilterOptions(){
   for(const id of ['entry-filter-type','map-entry-type']){
   const select = document.getElementById(id);
@@ -3920,7 +4066,8 @@ function setTheme(theme){
   const isLight = theme === 'light';
   document.documentElement.toggleAttribute('data-theme', isLight);
   if(isLight) document.documentElement.dataset.theme = 'light';
-  const toggles = [document.getElementById('theme-toggle'),document.getElementById('map-theme-toggle')];
+  // The map tab no longer carries its own theme control; it follows the app.
+  const toggles = [document.getElementById('theme-toggle')];
   const nextLabel = isLight ? 'Switch to dark mode' : 'Switch to light mode';
   toggles.forEach(toggle => {
     if(toggle){ toggle.setAttribute('aria-label', nextLabel); toggle.title = nextLabel; }
@@ -3937,7 +4084,6 @@ function toggleTheme(){
   try{ localStorage.setItem(STORAGE_KEY_THEME, nextTheme); }catch(e){ /* theme preference is non-critical */ }
 }
 document.getElementById('theme-toggle').addEventListener('click',toggleTheme);
-document.getElementById('map-theme-toggle').addEventListener('click',toggleTheme);
 
 function showSwipeUndo(){
   hideSwipeUndo();
@@ -4099,9 +4245,13 @@ function renderLog(){
   exportBtn.disabled = false;
   backupBtn.disabled = false;
 
+  /* Capture shows the newest few only; the Log tab shows the whole register.
+   * `visible` stays the source of truth for every count. */
+  const capped = logRegisterView === 'inspection';
+  const shown = capped ? visible.slice(-CAPTURE_RECENT_LIMIT) : visible;
   list.innerHTML = '';
   if(!visible.length) list.innerHTML = '<div class="log-empty">No entries match the current filters.</div>';
-  visible.slice().reverse().forEach((e) => {
+  shown.slice().reverse().forEach((e) => {
     const realIdx = entries.indexOf(e);
     const div = document.createElement('div');
     const row = document.createElement('div');
@@ -4150,6 +4300,14 @@ function renderLog(){
     row.appendChild(div);
     list.appendChild(row);
   });
+  if(capped && visible.length > shown.length){
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'log-view-all';
+    more.textContent = `View all ${visible.length} entries`;
+    more.addEventListener('click', () => showAppView('log'));
+    list.appendChild(more);
+  }
   list.querySelectorAll('.photo-view-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4170,6 +4328,7 @@ function renderLog(){
   }));
   wireSwipeRows(list);
   if(selectMode) updateBulkBar();
+  updateSyncStatus();
 }
 renderLog();
 
@@ -4389,7 +4548,7 @@ function updateCameraDraftLane(){
   if(!cameraDraftEntry) return;
   const selVal = document.getElementById('camera-lane-select').value;
   const othersVal = document.getElementById('camera-lane-others-input').value.trim();
-  cameraDraftEntry.lane = selVal === 'Others' ? othersVal : selVal;
+  KMTrackEntry.setLane(cameraDraftEntry, selVal === 'Others' ? othersVal : selVal);
   updateCameraOverlay(cameraDraftEntry);
 }
 
@@ -4601,10 +4760,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const boundOthersVal = document.getElementById('edit-bound-others-input').value.trim();
     const entry = entries[editingEntryIndex];
     entry.type = defectVal;
-    entry.lane = laneSelVal === 'Others' ? laneOthersVal : laneSelVal;
+    KMTrackEntry.setLane(entry, laneSelVal === 'Others' ? laneOthersVal : laneSelVal);
     entry.km = kmResult.km;
     entry.expressway = expresswaySelVal === 'Others' ? expresswayOthersVal : expresswaySelVal;
     entry.bound = boundSelVal === 'Others' ? boundOthersVal : boundSelVal;
+    KMTrackEntry.touch(entry);
     saveEntries();
     renderLog();
     closeEditModal();

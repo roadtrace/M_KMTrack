@@ -1,704 +1,374 @@
----
-name: KMTrack
-description: Existing mobile road-inspection interface baseline, captured from the working code on 2026-09-07.
-colors:
-  line-yellow: "#f4b400"
-  pothole-light: "#e8b323"
-  safety-green: "#2e8b57"
-  safety-orange: "#d9772f"
-  safety-red: "#c1392b"
-  cracks: "#c9c9c9"
-  other-defect: "#c1707a"
-  error-text-dark: "#e47164"
-  action-ink: "#191c1f"
-  asphalt: "#14181c"
-  asphalt-2: "#1c2126"
-  panel: "#252b31"
-  panel-raised: "#2b3239"
-  surface-soft: "#303840"
-  line-white: "#f5f7f8"
-  text-muted: "#a7b0b8"
-  text-subtle: "#707b84"
-  border: "rgba(255,255,255,.10)"
-  border-strong: "rgba(255,255,255,.18)"
-  asphalt-light: "#f4f5f7"
-  asphalt-2-light: "#eceff2"
-  panel-light: "#fff"
-  panel-raised-light: "#f7f8fa"
-  surface-soft-light: "#eef1f3"
-  line-white-light: "#23272b"
-  text-muted-light: "#696f74"
-  text-subtle-light: "#858b90"
-  border-light: "rgba(32,42,49,.10)"
-  border-strong-light: "rgba(32,42,49,.18)"
-  tab-active: "#79cef4"
-  tab-active-surface: "rgba(71,169,215,.14)"
-  tab-inactive: "#98a7b0"
-  tab-active-light: "#1683b6"
-  tab-active-surface-light: "#eef7fb"
-  tab-inactive-light: "#747b80"
-typography:
-  body:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
-    fontWeight: 400
-    lineHeight: 1.4
-    letterSpacing: "-.005em"
-  station:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
-    fontSize: "clamp(34px,10vw,44px)"
-    fontWeight: 760
-    lineHeight: 1.1
-    letterSpacing: "-.035em"
-  section-label:
-    fontSize: "13px"
-    fontWeight: 700
-    letterSpacing: ".10em"
-  coordinate-label:
-    fontSize: "11px"
-    fontWeight: 700
-    letterSpacing: ".08em"
-  coordinate-value:
-    fontFamily: "'Courier New', ui-monospace, monospace"
-    fontSize: "clamp(11px,3.4vw,16px)"
-    fontWeight: 400
-    letterSpacing: ".01em"
-  entry-title:
-    fontSize: "14px"
-    fontWeight: 700
-  entry-meta:
-    fontFamily: "'Courier New', ui-monospace, monospace"
-    fontSize: "clamp(9px,2.45vw,11px)"
-    lineHeight: 1.5
-    letterSpacing: "-.015em"
-  tab-label:
-    fontSize: "11px"
-    fontWeight: 700
-rounded:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  full: "9999px"
-  restored-bound: "10px"
-  restored-panel: "14px"
-  restored-readout: "18px"
-  restored-station: "20px"
-  restored-drawer-bottom: "30px"
-spacing:
-  space-1: "4px"
-  space-2: "8px"
-  space-3: "12px"
-  space-4: "16px"
-  space-6: "24px"
-components:
-  lane-pothole:
-    backgroundColor: "{colors.line-yellow}"
-    textColor: "{colors.action-ink}"
-    rounded: "{rounded.md}"
-    padding: "12px 2px"
-  lane-pothole-light:
-    backgroundColor: "{colors.pothole-light}"
-    textColor: "{colors.action-ink}"
-    rounded: "{rounded.md}"
-  lane-shoving:
-    backgroundColor: "{colors.safety-orange}"
-    textColor: "{colors.action-ink}"
-    rounded: "{rounded.md}"
-  lane-cracks:
-    backgroundColor: "{colors.cracks}"
-    textColor: "{colors.action-ink}"
-    rounded: "{rounded.md}"
-  lane-other:
-    backgroundColor: "{colors.other-defect}"
-    textColor: "{colors.action-ink}"
-    rounded: "{rounded.md}"
-  tab-active:
-    backgroundColor: "{colors.tab-active-surface}"
-    textColor: "{colors.tab-active}"
-    rounded: "{rounded.md}"
-    padding: "3px 12px"
-  tab-active-light:
-    backgroundColor: "{colors.tab-active-surface-light}"
-    textColor: "{colors.tab-active-light}"
-    rounded: "{rounded.md}"
-  readout-light:
-    backgroundColor: "{colors.panel-light}"
-    textColor: "{colors.line-white-light}"
-    rounded: "{rounded.restored-readout}"
-    padding: "14px 16px"
-  entry-card:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.line-white}"
-    rounded: "{rounded.lg}"
-    padding: "10px 12px"
-  edit-input:
-    rounded: "{rounded.sm}"
-    padding: "11px"
+# KMTrack engineering notes
+
+**This is not a design spec, and there is no frozen visual baseline.** Redesign
+freely — see `AGENTS.md`. What follows is here because it cost real time to
+learn, or because breaking it breaks the app.
+
+The previous design-system document (palette, typography, layout, components,
+Do's and Don'ts) was removed on 2026-09-18 when the owner retired the design
+rules. It is still in git history if it is ever wanted back:
+
+```
+git show <commit-before-removal>:DESIGN.md
+```
+
+Functional knowledge lives in its own files: `PRODUCT.md`, `SHARING.md`,
+`MAP_LANDMARKS.md`.
+
 ---
 
-# Design System: KMTrack
+## Architecture invariants
 
-## Overview
+### The register is ONE node in TWO tabs
 
-This is the baseline of the existing M_KMTrack working tree as of 2026-09-07, including the bottom-navigation keyboard and inspection accessibility refinements. It documents the implemented interface, not a redesign or an accessibility certification. Descriptions are literal: no new creative metaphor, palette, tonal ramp, or component styling has been invented.
-
-KMTrack combines a centered road-marking logo, blue/navy gradient surroundings, translucent instrument panels, and a prominent green kilometer-station card. The interface is compact and practical, with strong defect-color coding and large lane targets. Light mode retains the dark branded header and green station card while surrounding panels become white and pale gray.
-
-**Key Characteristics:**
-
-- Layered gradients, translucency, soft offset shadows, and thin borders.
-- Inter interface text with selective monospace measurement metadata.
-- Restored, component-specific curves with a rectangular bottom navigation tray.
-- Compact phone layouts that expand into a landscape inspection dashboard.
-
-Sources: `index.html` (inline styles and markup), followed in cascade order by `radius-system.css`, `sharing.css`, and `photo-viewer.css`; behavior in their JavaScript companions. `AGENTS.md`, `PRODUCT.md`, and `BORDER_RADIUS_RULES.md` supply preservation constraints. Rendered styles were sampled at 390 × 844 and 1280 × 800 in both themes. Frontmatter aliases ending in `-light` describe theme overrides; aliases beginning `restored-` describe existing literal overrides, not newly implemented CSS variables.
-
-**The Existing Cascade Rule.** Preserve the final computed appearance. Later theme rules, selector specificity, and the restored corner stylesheet take precedence over earlier declarations. Do not apply every root token indiscriminately.
-
-## Colors
-
-### Primary
-
-Road yellow (`line-yellow`) marks potholes, selected direction controls, export actions, and focus treatments. The light-theme pothole/export fill uses `pothole-light`. Selected direction buttons retain `linear-gradient(145deg,#ffc000,#f2ad00)` in both themes.
-
-### Secondary
-
-Green is the station/readiness family. The station surface is not the flat `safety-green` token: its exact fill is `linear-gradient(135deg,rgba(27,139,98,.92),rgba(23,102,82,.88)) padding-box`, over `linear-gradient(125deg,rgba(210,255,236,.58),rgba(107,211,184,.28) 52%,rgba(235,255,248,.72)) border-box`, with a transparent 2px border. Dataset readiness uses a luminous green dot (`#45e3a0`); pending data uses amber (`#d39a26`).
-
-### Tertiary
-
-Defect categories retain orange for shoving, gray for cracks, and muted rose for other defects. The same accents identify log-entry left borders in both themes. Safety red remains the deletion/fill token. Dark GPS error text uses `error-text-dark`; light error text retains safety red. Shoving lane labels use action ink in both themes. Direction hints use the existing muted-text token; the light Bound label does too. Light GPS waiting guidance uses the existing brown (#765300). Navigation uses the separate blue active-tab colors in frontmatter; this blue does not replace category coding.
-
-### Neutral
-
-Root asphalt/panel tokens supply controls, dialogs, and log cards. The actual dark page is a layered background: `radial-gradient(circle at 7% 40%,rgba(24,132,178,.27) 0,transparent 38%)`, `radial-gradient(circle at 82% 28%,rgba(61,67,145,.19) 0,transparent 40%)`, and `linear-gradient(155deg,#102231 0%,#141a27 46%,#07111a 100%)`.
-
-Light mode uses `radial-gradient(circle at 8% 28%,rgba(42,132,173,.055) 0,transparent 38%)` over `linear-gradient(180deg,#f7f8fa 0%,#f1f3f5 100%)`. Both page backgrounds are fixed.
-
-The dark header uses `radial-gradient(circle at 16% 10%,rgba(31,112,158,.24),transparent 46%)` over `linear-gradient(145deg,rgba(27,48,64,.98),rgba(15,27,38,.98))`. Its light-theme counterpart uses `radial-gradient(circle at 16% 10%,rgba(51,137,185,.30),transparent 46%)` over `linear-gradient(145deg,#1b4057,#102a3d)`.
-
-Dark readouts use `linear-gradient(180deg,rgba(30,41,49,.92),rgba(17,30,39,.92))`; raised compact controls/dataset drawers use the same stops at `.98` opacity. Map panels use `.94`. Light readouts and dataset drawers are white; bound panels use the light raised-panel token. These are contextual treatments, not one universal card fill.
-
-**The Gradient Identity Rule.** Retain both theme backgrounds, the branded header, and the green station treatment. The previously rejected flat color-system restyle is not the baseline.
-
-## Typography
-
-Inter is self-hosted through `fonts/InterVariable.woff2`, with weights 100–900, normal style, `font-display:swap`, and `font-synthesis:none`. The logo is the existing image asset `KMTrack.png`, not a substitute display font. Preserve `KMTrack_logo.png` for the app identity.
-
-The body inherits the browser's default size (16px in the inspected browser); its authored line-height and tracking are in frontmatter. This is a compact UI rather than a single modular type scale. Many labels and secondary controls are intentionally smaller than body text in the current implementation.
-
-| Role | Existing treatment |
-| --- | --- |
-| Station number | Frontmatter `station`; tabular numerals. The late rule caps it at 44px even in wide landscape, overriding earlier 58px declarations. |
-| Nearby bridge name | 15px/800, line-height 1.25; 13px at ≤380px; landscape ≥700px uses clamp(19px,2.1vw,24px), with 16px at 700–900px. |
-| Station caption | 11px/700, uppercase; tracking .12em on phones and 2.2px in wide landscape (1.5px at 700–900px). |
-| Section label | Frontmatter `section-label`, uppercase. |
-| Coordinates | Monospace `coordinate-value`; becomes 12px at ≤390px. Labels use `coordinate-label`. |
-| Lane number | 15px/700 on phones; 20px in wide landscape, 18px at 700–900px; focused-category mode uses 28px. |
-| Log title / metadata | Entry titles are 15px/800 (14px on narrow phones); imported attribution is inline at 12px/400 (11px narrow). Timestamps and road context use matching 12px muted text (11px narrow) with tabular numerals for dates and KM values. |
-| Header status | 11px/450 with .035em tracking. |
-| Navigation | Frontmatter `tab-label`; icon above label. |
-
-The variables named `--mono` and `--sans` both resolve to the UI font. Only explicit `--font-readout` overrides produce Courier New. Station values, timestamps, GPS status, and camera metadata use tabular-number settings where declared.
-
-## Layout
-
-The phone inspection column is centered, max-width 520px, with 14px side/bottom padding and 12px top padding. A sticky top shell contains the header and overlapping dataset drawer. The drawer is at most 560px wide, or viewport minus 20px at ≤600px. Its internal two-column grid becomes one column at ≤390px.
-
-At ≤360px, the direction panel stacks below a two-equal-column measurement grid; direction buttons form a wrapping row. Above that width, the readout pairs a two-column measurement grid with a direction panel (132px basis, 112px at ≤390px). The final readout padding remains 14px 16px and bound-panel padding 10px 12px because the restored stylesheet overrides narrower earlier padding. The station card uses two columns, separated by a fine vertical line, with 17px 18px padding and a 14px gap on ordinary phones.
-
-Lane controls form five shrinkable equal columns with 5px gaps. Standard phone rows are restored to a consistent 60px height; numbered lanes use 15px text while the Other-lane label and explanation use 9px and 8px so they do not enlarge the full row. Focused-category mode changes to two columns with 12px gaps, and the Other lane spans both with larger targets. Shared spacing tokens are listed in frontmatter, but the existing interface also uses 5, 6, 7, 10, 14, 18, 20, and 22px locally; do not silently snap these to a new scale.
-
-Inspection entries are independent rounded cards separated by a 6px gap. Each card has two compact information lines: defect type and imported-inspector attribution align with the timestamp above; expressway, KM station, bound, and lane align with the optional View Photo action below. The defect-color stripe remains on the leading edge. In selection state, a yellow inset ring and trailing checkbox appear without replacing the stripe. The select-all control shares the same one-line row as the two dates and filter button on phone widths.
-
-Landscape ≥700px expands main to 1180px with 12px 18px padding. The top grid is `minmax(250px,1fr) minmax(135px,.48fr) minmax(360px,1.5fr)` with a 16px column gap. GPS, direction, and station align at the top with no extra margin on direction/station; defects span the width in two columns. At 700–900px the grid becomes `minmax(215px,1fr) minmax(120px,.5fr) minmax(320px,1.5fr)` with 12px gaps. The readout wrapper becomes `display:contents`; its inner GPS panel is the visible card.
-
-The fixed bottom tray is at most 560px wide and 56px tall plus bottom safe-area inset; body reserves matching space. The map fills `100dvh - 56px - bottom safe area`, with a 420px minimum height. Its top and lower filter panels sit 12px from the sides; lower filters sit 30px from the bottom. Dates use shrinkable grid tracks and centered native date text. Entry filters use `minmax(0,1.15fr) auto minmax(0,1.15fr) minmax(0,1fr) auto` with 6px gaps.
-
-Map inspection entries use bound-colored dots with compact KM-station labels placed immediately beside, above, or below their respective dots. Leader lines and arrows are not used. Labels avoid the map header, legend, filter panel, and each other; when density leaves no nearby collision-free position, the label is suppressed until zooming reveals enough space while the dot remains visible and interactive.
-
-Map landmark labels distinguish formally identified interchanges from ordinary exits and append the station without a redundant `KM` prefix, for example `Dau Interchange · 83+353` and `Libtong Exit · 19+550`.
-
-Landmark pins use a compact 22 × 28px visible symbol, comparable to map point-of-interest markers, centered within a 44 × 44px touch target. The tooltip offset follows the smaller visual pin rather than leaving the previous oversized gap.
-
-Inspection touch sizes: ordinary lane buttons are 60px high; navigation, theme, bridge, camera category, export, select, focus select, and inspection date/filter controls are at least 44px. Map date/filter controls remain 38px. The two inspection dates, separator, filter, and select-all control remain on one compact row down to common 390px phone widths. Camera topbar controls are 36px, or 34px at ≤380px. These are measured patterns, not a claim that every control meets a uniform target size.
-
-## Elevation & Depth
-
-Depth comes from translucent gradient fills, thin borders, offset shadows, and selective backdrop blur. Preserve the combined treatments instead of imposing a flat or shadow-only system.
-
-| Surface | Existing shadow / blur |
-| --- | --- |
-| Shared dark card token | `0 10px 28px rgba(0,0,0,.18)` |
-| Shared light card token | `0 7px 20px rgba(38,48,56,.09)` |
-| Dark readout | `0 12px 24px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.035)`; 14px blur |
-| Station card | `0 14px 34px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.08)`; 12px blur |
-| Compact dark raised control | `0 7px 16px rgba(0,0,0,.20)` |
-| Map panel | `0 8px 22px rgba(0,0,0,.24)`; 12px blur; light shadow `0 7px 20px rgba(38,48,56,.13)` |
-| Bottom tray | `0 -8px 24px rgba(0,0,0,.24)`; light `0 -7px 22px rgba(38,48,56,.11)` |
-
-Dataset dots intentionally have glow. General controls transition transform/filter over 120ms and background/border/shadow over 160ms, using ease. Lane controls use 100ms transform/filter and 140ms shadow; pressed state scales to .97 and darkens to .9 brightness. Swipe rows use 180ms ease, with a 900ms preview animation after 250ms. Existing reduced-motion overrides cover swipe previews/transitions, dataset chevrons, theme toggle, tabs, and photo-image optimization; there is no blanket removal of all control transitions.
-
-## Shapes
-
-The nominal radius tokens do not describe every final component. Preserve the explicitly restored pre-system overrides in `radius-system.css`.
-
-| Component | Final corner treatment |
-| --- | --- |
-| Header / dataset drawer | Square top; 24px / 30px lower corners |
-| Dataset panel / reload button | 14px / 10px |
-| GPS readout / direction panel / direction button | 18px / 10px / 12px |
-| Station / bridge menu / menu option | 20px / 14px / 9px |
-| Edit modal / its inputs and action buttons | 12px / 8px |
-| Edit photo thumbnail | 10px parent clipping; image 0 |
-| Camera lane picker / its fields | 10px / 7px |
-| Select toggle / export | 999px |
-| Bottom tray / tab highlight | 0 / 12px |
-| Map panels / date controls | 14px / 10px |
-| Photo card / image | 8px parent clipping / 0; fullscreen zoom is square |
-| Sharing dialog / inner controls | 24px / computed 7px (24 − 16 padding − 1 border) |
-
-**The Restored Corners Rule.** Do not replace these values with a formula-derived scale. Use parent clipping for photo corners and offset outlines for focus; do not clip an entire interactive panel to round a child image.
-
-Swipe wrappers and their cards share 8px corners in dark mode and 16px in light mode. Focus select is also theme-specific: 12px dark and 16px light.
-
-## Components
-
-### Header and dataset drawer
-
-Keep the centered image logo and compact timestamp/saved-count line. The default logo height is 64px, 48px at ≤600px, and 58px in landscape ≥700px. Dataset status is an overlapping disclosure drawer with a colored dot, uppercase status text, and circular chevron. Preserve native disclosure behavior and the loaded/pending states.
-
-### Station and direction controls
-
-The green station card is the signature component: large station number, small unit, adjacent nearby-bridge text, classification filter, and compact segment/ramp tags. The bridge filter keeps a 44px tap target but renders a centered 28px visible control aligned with the Nearby Bridge heading so it cannot overlap the bridge name. Segment tags have translucent black fill, 5px 12px padding, 12px bold text, and 16px corners; ramp tags use translucent blue with a blue border. Direction buttons form a vertical pair and use the yellow gradient when active.
-
-### Defect and utility buttons
-
-Keep the five-lane category rows and distinct defect colors. Native checkbox overlays support the existing haptic interaction. Camera category buttons use the raised panel gradient and a masked camera icon; hover lightens the gradient. The log header contains Import and the conditional Imported files menu. A sticky action footer above the bottom navigation contains the entry/selection count, Select/Cancel, and Export/Export selected. Selection mode exposes Select all and Delete selected above the records. Import uses the existing panel surface; Export uses safety green. The single Export action opens a native dialog with the current selected/filtered/saved count and choices for Excel only or Excel with photos. Both choices reuse existing export handlers and inspector attribution. Disabled controls retain their current muted/opacity treatments. Do not invent additional hover effects for controls that have none.
-
-Excel exports center headers and body cells. KM stations remain numeric metre values and use the custom Excel number format `0+000`; unavailable stations remain blank. The photo workbook embeds available JPEG/PNG files as native Excel Place in Cell rich values in the existing Photo column, keeps Photo Filename intact, increases only photo-bearing row heights, and leaves missing-photo cells blank. Rich-value relationships are preserved on import so the `.xlsx` remains an offline, shareable inspection package. Legacy KMTrack photo ZIP files remain importable, but new photo exports use a single workbook and never floating worksheet drawings.
-
-### Log entries
-
-Records share a single bordered list with separators and no gaps. Each row keeps 10px 12px padding, a bold defect title and a 4px defect-colored edge. Wide screens use aligned selection, Type, Date, Expressway/Segment, KM, Bound and Lane columns; at ≤760px the title/date sit above wrapping road context. Outer list corners remain rounded; interior rows are square. Photos retain their existing view/remove actions. Full timestamps and coordinates remain available in entry details. Selected entries have an inset yellow outline; light selection uses `#fff5cf`. Swipe actions expose blue editing and red deletion, with a floating undo message. Preserve the category border through light-mode overrides and keep revealed actions clipped.
-
-The Inspection Log heading carries the current filtered result count in a compact red notification badge tucked against the title's upper-right corner. The badge is 24px tall, uses a restrained glow, stays circular for short counts and expands into a fully rounded capsule for longer, comma-formatted counts; the old count/filter-result row stays hidden. The sticky log action area uses a stable two-column grid. Normally Select and Export form its only action row. In selection mode, equal-width Select all and Delete selected appear as the temporary top row while the persistent Select-to-Cancel and Export controls move together to the bottom row, preserving their positions and meaning. All four controls are 44px tall with identical 8px corners, one-pixel border geometry and no inherited shadow, nested inside the panel's 16px corners and 8px padding. Their fill colors may differ by purpose, but their shapes must not. Select enters selection mode without choosing any records and changes its text to Cancel. Row checkboxes render a 28px rounded square with an 8px radius centered inside an unchanged 44px tap target. Empty boxes use a transparent fill with a muted blue-gray 2px outline; checked boxes use the app's warm yellow fill with a dark navy, geometrically centered SVG-mask check. Selected rows retain the yellow inset outline. Record IDs remain the selection keys, and row checkboxes are keyboard-operable.
-
-### Inputs, filters, and dialogs
-
-Inspection dates remain visible beside a 44px funnel disclosure. Inspection-log, map-entry and nearby-bridge filters all use the same filled funnel artwork. Active filters use the same yellow icon, yellow border and restrained yellow glow; the bridge version retains its smaller visible footprint inside a 44px tap target. Defect type and Clear filters sit inside the inspection popup; the funnel indicates active filters and closes after choosing a type, clearing filters, Escape, or an outside click. Source and inspector fields share the funnel popup with defect type. A compact three-line Imported files control sits beside Import and opens a newest-first list of import batches. Each batch detail shows its filename, inspection date range, import timestamp and remaining entry count; its inspector name can be edited for the full batch, or the batch and its photos can be deleted after confirmation without affecting own inspections. The text-based Select control sits beside Export in the sticky log action area. Controls wrap on narrow phones; at 320px the log heading occupies its own row. The map filter disclosure opens a vertical, scrollable options panel capped at 50dvh. Edit fields use 16px text and at least 48px height; sharing controls use at least 42px. The native sharing dialog is at most 420px wide (viewport minus 32px), 85dvh high, padded 16px, with a dark `.6` backdrop. Preserve existing semantic labels, disabled states, validation, and modal behavior.
-
-### Bottom navigation and map
-
-Two equal tabs place 21px outlined SVG icons above text. The tray stays rectangular and highlights remain rounded. Selected tabs expose `aria-selected`, and only the selected tab has a normal tab stop. Left/Right wrap; Home/End select the endpoints. The new tab focus outline is 2px `currentColor` with 2px offset. Checkbox-backed lane controls now expose focus on their visible label with a 3px yellow outline and 2px offset. Browser zoom is no longer capped by viewport metadata. General buttons/inputs/selects still have the more specific inline 3px translucent-yellow focus outline; swipe cards use an inset outline. Do not describe the lower-specificity 2px global fallback as overriding all of these.
-
-Map controls reuse translucent panels and circular 44px locate/theme actions. Map landmark labels use compact native system typography with a restrained map-style halo. The legend represents landmarks with a miniature version of the same yellow interchange/location pin used on the map, not an abstract diamond. The curated landmark catalog omits General T. de Leon, Parada and Libis Baesa; uses Mindanao Exit and R10 Ramp; and locates Caloocan Interchange and C-3 Road Exit at their respective named central OSM motorway-junction nodes rather than centroids spanning unrelated ramps. KM labels use the same transparent, unboxed typography with a subtle bound tint applied only to the text: blue for NB, red for SB, yellow for EB, purple for WB and neutral gray for Other/unset, matching their dots while preserving light/dark contrast. The map filter includes bound alongside defect type, source and inspector. Pressing All dates fills the visible From and To controls with the oldest and newest saved inspection dates and gives the button an active yellow state; manually changing either date clears that state. Preserve existing light/dark map tiles, attribution, and entry markers.
-
-### Photo and camera surfaces
-
-Camera controls sit over the live viewfinder with safe-area spacing; landscape rearranges lane controls and review actions horizontally. Photo previews clip inside their own card; fullscreen zoom removes card rounding and exposes compact dark translucent zoom controls (42px minimum, 10px corners). Preserve pinch/pan, capture, review, and close behavior.
-
-## Do's and Don'ts
-
-### Do:
-
-- Do preserve both themes, the existing logo assets, gradients, and translucent panels.
-- Do use the final cascade and restored corner values as the baseline.
-- Do retain defect-color associations across capture controls and log entries.
-- Do preserve native controls, keyboard focus, safe-area spacing, and inspection workflows.
-- Do update this baseline deliberately when an approved visual change alters the system.
-
-### Don't:
-
-- Don't reapply the rejected flat color-system restyle.
-- Don't round the bottom navigation tray or square its selected highlights.
-- Don't normalize existing sizes, radii, or typography merely to fit a new scale.
-- Don't invent palette ramps, claims, or new visual patterns and label them as existing.
-- Don't modify GPS, camera, storage, import/export, or offline behavior during visual refinement.
-
-## Map entry and landmark overlays (2026-09-10)
-
-The map displays saved entries by default, honoring its existing date, defect, source, and inspector filters. Direction colors are NB cyan #00b9f2, SB red #ef4444, EB yellow #f4b400, WB violet #b18cff, and other/unset gray #a7b0b8. These map-only colors do not change inspection defect colors. The upper-right legend lists directions in the filtered entries.
-
-Each visible entry has its saved KM station in a callout joined to its geographic dot by a direction-colored leader. Missing KM values read KM n/a. Labels stagger when space permits and use 44px minimum hit heights; dots have transparent 44px hit targets. Clicking either opens the same entry editor used by the inspection log, resolving the entry by stable ID.
-
-Yellow map pins identify interchanges and Pulilan/Tibag Underpass. Names appear from zoom 12, with details on click. Existing bridge coordinates remain authoritative for existing assets; supplementary OSM landmark data is bundled and cached offline. See MAP_LANDMARKS.md for source provenance and coverage. Basemaps, gradients, fonts, and bottom navigation retain their existing design.
-
-The live inspection readout also uses the bundled `interchanges.json` line dataset converted from the supplied `Final NLEX Mainline Interchange.gpkg`. It matches GPS positions within 50 metres of 448 drawn line features across 21 interchange/exit sites and displays the shared site name only. Individual defects continue to use the inspector-selected lane; the interchange geometry does not assign or override lane values. The line dataset remains separate from mainline KM interpolation and is cached for offline use.
-
-Location matching retains a confirmed corridor instead of selecting the globally nearest calibration point on every GPS fix. KM interpolation is restricted to that corridor. A different corridor is accepted only after several consistent, plausible fixes show at least 30 metres of movement near a mapped interchange line while the prior corridor has become materially farther away. Nearby vertically overlapping corridors do not trigger a switch. Startup remains provisional until repeated fixes agree; stale or lost GPS retains the last confirmed road for display but disables new defect/photo capture. A confirmed interchange/exit name survives short gaps between its drawn ramps and approaches, and is saved with entries, photo watermarks, sharing metadata, and Excel exports.
-
-When the vehicle remains close to a calibrated through-road inside an interchange footprint, the station card continues to show that corridor and KM—for example Segment 8.1 passing over Smart Connect or NLEX passing beneath it. When the confirmed vehicle track departs the calibrated corridor but remains on a supplied interchange line, the left side changes from **Current KM Station** to **Current Location**, displays the interchange/exit name, and intentionally omits KM. An explicit QGIS `ramp`/`seg_type` label is displayed and exported when available; otherwise the honest fallback is `Ramp / interchange roadway`, with the inspector-selected lane (such as Acce or Dece) providing the operational detail. Saved interchange records retain the confirmed corridor and bound while leaving KM blank. Excel adds backward-compatible `Interchange / Exit` and `Interchange Segment` columns.
-
-The supplied GeoPackage currently has no populated `from_node` or `to_node` values, only one populated `level`, and almost no corridor/bound/travel classification. Therefore the app does not infer graph connections from crossing lines. The conservative switching evidence above is deliberately limited to sustained motion near the supplied interchange geometry; authoritative node, level, and connected-corridor attributes are still required for deterministic ramp-by-ramp routing.
-
-## Design system layer and four-tab shell (2026-09-17)
-
-**This section supersedes the earlier "Gradient Identity Rule" and the green
-station treatment.** The change is an explicit, user-approved direction change
-based on a reference design system, not a reinstatement of the previously
-rejected flat restyle. It is recorded here deliberately, per the Do's list
-above.
-
-### Where the new styling lives
-
-The design system is implemented in a single new stylesheet,
-`design-system.css`, loaded **after** `radius-system.css`, `sharing.css`,
-`photo-viewer.css`, and `map-overlays.css`, so it is last in the cascade. It
-retunes the existing root token layer and restates component treatments at
-equal-or-higher specificity. It does **not** redefine the radius scale.
-
-An explicit "specificity bridge" block exists because the inline stylesheet
-carries `html[data-theme="light"] …` rules that outrank a bare class selector.
-Any future light-mode fix should be added to that block rather than inlined.
-
-### Palette
-
-**Source of truth.** The real `tokens.json` from the reference export —
-`REPLIT_KMTrack/artifacts/kmtrack-design-system/tokens.json` — is authoritative
-for every colour, radius and font. It declares colours as hex; the values below
-are the resolved equivalents in this app's `hsl()` syntax. They were verified by
-converting both sides to hex and diffing: **0 drift in both themes.** Re-run
-`.playwright-cli/pw/diff-tokens.cjs` after any palette edit.
-
-Legacy token names are preserved and remapped onto the new ramp, so existing
-rules inherit automatically: `--asphalt`, `--asphalt-2`, `--panel`,
-`--panel-raised`, `--surface-soft`, `--line-white`, `--text-muted`,
-`--text-subtle`, `--border`, `--border-strong`, `--line-yellow`, `--safety-red`.
-
-| Token | Dark (default) | Light |
-| --- | --- | --- |
-| `--ds-bg` | `hsl(214 35% 11%)` | `hsl(42 25% 93%)` |
-| `--ds-bg-2` | `hsl(214 34% 14%)` | `hsl(42 27% 90%)` |
-| `--ds-card` | `hsl(214 30% 15%)` | `hsl(42 28% 97%)` |
-| `--ds-card-2` | `hsl(214 27% 19%)` | `hsl(42 32% 99%)` |
-| `--ds-muted` | `hsl(214 22% 22%)` | `hsl(40 16% 87%)` |
-| `--ds-sidebar` | `hsl(214 37% 7.5%)` | `hsl(214 34% 16%)` |
-| `--ds-fg` | `hsl(40 22% 92%)` | `hsl(214 34% 16%)` |
-| `--ds-fg-muted` | `hsl(214 12% 68%)` | `hsl(214 13% 41%)` |
-| `--ds-border` | `hsl(214 19% 27%)` | `hsl(39 17% 80%)` |
-| `--ds-input` | `hsl(214 19% 33%)` | `hsl(39 17% 74%)` |
-| `--ds-primary` (amber) | `hsl(43 96% 52%)` | `hsl(43 96% 52%)` |
-| `--ds-secondary` (teal) | `hsl(182 42% 49%)` | `hsl(188 36% 31%)` |
-| `--ds-accent` | `hsl(186 27% 23%)` | `hsl(183 49% 87%)` |
-| `--ds-destructive` | `hsl(2 70% 55%)` | `hsl(2 66% 47%)` |
-| `--ds-ring` | `hsl(43 96% 52%)` | `hsl(40 91% 51%)` |
-
-Control borders use the design system's dedicated `--ds-input` colour;
-`--ds-border-strong` is an alias for it.
-
-**Degrees of freedom not taken.** `tokens.json` says `radius.base = 0.875rem`
-(14px, adopted as `--radius-card`) and that *"controls use a tighter 10px
-treatment"*. Control radii are **not** re-tuned to 10px, because `AGENTS.md`
-protects the restored corner values over any radius system. That remains an
-open, deliberate deviation.
-
-**The Role Rule.** Amber advances an inspection, teal verifies it, red destroys
-it. Amber is reserved for the single primary action in a surface; `Export` was
-previously painted `--safety-green` in `sharing.css` and now takes amber.
-
-### Typography
-
-`--font-ui` is **Space Grotesk** (variable 300–700) and `--font-readout` is
-**DM Mono** (400/500), both self-hosted under `fonts/` with latin and latin-ext
-subsets and matching OFL license files. Coordinates, stations, timestamps and
-other evidence values are mono with tabular numerals. Field and status labels
-use a 10px uppercase eyebrow with `.16em` tracking. The earlier `Inter` face and
-its `@font-face` remain in place but are no longer the primary UI font.
-
-### Tab shell
-
-The bottom tray is **five columns — Capture | Log | Map | Tools | Settings** —
-with the labels copied verbatim from the reference so the two products read the
-same. The tray stays rectangular and only the selected tab is highlighted
-(amber). `showAppView()` is driven by an `APP_VIEW_IDS` map rather than the
-previous hardcoded two-view branch.
-
-Note: the first tab's *label* is `Capture` but its internal id is still
-`inspection-tab` / `inspection-view` / `data-app-view="inspection"`. Only the
-user-visible name was changed; renaming the ids would touch `APP_VIEW_IDS`,
-`mountLogRegister()` and the tests for no user-facing gain.
-
-Data controls were relocated into these tabs, which supersedes the earlier
-"preserve current button locations" instruction for these specific controls:
-
-- **Log** holds `Import`, the export trigger, `Imported files`, and import
-  status — all in the Log tab's data cards, mounted into `#log-export-actions`
-  and `#log-import-actions`. The `#export-btn` / `#backup-btn` elements
-  deliberately remain in the markup inside `.export-actions`, because
-  `log-controls.js` adopts them into the export-format dialog.
-- **Tools** holds **Alignment & calibration** — the network/interchange dataset
-  drawer, moved out of Settings to match the reference's Tools tab ("Local data
-  control").
-- **Settings** holds the theme toggle and storage status. The theme toggle is
-  `position:static` inside its card; it was previously pinned to the masthead
-  corner.
-- The masthead keeps only the brand and the clock. It stays a **dark** surface
-  in both themes, because the `KMTrack.png` wordmark is white and would be
-  illegible on the light `--ds-card`.
-
-#### The shared register (one node, two tabs)
-
-The inspection log appears in **both** the Inspection and Log tabs — the owner
-needs immediate delete access from the capture screen, because a mis-logged
-entry must be removable on the spot.
+The inspection log appears in both the Capture and Log tabs because a
+mis-logged entry has to be deletable from the capture screen on the spot.
 
 It is **one DOM node** (`#log-register`), re-parented by `mountLogRegister()`
-on tab switch between `#log-host-inspection` and `#log-host-log`. Do **not**
-"fix" this by rendering the list twice: `renderLog()` writes `list.innerHTML`,
-so a second list would fork the rows, the selection set, the bulk-delete state,
-the swipe handlers and the `MutationObserver` watching `#log-list`.
+between `#log-host-inspection` and `#log-host-log`. Do **not** render the list
+twice: `renderLog()` writes `list.innerHTML`, so a second list would fork the
+rows, the selection set, the bulk-delete state, the swipe handlers and the
+`MutationObserver` watching `#log-list`.
 
-`tabs-navigation.test.js` asserts there is exactly one `#log-register`, one
-`#log-list` and one `renderLog()`. The footer and filter bar travel with the
-block because `log-controls.js` inserts them as siblings inside it.
+`log-list-view.test.js` asserts exactly one `#log-list` and one `renderLog()`.
 
-#### Register toolbar and the records chip
+### The Capture tab is capped, the Log tab is not
 
-The full-width `.log-action-footer` card that used to sit under the list is
-**removed**. Select and the bulk actions are mounted into `#log-select-actions`
-in the **Log tab's head**, sharing one row with the records chip:
+Capture shows the newest `CAPTURE_RECENT_LIMIT` (10) records plus a
+`View all N entries` button; Log shows everything. The cap is applied **per
+mount** in `renderLog()` via `logRegisterView` — **not** by a second renderer.
+`mountLogRegister()` re-renders on host change so each tab gets the right amount.
 
-```
-[N records] ····················· [Select]
-```
+Every count still comes from the uncapped `visible` set.
 
-Pairing them keeps "how many" and "choose from them" together, and avoids a row
-holding a single floating button — which is what happened when Select sat alone
-in the register toolbar. Select therefore exists only in the Log tab; the
-Capture tab keeps per-entry swipe-to-delete and shows only the register heading
-and badge. Idle, the selection count is hidden because the badge already reports
-it.
+### The Capture tab renders the register as ONE card
 
-The mount carries the `.log-select-actions` class itself and the JS appends the
-controls straight into it. Wrapping them in an extra div breaks the
-`margin-left:auto` that pushes Select right, because the wrapper shrinks to
-content.
+The header and the rows form a single card separated by hairlines, rather than
+floating blocks. Scoped to `.inspection-view #log-register`, so **the Log tab
+keeps its plain list** — the two tabs deliberately present the same records
+differently.
 
-In the **Log tab** the head is deliberately minimal: an `Inspection log`
-heading, then the chip + Select row, then a bare `.log-data-row` of buttons
-(`Export`, `Import`, `Imported files`), then one muted import hint, then the
-register. The `Evidence register` eyebrow and the description line that used to
-sit here were removed as visual noise.
+- The defect indication is the row's **existing left border**, which already
+  carries the app's own colours: `--line-yellow` as the default (Potholes has no
+  type class), `--safety-orange`, `#c9c9c9`, `#c1707a`.
+- Rows go full-bleed (`gap:0`, `border-radius:0`, no shadow); the card owns the
+  radius and the clipping. `View all` is the card's footer.
+- **Rows stay per-row `.swipe-row` wrappers.** The card is a visual shell only —
+  swipe, selection and the list observer are untouched.
 
-The actions were previously cards placed **below** the register, which pushed
-them off-screen as soon as the register ran long — with hundreds of rows they
-were unreachable without a long scroll. The export card's explanatory line moved
-into the export dialog as `.export-hint`; import keeps a single hint line
-because it has no dialog, and adding one would cost a tap on a routine action
-just to learn which file types are accepted. `.ds-chip` replaced the old red
-numeric badge, and `.log-view .log-header h2` is hidden so the heading is not
-duplicated.
+**There is no filter row on this mount.** Filtering belongs to the Log tab's full
+register. `visibleEntries()` returns everything when `logRegisterView ===
+'inspection'`, so a filter set on the Log tab cannot leave this card showing a
+subset the user has no way to clear from here. The Log tab's filter is untouched
+and still applied when the user returns to it.
 
-#### Heading case
+Two specificity traps bite here, both because `sharing.css` and
+`radius-system.css` style these with `html:root[data-theme]` chains that outrank
+a bare class selector:
 
-The reference pairs uppercase eyebrows with **sentence-case** headings. The old
-app-wide `h2{text-transform:uppercase}` treatment is superseded: `h2` is now
-`text-transform:none`, and `.ds-view-head h2` runs at 30px/700 with `-.06em`
-tracking. That is why the views read `Inspection log`, `Tools`, `Settings`
-rather than `INSPECTION LOG`, `TOOLS`, `SETTINGS`.
+1. The overrides must be prefixed `html:root` or the rows keep their 1px border
+   and 16px radius and never merge into the card.
+2. The row rule resets **only the non-left edges** (`border-top/right/bottom:0`
+   plus `border-left-width`). Writing the `border-left` shorthand there would
+   repaint every row yellow and wipe out the per-defect colours.
 
-### Surfaces and preserved behaviour
+### The instrument metrics mirror the reference
 
-Cards are quiet panels — hairline border, card fill, one soft shadow. The
-KM-station card briefly used a dark evidence surface with amber rings and a
-hazard stripe; that treatment was removed when the panel was merged (see below),
-because the reference system reserves dark surfaces for its *capture* card, not
-for readout metrics.
+Values are copied from the reference's `Metric` component and its call site in
+`GpsCard`: cells are `px-3 py-3 first:pl-4` in a 2-column grid with `divide-x`
+only (**no** horizontal rule between the metric rows), labels are
+`text-[10px] font-bold uppercase tracking-wider` with a 14px icon and a 6px gap,
+and **every** value — accuracy, corridor, stationing, bound — is
+`mt-1 truncate font-mono text-[13px] font-medium`.
 
-Deliberately preserved: the restored corner values and radius scale (protected
-by `AGENTS.md`; this layer never re-tunes radii), per-defect colour coding, and
-all GPS, camera, storage, import/export, and offline behaviour. The dimmed
-`gps-pending` appearance remains the pre-existing `opacity:.35` on
-`.defect-category`, unchanged by this layer.
+The interchange is a **separate full-width row below the grid**
+(`flex items-center gap-2 border-t px-4 py-3`): a 14px network icon in
+`--ds-secondary`, a muted `Interchange identity` label, and the name pushed right
+in bold. `#ramp-tag` lives there and keeps its existing writer; the row hides
+itself via `:not(:has(.ramp-tag.show))`, so `updateRampReadout()` needed no
+structural change.
 
-`sw.js` is bumped to `v145` and caches `design-system.css` plus the six new
-font files.
+### The header is global
 
-### Merged instrument panel (2026-09-17)
+It sits **before the view containers**, so `showAppView()` toggling `hidden` on a
+view cannot hide it. It carries the brand, an `Off network` pill and a refresh
+button.
 
-The former `.readout` (latitude, longitude, accuracy, points logged, bound) and
-`.kmpost` (station, nearby bridge) are now **one** panel,
-`section.kmpost.instrument-panel`, restyled after the reference metric card:
+Its values are copied literally from the reference (`artifacts/kmtrack/src/
+App.tsx` + `src/index.css`) rather than inferred from a screenshot: header
+`bg-[hsl(var(--background)/.93)]` + `border-b border-[hsl(var(--border))]` +
+`px-4 py-3 backdrop-blur`, `.status-pill .status-bad` for the pill, and
+`.btn .btn-ghost !min-h-9 !px-2` for the refresh. **Our `--ds-*` tokens already
+carry the reference's exact hsl values**, so none of it is hard-coded.
 
-1. **Status strip** — the road-match/GPS trust pill only. It shrinks to the
-   message; with the saved count and filter gone, a stretched pill would read as
-   a full-width banner.
-2. **2x2 metric grid** — a vertical rule between columns, a small line icon per
-   label, and no horizontal rule between rows. Order matches the reference:
-   `ACCURACY` / `CORRIDOR` over `STATION` / `BOUND`.
-3. **Nearby bridge** row — the bridge feature and its classification filter,
-   which now lives at the end of this row rather than in the header.
-4. **Coordinate footer** in mono, carrying latitude and longitude.
+The brand is the **mark plus a text wordmark** (`KM` in `--ds-fg`, `TRACK` in
+`--ds-primary`), matching the reference's `Brand`. The outlined lockups
+(`kmtrack-logo-on-dark.svg`, `-on-light.svg`) are unused by the shell now and
+exist only as brand assets.
+- **The map swaps the wordmark for its station and status in place.**
+  `#map-km-station` and `#map-status` were *moved* into the header rather than
+  reimplemented, so `updateOsmLocation()` and the station writers keep working
+  untouched. The map's own topbar is gone with it.
+- **The map tab no longer has its own dark/light toggle**; it follows the app.
+- The refresh button re-checks `navigator.onLine` and drains the sync queue.
+  Until a transport is supplied that queue is inert, so today it effectively just
+  re-tests the connection.
 
-The bridge filter opens a dropdown *below* the card. `.kmpost.instrument-panel`
-therefore sets `overflow:visible`; nothing inside is full-bleed, so there is
-nothing to clip. Do not restore `overflow:hidden` here or the dropdown will be
-cut off.
+`--app-header-h` is measured by `syncHeaderHeight()`, not hard-coded: the map
+height subtracts the header as well as the tab tray, and the header's height
+moves with the safe-area inset and the logo.
 
-The panel is **theme-aware** (`--ds-card` / `--ds-border` / `--ds-fg`): light in
-light mode, dark in dark mode, matching the reference rather than the app's
-previous always-dark hero card.
+### The clock lives in the instrument footer
 
-#### Exact reference measurements
+`#clock` and `#clock-saved` moved out of the header to sit beside the
+coordinates. `"· N saved"` is dropped when the row cannot fit it — measured, not
+guessed, because the date string moves with the month and the locale. It fits at
+320px and drops at 285px.
 
-These values were read from the live reference app with `getComputedStyle`
-(390px viewport, matching state) rather than estimated, and the local panel
-copies them literally. The extra `--radius-card:14px` token exists solely for
-this card.
+### Where Select lives
 
-| Element | Reference class | Resolved value |
-| --- | --- | --- |
-| Card | `panel overflow-hidden` | radius 14px, `1px` border, `--ds-card`, padding 0 |
-| Header | `px-4 py-4 bg-[hsl(var(--muted)/.65)]` | padding 16px, gap 16px, **no bottom border** |
-| Header tint | — | `hsl(var(--muted)/.65)` — the tint alone separates it from the metrics |
-| Metric cell | `min-w-0 px-3 py-3 first:pl-4` | padding 12px, first cell 16px left |
-| Cell separators | `grid grid-cols-2 divide-x` | vertical rule between columns only |
-| Metric label | `gap-1.5 text-[10px] font-bold uppercase tracking-wider` | 10px/700, tracking `.05em`, gap 6px, line-height 1.5 |
-| Metric value | `mt-1 truncate font-mono text-[13px] font-medium` | **13px**/500 DM Mono, line-height 1.5, margin-top 4px |
-| Footer | `border-t px-4 py-3 font-mono text-[11px]` | 11px DM Mono, padding 12px 16px, `1px` top border |
+`Select` rides at the **right end of the Export / Import data row**, pushed there
+by `margin-left:auto` on `.log-select-actions`. Clicking it does two things: the
+button becomes `Cancel` in the same slot, and `.log-bulk-actions` — a separate
+mount **below** the data row, `justify-content:flex-end` — is revealed with
+`Select all` and `Delete (5)`, flushed to the same right edge.
 
-**The No-Row-Separator Rule.** The reference grid uses `divide-x` and *not*
-`divide-y`: the vertical rule between the two columns must be kept, but there is
-deliberately **no horizontal rule between the top and bottom metric rows**.
-Do not add `border-top` to the second row of cells.
+**It must stay BELOW.** Placed above, the new row shoved the Export/Import row —
+and the button you had just tapped — 44px down the instant Select was pressed.
+Measured: the data row's `top` and the toggle's right edge are now identical in
+both states. (The toggle's *left* edge shifts ~2px, purely because "Cancel" is a
+wider word than "Select" in a right-anchored slot.)
 
-#### Iconography
+This replaced an earlier arrangement where the actions owned a permanent row and
+nothing moved at all. The owner preferred Select grouped with the data actions;
+the bulk row appearing on click is now intended, not a regression.
 
-Every glyph is taken verbatim from the reference app, which is built on
-**lucide**. The path data below was extracted from its live DOM; these are not
-redrawn approximations. All use `viewBox="0 0 24 24"`, `fill:none`,
-`stroke:currentColor`, `stroke-width:2`, round caps and joins.
+**Measured**, so a future button cannot silently break the row: `Export` 100px +
+`Import` 99px + `Select` 70px = **285px against 362px available** at 390px
+(287px in selection mode with `Cancel` / `Export selected`). At 360px there is
+still 47px of slack. Anything added to that row has to fit in what is left.
 
-| Where | lucide name | Size |
-| --- | --- | --- |
-| Metric — stationing | `navigation` | 14px |
-| Metric — corridor | `route` | 14px |
-| Metric — accuracy | `gauge` | 14px |
-| Metric — bound | `compass` | 14px |
-| Tab — Inspection | `locate-fixed` | 19px |
-| Tab — Map | `map` | 19px |
-| Tab — Tools | `database` | 19px |
-| Tab — Settings | `settings` | 19px |
+The chip is the selection readout: `N records` idle, `S of N selected` while
+selecting. `#selection-count` was removed so two counters never compete.
 
-Reference glyphs not yet used locally, available if wanted: `signal` (20px,
-status tile), `refresh-cw` (17px), `camera` (21px), `chevron-right` (18px),
-`shield-check` (14px), `clipboard-list` (21px), `crosshair` (23px, sw 2.5),
-`layers` / `user-round` / `activity` (16px).
+**"records" is dropped while selecting on purpose.** Measured at 390px: title
+182px + chip 177px = **371px against 358px available**, so the long form wraps
+the chip to its own line. The short form is ~323px and fits at 390px and 360px.
 
-Every metric value is 13px mono **except stationing**. `STATION` is the
-field-critical reading on this panel, so its value is the one deliberate step
-up from the reference scale: `clamp(18px, 5.4vw, 21px)`. Everything else on the
-panel uses the reference sizes verbatim.
+Verify with `verify-final-row.cjs` — it asserts the three data-row buttons share
+a line, that `Select` and `Cancel` are flush with the row's right edge, and that
+the bulk row sits above the data row.
 
-**The one deviation from the reference.** The **nearby bridge** row exists
-because the reference has no equivalent and bridge data plus its classification
-filter are load-bearing. Its filter control is the app's own lucide `filter`
-glyph, not a reference glyph.
+---
 
-Removed by request, and their writers made null-safe: the saved-record count
-(`#count-mini`) — the masthead already reports the same total — and the station
-unit caption (`#current-location-detail`). The station label now reads
-`Station`, becoming `Location` inside an interchange.
+## Traps
 
-Structural contracts this markup must keep, because the JavaScript depends on
-them:
+These all produced bugs that took time to find. They are not style opinions.
 
-- The element keeps the `kmpost` class — `updateReadout()` calls
-  `#km-value.closest('.kmpost')` to toggle `interchange-mode`.
-- `#bound-toggle` must contain **only** dynamic content: `renderBoundToggle()`
-  overwrites its `innerHTML`, so the `BOUND` label lives outside it.
-- `#count-mini` remains in the DOM (in the status strip) because
-  `renderEntryCount`-style code writes to it directly; "points logged" is no
-  longer shown separately since the masthead already reports the same total.
+### `[hidden]` loses to a class `display`
 
-`instrument-panel.test.js` guards these contracts.
+`.ds-chip` and `.ds-btn` set `display:inline-flex`, which **outranks** the UA
+`[hidden]{display:none}`. A hidden chip rendered as a stray empty dot, and the
+"Imported files" button showed with no history behind it. Fixed by
+`.ds-chip[hidden],.ds-btn[hidden]{display:none}`.
 
-## Log date filters (2026-09-18)
+**Any new component with a `display` rule needs the same guard.**
 
-Two traps live here; both were hit in practice.
+### Never scope a shared control's styling to its mount
 
-**`.entry-filters` is not a card.** It is deliberately excluded from the
-card-surface selector list in `design-system.css`. Including it painted a stray
-white rectangle behind the log's date row. `.map-entry-controls` is different —
-that one is a genuine floating bar over the map and keeps the surface.
+This one has caused the same bug **three times**, twice in one session.
 
-**Vertical centring must be engine-agnostic.** With `appearance:none` and a
-forced height, WebKit and Chromium both leave the date text pinned to the top of
-the box. The centring is therefore done by **sizing the box symmetrically around
-the text** — `height:auto` with equal `padding-top`/`padding-bottom` (12px) — in
-`radius-system.css`. That works in every engine because it depends on geometry,
-not on shadow-DOM hooks.
+`#bulk-select-all-btn` and `#bulk-delete-btn` live in whichever container the
+layout currently wants. Each time they move, a rule scoped to the *old* mount
+stops matching and they silently fall back to **raw native buttons** — square
+corners, `1px 6px` padding, default 13.3px type, and a `2px outset` bevel on
+Delete. They never error; they just look wrong.
 
-The `::-webkit-datetime-edit{height:100%}` rules that sit alongside it are a
-Chromium-only belt-and-braces. They are **not** the fix: iOS Safari renders these
-inputs natively and ignores them, which is why a `::-webkit-*`-only solution
-shipped once and came back reported as still broken on iPhone.
+1. First they were styled inside `.log-action-footer`. That panel was removed.
+2. Then they were restyled under `#log-select-actions`. They moved to
+   `#log-bulk-actions`.
 
-The resulting field is ~44px, matching the 44px filter button beside it.
+They are now targeted by **ID only** (`#bulk-select-all-btn,#bulk-delete-btn`),
+which cannot be orphaned by re-parenting.
 
-## Brand identity — logo replacement (2026-09-17)
+**Rule: if a control can be moved, style it by its own id or class — never
+`#someMount .theControl`.** Nothing else in the cascade sizes these; without an
+explicit rule they render as browser defaults.
 
-**This supersedes the earlier instruction to treat the logo assets as
-immutable.** The replacement was explicitly commissioned by the product owner.
-`KMTrack.png` and `KMTrack_logo.png` are deliberately **retained** in the repo
-rather than deleted, so the previous identity can be restored or reused.
+### Legacy chips repurposed as plain values
 
-### The mark
+`.kmpost .ramp-tag` and `.kmpost .segment-tag` are painted as **accent chips** by
+the inline sheet (background, border, radius, padding). The metrics panel now
+uses both as plain text values, so each rule has to reset **all four** —
+resetting only the font leaves a filled pill around the interchange name.
 
-An amber instrument tile carrying a **road running to a vanishing point**: a
-navy tapered road body with amber centre dashes cut out of it, so the tile
-colour reads as the painted centreline.
+That is also why the metrics have ONE value scale. The reference's `Metric`
+component is `mt-1 truncate font-mono text-[13px] font-medium` for every cell,
+stationing included; the station used to be deliberately larger.
 
-Amber `#F5B400` on navy `#1B2737`, both taken from the existing design tokens
-(`--ds-primary`, `--ds-sidebar`). Tile corner is `13/48` of the tile, which
-keeps it in the same squircle family as `--radius-card`.
+### A dropdown anchored inside a row must be TOLD where to stop
 
-The road geometry is: body `M21.6 11.2H26.4L35.2 38.8H12.8Z`, with three
-round-capped dashes on `x=24` at `y 33.8–37.4` (w 3.0), `25.6–28.6` (w 2.1)
-and `18.4–20.2` (w 1.4), all on a 48×48 grid.
+The bridge classification menu is `position:absolute` inside `.nearby-asset`, so
+it escapes the instrument card — that part is fine. Two things were not:
 
-### The wordmark
+- `sharing.css` sets `html:root .bridge-filter-menu{top:52px}`, which outranks a
+  bare `.instrument-panel` selector and made the menu open **52px down — inside
+  the row it belongs to**. Fixed with
+  `html:root .instrument-panel .bridge-filter-menu{top:calc(100% + 8px)}`.
+- `max-height:280px` is a guess that knows nothing about what sits below. It ran
+  **8px past the defect buttons**. `fitBridgeFilterMenu()` now measures the space
+  from the menu's top to the first `.lane-btn-row` when it opens, subtracts a
+  16px gap, and sets `max-height` and `overflow-y` — so the list scrolls instead
+  of overlapping.
 
-`KMTRACK`, outlined to paths so the files carry **no font dependency**. This
-matters: an SVG loaded through `<img>` cannot load a webfont, so `<text>` in an
-image-loaded logo would silently fall back to a system font. The outlines were
-generated from the real face with `fontkit`, not drawn by hand.
+**Anything absolutely positioned needs its stopping point measured, not guessed**,
+because the content beneath it moves.
 
-### Assets
+### Do not mix two centring methods in one control
 
-| File | Use |
+The selection checkbox centred its **box** with `place-items:center` on a grid
+and its **check** with absolute positioning. Those are not independent: the
+moment the check appeared, the box jumped **4px up**.
+
+Measured by pixel bounds rather than by eye — the box was 28x28 in *both* states,
+but its centre moved from y=22 to y=18. Both pseudo-elements are now absolutely
+positioned and centred the same way, so neither can move the other.
+
+**Measure the pixels when a control "looks like" it moved.** Computed styles
+reported an identical 28x28 box and a stable `top` throughout; only the rendered
+bounds exposed it.
+
+### The header panel is dark in BOTH themes
+
+Superseded — that was the *old* masthead. The header now **follows the theme**,
+exactly like the reference (`bg-[hsl(var(--background)/.93)]`), because the brand
+is the mark plus themed text rather than a white SVG wordmark.
+
+### Legacy rules outrank a bare class chain
+
+The header is styled once, by `html:root .top-shell header`. The `html:root`
+prefix is **required**: two legacy rules outrank a plain `.top-shell header`
+because they carry a type plus an attribute/pseudo-class —
+
+- `index.html` — `html[data-theme="light"] header{background: …navy gradient…}`
+- `radius-system.css` — `html:root header{border-radius:0 0 24px 24px}`
+
+Both styled the old dark masthead. Without the prefix the light theme silently
+keeps its navy gradient and its rounded bottom corners; only the theme you did
+not look at appears correct. **When a change "does not apply", check whether an
+`html:root` / `html[data-theme]` rule is winning before editing your own.**
+
+### Re-declaring `display` does not reset a flex direction
+
+The inline sheet makes `.header-brand` a centred **column** (logo above the
+clock) at every width — those rules are top-level, not inside a media query.
+Overriding only `display:flex` left the column direction in place, so the new
+one-row header rendered stacked and centred. `flex-direction`, `justify-content`
+and `width` had to be reset too.
+
+### A per-second fit check runs while its tab is hidden
+
+`tickClock()` fires every second regardless of which tab is showing. When the
+Capture view is hidden its footer has no layout and `clientWidth` is `0`, so
+every "does it fit?" comparison fails and the saved count was hidden — then only
+restored if a tick happened to land while the tab was visible again.
+
+`fitInstrumentFoot()` bails out when `clientWidth` is 0 and is re-run on
+`showAppView()`. **Any measurement driven by a timer needs the same guard.**
+
+### Potholes carries no defect-type class
+
+`typeClass()` returns `''` for Potholes — yellow is the *default*, applied by the
+base `.log-entry` rule. A `.log-entry.pothole` selector never matches anything
+and silently falls through to the fallback. Set any per-type default on the
+**base** rule.
+
+### The count badge lives inside the `<h2>`
+
+`log-controls.js` appends `.log-count-badge` to the heading, so it is not a grid
+item of its parent. `grid-row` on it does nothing. `.inspection-view .log-header
+h2` is a column flexbox specifically so the eyebrow and the numeral stack.
+
+### The workbook's first 14 columns are frozen
+
+Not a style choice — `inspection-sharing.js` validates those headers on import
+and older exports must keep importing. New columns are **appended only**, and
+unknown trailing columns are ignored by the importer.
+
+### `typeClass` and the export lane rule
+
+`lane` is kept verbatim for display and for the import fingerprint.
+`lane_number` (whole 1–4) and `lane_other` are the structured pair, kept in step
+by `setLane()`, which every write site uses. `Number.isInteger` guards the export
+so `1.5` is never emitted as a lane.
+
+---
+
+## Data model — sync-ready record
+
+Groundwork for a future Supabase backend. **Nothing talks to a network**: no
+client, no auth, no API calls, no cloud photo upload, no Realtime, no RLS.
+
+`entry-model.js` is the single source of truth for the record shape and loads
+before the app script and before `inspection-sharing.js`, which reuses it
+(`require()` under Node, the browser global at runtime) so the lane rule exists
+once.
+
+| Field | Meaning |
 | --- | --- |
-| `kmtrack-mark.svg` | Rounded tile mark — favicon, app icon, avatar |
-| `kmtrack-logo-on-dark.svg` | Horizontal lockup, cream wordmark — the masthead |
-| `kmtrack-logo-on-light.svg` | Horizontal lockup, navy wordmark — light surfaces |
-| `kmtrack-icon-192.png` / `-512.png` | PWA icons, full-bleed and maskable-safe |
-| `kmtrack-apple-touch-icon.png` | 180px Apple touch icon |
+| `id` | Permanent UUID v4, assigned at creation, offline |
+| `created_at` / `updated_at` | ISO instants; `touch()` bumps the latter on edit |
+| `sync_status` | `pending` \| `synced` \| `failed` |
+| `user_id` / `team` | Empty, reserved for auth and team scoping |
+| `photo_path` | Empty; future private-bucket object path |
+| `lane_number` / `lane_other` | Whole 1–4, else `null`; free text, else `''` |
+| `sync_attempts` / `sync_error` / `remote_id` / `synced_at` | Sync bookkeeping |
 
-The PWA icons are **full-bleed** (no transparent corners) with the road scaled
-to 0.78 and centred, holding it inside the 80% maskable safe circle so any
-platform mask crops it cleanly. The rounded tile is used only where
-transparency is safe.
+`uuid()` prefers `crypto.randomUUID()` and falls back to a hand-built RFC 4122
+v4 — it never emits a non-UUID identifier.
 
-### Accepted trade-off: the road mark reads as an "A"
+`normalizeEntry()` **backfills only**. It **preserves unknown fields**, which
+matters: import attaches a transient `photoFile` Blob that must survive until it
+reaches IndexedDB. `loadFromStorage()` rewrites localStorage only when the
+migration actually changed something.
 
-This was measured, not assumed, and the owner chose the road mark with the
-finding in hand — so **this is a decision, not a defect. Do not "fix" it
-unprompted.**
+`sync-queue.js` decides what *would* upload and records the outcome. It is inert
+by construction: `createQueue({})` has no transport, so `ready()` is `false` and
+`drain()` returns `{ok:false, reason:'no-transport'}` **without marking
+anything**. A Supabase client plugs in as `{transport}`.
 
-Four rounds of variants were rendered and reviewed:
+**Duplicate safety:** uploads are addressed by the permanent UUID and applied as
+an upsert, so retrying can never create a second cloud row.
+`sync-queue.test.js` asserts a failure and its retry send the *identical* UUID.
 
-- Any symmetric narrow-top/wide-bottom shape in the tile reads as the letter
-  **"A"** — the road body, an outline-only variant, and a version with a
-  horizon bar all did.
-- Parallel-edged road pictograms read as a **ladder or barcode**.
-- A filled road band reads as a **stripe**; a curved road reads as a
-  **squiggle**.
-- A lane arrow and a reticle were the only pictograms that stayed legible at
-  16px, but both are generic; a **"K" monogram** was also built and reviewed
-  and had no failure mode, but the owner preferred the road.
+The sync indicator is a small `.ds-chip` in the Log head, **hidden unless
+something is actionable** — a failure, or pending work with a live transport.
 
-If the mark is ever revisited, expect these same perceptual failures.
+---
 
+## Brand: the road mark
 
+The logo is an amber tile, navy field, and a road mark. **The mark reads as the
+letter "A"** — this is not fixable by refinement, it is how the shape parses.
+
+The exploration is settled and should not be repeated unprompted: symmetric
+narrow-top/wide-bottom shapes read as "A"; parallel edges read as a ladder;
+a filled band reads as a stripe; a curve reads as a squiggle. A lane arrow, a
+reticle and a "K" monogram were also built, and the owner chose the road.
+
+---
+
+## Rejected — do not rebuild
+
+Built and then rejected by the owner. `log-list-view.test.js` asserts these stay
+gone.
+
+- **Log tab search field**, with an `entryHaystack` and a `query` parameter
+  through `filterEntries()`.
+- **`All / Mine / Imported` segments** promoting the source filter.
+- **Record-card rows** — a type-coloured glyph tile in a leading column.
+- The **`All / Mine / Imported`** and row-tile work are gone from
+  `entry-filters.js` and `design-system.css` entirely; do not resurrect them.
+
+The Capture tab keeps the one piece that survived: the record-card **header**
+(`Today's record`, the count as a 30px numeral, a glyph tile).
