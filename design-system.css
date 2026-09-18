@@ -61,14 +61,15 @@
   --ds-card:          hsl(214 30% 15%);
   --ds-card-2:        hsl(214 27% 19%);
   --ds-muted:         hsl(214 22% 22%);
-  --ds-sidebar:       hsl(214 40% 8%);
+  --ds-sidebar:       hsl(214 37% 7.5%);
 
   --ds-fg:            hsl(40 22% 92%);
   --ds-fg-muted:      hsl(214 12% 68%);
   --ds-fg-subtle:     hsl(214 14% 50%);
 
   --ds-border:        hsl(214 19% 27%);
-  --ds-border-strong: hsl(214 19% 34%);
+  --ds-input:         hsl(214 19% 33%);
+  --ds-border-strong: var(--ds-input);
 
   /* Amber advances the inspection; teal verifies it; red destroys it. */
   --ds-primary:       hsl(43 96% 52%);
@@ -78,7 +79,7 @@
   --ds-accent:        hsl(186 27% 23%);
   --ds-accent-fg:     hsl(183 49% 87%);
   --ds-destructive:   hsl(2 70% 55%);
-  --ds-destructive-fg:hsl(40 22% 95%);
+  --ds-destructive-fg:hsl(40 22% 92%);
 
   --ds-ring:          hsl(43 96% 52%);
   --ds-shadow:        0 10px 32px rgba(5,10,15,.34);
@@ -92,9 +93,11 @@
   --mono:var(--font-readout);
   --sans:var(--font-ui);
 
-  /* The one radius added deliberately: the reference metric card's corner.
-     The rest of the scale still comes from radius-system.css. */
+  /* The two radii added deliberately: the reference card corner, and the
+     reference's tighter control radius. The rest of the scale still comes
+     from radius-system.css. */
   --radius-card:14px;
+  --radius-control:10px;
 
   /* Legacy token names remapped onto the new ramp, so existing rules inherit */
   --asphalt:var(--ds-bg);
@@ -126,7 +129,8 @@ html[data-theme="light"]{
   --ds-fg-subtle:     hsl(214 12% 52%);
 
   --ds-border:        hsl(39 17% 80%);
-  --ds-border-strong: hsl(39 17% 70%);
+  --ds-input:         hsl(39 17% 74%);
+  --ds-border-strong: var(--ds-input);
 
   --ds-primary:       hsl(43 96% 52%);
   --ds-primary-strong:hsl(40 96% 46%);
@@ -135,7 +139,8 @@ html[data-theme="light"]{
   --ds-accent:        hsl(183 49% 87%);
   --ds-accent-fg:     hsl(188 46% 20%);
   --ds-destructive:   hsl(2 66% 47%);
-  --ds-destructive-fg:hsl(40 25% 96%);
+  --ds-destructive-fg:hsl(48 24% 96%);
+  --ds-ring:          hsl(40 91% 51%);
 
   --ds-shadow:        0 8px 24px rgba(27,39,55,.10);
   --ds-shadow-sm:     0 6px 18px rgba(27,39,55,.08);
@@ -189,15 +194,23 @@ h2,.section-title{
   font-size:19px;
   font-weight:700;
   letter-spacing:-.03em;
+  line-height:1.2;
+  /* The reference pairs uppercase eyebrows with sentence-case headings; the
+     old app-wide uppercase h2 treatment is superseded. */
+  text-transform:none;
   color:var(--ds-fg);
 }
 
 /* ---------- Surfaces ----------------------------------------------------- */
 
 /* Every existing card adopts the quiet Base44 panel: hairline border,
-   card fill, one soft shadow. Borders carry the structure, not elevation. */
+   card fill, one soft shadow. Borders carry the structure, not elevation.
+   NB: `.entry-filters` is deliberately NOT here. The log's date/filter row is
+   bare controls on the page, not a card — giving it a surface painted a stray
+   white rectangle behind them. `.map-entry-controls` is different: it is a
+   genuine floating bar over the map. */
 .readout,.bound-panel,details.calib,.log-entry,.dataset-panel,
-.ds-card,.sharing-filters,.entry-filters,.map-entry-controls{
+.ds-card,.sharing-filters,.map-entry-controls{
   background:var(--ds-card);
   border:1px solid var(--ds-border);
   color:var(--ds-fg);
@@ -302,7 +315,9 @@ html[data-theme="light"] .ds-card{
 .kmpost.instrument-panel,
 html[data-theme="light"] .kmpost.instrument-panel{
   border-radius:var(--radius-card);
-  overflow:hidden;
+  /* Visible, not hidden: the bridge-filter dropdown opens below this card and
+     nothing inside is full-bleed, so there is nothing to clip. */
+  overflow:visible;
 }
 /* The reference metric card is a quiet theme-aware surface: no rings and no
    hazard stripe (those belong to the dark capture card in that system). */
@@ -321,44 +336,47 @@ html[data-theme="light"] .kmpost.instrument-panel{
   border-bottom:0;
 }
 .instrument-head .status{
-  flex:1 1 auto;
+  /* Shrink to the message: with the count and filter gone, a stretched pill
+     would read as a full-width banner. */
+  flex:0 1 auto;
   min-width:0;
   justify-content:flex-start;
 }
-.instrument-record{
-  display:flex;
-  align-items:baseline;
-  gap:5px;
-  flex:0 0 auto;
-}
-.instrument-record-value{
-  font-family:var(--font-readout);
-  font-variant-numeric:tabular-nums;
-  font-size:17px;
-  font-weight:500;
-  line-height:1;
-  color:var(--ds-fg);
-}
-.instrument-record .eyebrow{
-  font-size:9px;
-  letter-spacing:.12em;
-  color:var(--ds-fg-muted);
-}
-/* The filter button used to be pinned to the card corner. */
-.instrument-head .bridge-filter-toggle{
-  position:static;
-  flex:0 0 32px;
+/* Bridge filter now lives in the bridge row, right-aligned, as a quiet
+   card-matched control with the app's lucide glyph. */
+.bridge-filter-toggle{
+  position:relative;
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
   background:var(--ds-card-2);
   border:1px solid var(--ds-border);
-  color:var(--ds-fg);
+  color:var(--ds-fg-muted);
 }
+.bridge-filter-toggle:hover{background:var(--ds-muted);color:var(--ds-fg);}
+/* The old CSS-mask funnel is replaced by the inline SVG. */
+.bridge-filter-toggle::before{content:none;}
+.bridge-filter-toggle svg{
+  width:15px;height:15px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+/* Anchored to the bridge row and opening downward, clear of the row it
+   belongs to. The panel no longer clips, so it can extend past the card. */
+.instrument-panel .nearby-asset{position:relative;}
 .instrument-panel .bridge-filter-menu{
-  top:52px;
-  right:12px;
-  bottom:12px;
+  top:calc(100% + 6px);
+  right:0;
+  bottom:auto;
+  left:auto;
+  width:min(250px,calc(100% - 32px));
+  max-height:280px;
+  overflow:auto;
+  z-index:12;
   background:var(--ds-card);
-  border-color:var(--ds-border);
+  border:1px solid var(--ds-border);
   color:var(--ds-fg);
+  box-shadow:var(--ds-shadow);
 }
 .instrument-panel .bridge-filter-title{color:var(--ds-fg-muted);}
 .instrument-panel .bridge-filter-option:hover{background:var(--ds-muted);}
@@ -417,19 +435,17 @@ html[data-theme="light"] .kmpost.instrument-panel{
   text-overflow:ellipsis;
   color:var(--ds-fg);
 }
-/* Interchange mode must not inflate the value beyond the reference scale. */
+/* Stationing is the one value deliberately larger than the reference scale:
+   it is the field-critical reading on this panel. */
+.instrument-metrics .metric-station .kmvalue,
 .instrument-panel.interchange-mode .kmvalue{
-  font-size:13px;
-  line-height:1.5;
+  font-size:clamp(18px,5.4vw,21px);
+  font-weight:500;
+  line-height:1.2;
+  margin-top:3px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-}
-.instrument-metrics .kmunit{
-  margin-top:2px;
-  font-size:11px;
-  line-height:1.4;
-  color:var(--ds-fg-muted);
 }
 /* Corridor reads as a value, not a badge; .faroff keeps its warning meaning. */
 .instrument-metrics .segment-tag{
@@ -493,12 +509,23 @@ html[data-theme="light"] .kmpost.instrument-panel{
   color:var(--ds-fg-subtle);
 }
 
-/* Nearby bridge keeps its own row so the bridge feature is not lost. */
+/* Nearby bridge keeps its own row so the bridge feature is not lost. The
+   classification filter sits at the end of this row. */
 .instrument-panel .nearby-asset{
   border-left:0;
   border-top:1px solid var(--ds-border);
   padding:12px 16px;
-  display:block;
+  display:flex;
+  /* The legacy .nearby-asset rule is a centred column; override the direction
+     or the filter button stacks under the text instead of sitting beside it. */
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  gap:12px;
+}
+.instrument-panel .nearby-asset-body{
+  min-width:0;
+  flex:1 1 auto;
 }
 .instrument-panel .nearby-asset .kmlabel{
   padding-right:0;
@@ -548,19 +575,16 @@ html[data-theme="light"] .kmpost.instrument-panel{
    rules that force the old green km-post's light text colours. */
 html[data-theme="light"] .instrument-panel{color:var(--ds-fg);}
 html[data-theme="light"] .instrument-panel .kmlabel,
-html[data-theme="light"] .instrument-panel .kmunit,
 html[data-theme="light"] .instrument-panel .nearby-asset .kmlabel,
 html[data-theme="light"] .instrument-panel .nearby-asset-distance,
-html[data-theme="light"] .nearby-asset-distance,
-html[data-theme="light"] .instrument-head .eyebrow{
+html[data-theme="light"] .nearby-asset-distance{
   color:var(--ds-fg-muted);
 }
 html[data-theme="light"] .instrument-metrics .kmvalue,
 html[data-theme="light"] .instrument-metrics .metric-value,
 html[data-theme="light"] .instrument-metrics .segment-tag,
 html[data-theme="light"] .instrument-panel .nearby-asset-name,
-html[data-theme="light"] .instrument-panel .nearby-asset-station,
-html[data-theme="light"] .instrument-record-value{
+html[data-theme="light"] .instrument-panel .nearby-asset-station{
   color:var(--ds-fg);
 }
 html[data-theme="light"] .instrument-metrics .segment-tag.faroff{color:hsl(35 72% 32%);}
@@ -615,6 +639,8 @@ html[data-theme="light"] #export-menu-btn{
   background:var(--ds-primary);
   border-color:var(--ds-primary);
   color:var(--ds-primary-fg);
+  /* sharing.css gives this button --radius-lg; align it with .ds-btn. */
+  border-radius:var(--radius-control);
 }
 html:root #export-menu-btn:hover{background:var(--ds-primary-strong);}
 html:root #export-menu-btn:disabled{
@@ -802,7 +828,7 @@ html[data-theme="light"] #defect-section.gps-pending .defect-gate{
 /* Rectangular tray preserved; only the selected tab is highlighted.
    Widened from two columns to four now that Tools and Settings exist. */
 .app-tab-bar{
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(5,minmax(0,1fr));
   gap:4px;
   background:var(--ds-card);
   border:1px solid var(--ds-border);
@@ -843,16 +869,83 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   background:var(--ds-card-2);border-color:var(--ds-border);color:var(--ds-fg);
 }
 
-/* ---------- Tools & Settings views -------------------------------------- */
+/* ---------- Log, Tools & Settings views --------------------------------- */
 
-.tools-view,.settings-view{
+/* `.log-view` holds the shared register block, so it needs the same centred
+   column that `main` gives the Inspection tab. */
+.log-view,.tools-view,.settings-view{
   max-width:520px;
   margin:0 auto;
   padding:14px;
 }
+
+/* Log tab data actions: a bare button row rather than a card, so the actions
+   stay reachable instead of sitting below a register that can run to hundreds
+   of rows. Their explanatory copy lives in the export dialog and in one muted
+   hint line. */
+.log-data-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+}
+.log-data-hint{
+  margin:0 0 12px;
+  font-size:12.5px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+}
+.export-hint{
+  margin:8px 0 0;
+  font-size:12.5px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+}
+
+/* ---------- Buttons (Base44 `.btn`) ------------------------------------- */
+/* Mirrors the reference: min-height 42px, 0 14px padding, 10px control radius,
+   bold label, 8px icon gap. */
+.ds-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:42px;
+  padding:0 14px;
+  border:1px solid transparent;
+  border-radius:var(--radius-control);
+  font-family:var(--font-ui);
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.ds-btn svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.ds-btn-primary{
+  background:var(--ds-primary);
+  color:var(--ds-primary-fg);
+  border-color:var(--ds-primary);
+}
+.ds-btn-primary:hover{background:var(--ds-primary-strong);}
+.ds-btn-quiet{
+  background:var(--ds-muted);
+  color:var(--ds-fg);
+  border-color:var(--ds-border);
+}
+.ds-btn-quiet:hover{background:var(--ds-card-2);}
+.ds-btn:disabled{opacity:.42;cursor:not-allowed;}
 .ds-view-head{padding:4px 2px 12px;}
 .ds-view-head .eyebrow{display:block;margin-bottom:6px;}
-.ds-view-head h2{margin:0 0 4px;}
+/* Reference view titles are sentence case at ~30px/700 with tight tracking. */
+.ds-view-head h2{
+  margin:0 0 6px;
+  text-transform:none;
+  font-size:30px;
+  font-weight:700;
+  letter-spacing:-.06em;
+  line-height:1.1;
+}
 .ds-view-head p{
   margin:0;
   font-size:13px;
@@ -915,6 +1008,58 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   font-size:12.5px;
   color:var(--ds-fg-muted);
 }
+
+/* Base44's record chip: a muted pill with a glyph, used in place of the old
+   red numeric badge on the log heading. */
+.ds-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:10px;
+  padding:5px 10px;
+  border-radius:var(--radius-full);
+  background:var(--ds-muted);
+  color:var(--ds-fg-muted);
+  font-size:12px;
+  font-weight:600;
+}
+.ds-chip svg{
+  width:14px;height:14px;flex:0 0 14px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+
+/* Select pairs with the records chip in the Log tab's head: `[N records]` on the
+   left, `[Select]` on the right. It used to live in the removed
+   `.log-action-footer` panel, then floated alone on a row of its own. */
+.log-head-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:12px;
+  justify-content:flex-start;
+}
+.log-head-row .ds-chip{margin-top:0;}
+.log-select-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+  margin-left:auto;
+}
+.log-select-actions #selection-count{
+  font-size:12px;
+  color:var(--ds-fg-muted);
+}
+/* Normally the badge already carries the count; only surface this when it is
+   reporting a selection. */
+.log-select-actions:not(.selection-mode) #selection-count{display:none;}
+/* Select is mounted only in the Log tab's head, so the Capture tab's register
+   header shows nothing but its heading and badge — no hiding rule needed. */
+/* In the Log tab the title and count live in the view head (Base44 style), so
+   the register's duplicate heading is hidden. */
+.log-view .log-header h2{display:none;}
 
 /* The toggle was pinned to the masthead corner; inside a Settings card it
    participates in normal flow. */

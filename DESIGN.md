@@ -355,6 +355,13 @@ Any future light-mode fix should be added to that block rather than inlined.
 
 ### Palette
 
+**Source of truth.** The real `tokens.json` from the reference export —
+`REPLIT_KMTrack/artifacts/kmtrack-design-system/tokens.json` — is authoritative
+for every colour, radius and font. It declares colours as hex; the values below
+are the resolved equivalents in this app's `hsl()` syntax. They were verified by
+converting both sides to hex and diffing: **0 drift in both themes.** Re-run
+`.playwright-cli/pw/diff-tokens.cjs` after any palette edit.
+
 Legacy token names are preserved and remapped onto the new ramp, so existing
 rules inherit automatically: `--asphalt`, `--asphalt-2`, `--panel`,
 `--panel-raised`, `--surface-soft`, `--line-white`, `--text-muted`,
@@ -367,14 +374,25 @@ rules inherit automatically: `--asphalt`, `--asphalt-2`, `--panel`,
 | `--ds-card` | `hsl(214 30% 15%)` | `hsl(42 28% 97%)` |
 | `--ds-card-2` | `hsl(214 27% 19%)` | `hsl(42 32% 99%)` |
 | `--ds-muted` | `hsl(214 22% 22%)` | `hsl(40 16% 87%)` |
-| `--ds-sidebar` | `hsl(214 40% 8%)` | `hsl(214 34% 16%)` |
+| `--ds-sidebar` | `hsl(214 37% 7.5%)` | `hsl(214 34% 16%)` |
 | `--ds-fg` | `hsl(40 22% 92%)` | `hsl(214 34% 16%)` |
 | `--ds-fg-muted` | `hsl(214 12% 68%)` | `hsl(214 13% 41%)` |
 | `--ds-border` | `hsl(214 19% 27%)` | `hsl(39 17% 80%)` |
+| `--ds-input` | `hsl(214 19% 33%)` | `hsl(39 17% 74%)` |
 | `--ds-primary` (amber) | `hsl(43 96% 52%)` | `hsl(43 96% 52%)` |
 | `--ds-secondary` (teal) | `hsl(182 42% 49%)` | `hsl(188 36% 31%)` |
 | `--ds-accent` | `hsl(186 27% 23%)` | `hsl(183 49% 87%)` |
 | `--ds-destructive` | `hsl(2 70% 55%)` | `hsl(2 66% 47%)` |
+| `--ds-ring` | `hsl(43 96% 52%)` | `hsl(40 91% 51%)` |
+
+Control borders use the design system's dedicated `--ds-input` colour;
+`--ds-border-strong` is an alias for it.
+
+**Degrees of freedom not taken.** `tokens.json` says `radius.base = 0.875rem`
+(14px, adopted as `--radius-card`) and that *"controls use a tighter 10px
+treatment"*. Control radii are **not** re-tuned to 10px, because `AGENTS.md`
+protects the restored corner values over any radius system. That remains an
+open, deliberate deviation.
 
 **The Role Rule.** Amber advances an inspection, teal verifies it, red destroys
 it. Amber is reserved for the single primary action in a surface; `Export` was
@@ -391,26 +409,95 @@ its `@font-face` remain in place but are no longer the primary UI font.
 
 ### Tab shell
 
-The bottom tray is now four columns — **Inspection | Map | Tools | Settings** —
-instead of two. The tray stays rectangular and only the selected tab is
-highlighted (amber). `showAppView()` is driven by an `APP_VIEW_IDS` map rather
-than the previous hardcoded two-view branch.
+The bottom tray is **five columns — Capture | Log | Map | Tools | Settings** —
+with the labels copied verbatim from the reference so the two products read the
+same. The tray stays rectangular and only the selected tab is highlighted
+(amber). `showAppView()` is driven by an `APP_VIEW_IDS` map rather than the
+previous hardcoded two-view branch.
 
-Data controls were relocated into the new tabs, which supersedes the earlier
+Note: the first tab's *label* is `Capture` but its internal id is still
+`inspection-tab` / `inspection-view` / `data-app-view="inspection"`. Only the
+user-visible name was changed; renaming the ids would touch `APP_VIEW_IDS`,
+`mountLogRegister()` and the tests for no user-facing gain.
+
+Data controls were relocated into these tabs, which supersedes the earlier
 "preserve current button locations" instruction for these specific controls:
 
-- **Tools** holds `Import`, the export trigger, `Imported files`, and import
-  status. The `#export-btn` / `#backup-btn` elements deliberately remain in the
-  markup inside `.export-actions`, because `log-controls.js` adopts them into
-  the export-format dialog; that script now mounts its export trigger into
-  `#tools-export-actions` and leaves Select and the bulk actions with the log
-  they operate on.
-- **Settings** holds the theme toggle, the network/interchange dataset drawer,
-  and storage status. The theme toggle is `position:static` inside its card; it
-  was previously pinned to the masthead corner.
+- **Log** holds `Import`, the export trigger, `Imported files`, and import
+  status — all in the Log tab's data cards, mounted into `#log-export-actions`
+  and `#log-import-actions`. The `#export-btn` / `#backup-btn` elements
+  deliberately remain in the markup inside `.export-actions`, because
+  `log-controls.js` adopts them into the export-format dialog.
+- **Tools** holds **Alignment & calibration** — the network/interchange dataset
+  drawer, moved out of Settings to match the reference's Tools tab ("Local data
+  control").
+- **Settings** holds the theme toggle and storage status. The theme toggle is
+  `position:static` inside its card; it was previously pinned to the masthead
+  corner.
 - The masthead keeps only the brand and the clock. It stays a **dark** surface
   in both themes, because the `KMTrack.png` wordmark is white and would be
   illegible on the light `--ds-card`.
+
+#### The shared register (one node, two tabs)
+
+The inspection log appears in **both** the Inspection and Log tabs — the owner
+needs immediate delete access from the capture screen, because a mis-logged
+entry must be removable on the spot.
+
+It is **one DOM node** (`#log-register`), re-parented by `mountLogRegister()`
+on tab switch between `#log-host-inspection` and `#log-host-log`. Do **not**
+"fix" this by rendering the list twice: `renderLog()` writes `list.innerHTML`,
+so a second list would fork the rows, the selection set, the bulk-delete state,
+the swipe handlers and the `MutationObserver` watching `#log-list`.
+
+`tabs-navigation.test.js` asserts there is exactly one `#log-register`, one
+`#log-list` and one `renderLog()`. The footer and filter bar travel with the
+block because `log-controls.js` inserts them as siblings inside it.
+
+#### Register toolbar and the records chip
+
+The full-width `.log-action-footer` card that used to sit under the list is
+**removed**. Select and the bulk actions are mounted into `#log-select-actions`
+in the **Log tab's head**, sharing one row with the records chip:
+
+```
+[N records] ····················· [Select]
+```
+
+Pairing them keeps "how many" and "choose from them" together, and avoids a row
+holding a single floating button — which is what happened when Select sat alone
+in the register toolbar. Select therefore exists only in the Log tab; the
+Capture tab keeps per-entry swipe-to-delete and shows only the register heading
+and badge. Idle, the selection count is hidden because the badge already reports
+it.
+
+The mount carries the `.log-select-actions` class itself and the JS appends the
+controls straight into it. Wrapping them in an extra div breaks the
+`margin-left:auto` that pushes Select right, because the wrapper shrinks to
+content.
+
+In the **Log tab** the head is deliberately minimal: an `Inspection log`
+heading, then the chip + Select row, then a bare `.log-data-row` of buttons
+(`Export`, `Import`, `Imported files`), then one muted import hint, then the
+register. The `Evidence register` eyebrow and the description line that used to
+sit here were removed as visual noise.
+
+The actions were previously cards placed **below** the register, which pushed
+them off-screen as soon as the register ran long — with hundreds of rows they
+were unreachable without a long scroll. The export card's explanatory line moved
+into the export dialog as `.export-hint`; import keeps a single hint line
+because it has no dialog, and adding one would cost a tap on a routine action
+just to learn which file types are accepted. `.ds-chip` replaced the old red
+numeric badge, and `.log-view .log-header h2` is hidden so the heading is not
+duplicated.
+
+#### Heading case
+
+The reference pairs uppercase eyebrows with **sentence-case** headings. The old
+app-wide `h2{text-transform:uppercase}` treatment is superseded: `h2` is now
+`text-transform:none`, and `.ds-view-head h2` runs at 30px/700 with `-.06em`
+tracking. That is why the views read `Inspection log`, `Tools`, `Settings`
+rather than `INSPECTION LOG`, `TOOLS`, `SETTINGS`.
 
 ### Surfaces and preserved behaviour
 
@@ -435,14 +522,20 @@ The former `.readout` (latitude, longitude, accuracy, points logged, bound) and
 `.kmpost` (station, nearby bridge) are now **one** panel,
 `section.kmpost.instrument-panel`, restyled after the reference metric card:
 
-1. **Status strip** — the road-match/GPS trust pill, today's saved count, and
-   the bridge-classification filter (previously pinned to the card corner).
+1. **Status strip** — the road-match/GPS trust pill only. It shrinks to the
+   message; with the saved count and filter gone, a stretched pill would read as
+   a full-width banner.
 2. **2x2 metric grid** — a vertical rule between columns, a small line icon per
-   label, and no horizontal rule between rows — `CURRENT KM STATION` /
-   `CORRIDOR` / `ACCURACY` / `BOUND`.
-3. **Nearby bridge** row, kept as its own row so the bridge feature and its
-   classification filter are not lost in the merge.
+   label, and no horizontal rule between rows. Order matches the reference:
+   `ACCURACY` / `CORRIDOR` over `STATION` / `BOUND`.
+3. **Nearby bridge** row — the bridge feature and its classification filter,
+   which now lives at the end of this row rather than in the header.
 4. **Coordinate footer** in mono, carrying latitude and longitude.
+
+The bridge filter opens a dropdown *below* the card. `.kmpost.instrument-panel`
+therefore sets `overflow:visible`; nothing inside is full-bleed, so there is
+nothing to clip. Do not restore `overflow:hidden` here or the dropdown will be
+cut off.
 
 The panel is **theme-aware** (`--ds-card` / `--ds-border` / `--ds-fg`): light in
 light mode, dark in dark mode, matching the reference rather than the app's
@@ -494,23 +587,20 @@ status tile), `refresh-cw` (17px), `camera` (21px), `chevron-right` (18px),
 `shield-check` (14px), `clipboard-list` (21px), `crosshair` (23px, sw 2.5),
 `layers` / `user-round` / `activity` (16px).
 
-Every metric value — stationing included — is 13px mono. The stationing number
-is no longer the oversized hero figure it was in the pre-merge card.
+Every metric value is 13px mono **except stationing**. `STATION` is the
+field-critical reading on this panel, so its value is the one deliberate step
+up from the reference scale: `clamp(18px, 5.4vw, 21px)`. Everything else on the
+panel uses the reference sizes verbatim.
 
-**Intentional deviations from the reference.** Two things differ on purpose,
-because the reference has no equivalent and the information is load-bearing:
+**The one deviation from the reference.** The **nearby bridge** row exists
+because the reference has no equivalent and bridge data plus its classification
+filter are load-bearing. Its filter control is the app's own lucide `filter`
+glyph, not a reference glyph.
 
-- The **nearby bridge** row, so bridge data and its classification filter
-  survive the merge.
-- The **station unit caption** (`#current-location-detail`), which reads
-  `kilometers (interpolated)` and becomes the interchange segment label in
-  interchange mode. It is styled at the muted 11px caption scale. Hiding it
-  would match the reference more literally but lose that context.
-
-The metric **cell order** also still differs: the reference runs
-`ACCURACY | CORRIDOR` over `STATION | BOUND`, while this app keeps stationing
-first because KM is the field-critical reading. Swapping the four cells in the
-markup is all that is needed to match the reference order exactly.
+Removed by request, and their writers made null-safe: the saved-record count
+(`#count-mini`) — the masthead already reports the same total — and the station
+unit caption (`#current-location-detail`). The station label now reads
+`Station`, becoming `Location` inside an interchange.
 
 Structural contracts this markup must keep, because the JavaScript depends on
 them:
@@ -524,6 +614,29 @@ them:
   longer shown separately since the masthead already reports the same total.
 
 `instrument-panel.test.js` guards these contracts.
+
+## Log date filters (2026-09-18)
+
+Two traps live here; both were hit in practice.
+
+**`.entry-filters` is not a card.** It is deliberately excluded from the
+card-surface selector list in `design-system.css`. Including it painted a stray
+white rectangle behind the log's date row. `.map-entry-controls` is different —
+that one is a genuine floating bar over the map and keeps the surface.
+
+**Vertical centring must be engine-agnostic.** With `appearance:none` and a
+forced height, WebKit and Chromium both leave the date text pinned to the top of
+the box. The centring is therefore done by **sizing the box symmetrically around
+the text** — `height:auto` with equal `padding-top`/`padding-bottom` (12px) — in
+`radius-system.css`. That works in every engine because it depends on geometry,
+not on shadow-DOM hooks.
+
+The `::-webkit-datetime-edit{height:100%}` rules that sit alongside it are a
+Chromium-only belt-and-braces. They are **not** the fix: iOS Safari renders these
+inputs natively and ignores them, which is why a `::-webkit-*`-only solution
+shipped once and came back reported as still broken on iPhone.
+
+The resulting field is ~44px, matching the 44px filter button beside it.
 
 ## Brand identity — logo replacement (2026-09-17)
 

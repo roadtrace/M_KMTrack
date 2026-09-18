@@ -1,5 +1,4 @@
-// Guards the four-tab shell and the relocated data controls.
-// These were previously log-header controls; they now live in Tools/Settings.
+// Guards the five-tab shell and where the data controls live.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -8,18 +7,18 @@ const html = fs.readFileSync(require.resolve('./index.html'),'utf8');
 const controls = fs.readFileSync(require.resolve('./log-controls.js'),'utf8');
 const design = fs.readFileSync(require.resolve('./design-system.css'),'utf8');
 
-test('the tab bar exposes inspection, map, tools and settings',()=>{
-  for(const view of ['inspection','map','tools','settings']){
+test('the tab bar exposes inspection, log, map, tools and settings',()=>{
+  for(const view of ['inspection','log','map','tools','settings']){
     assert.match(html,new RegExp(`data-app-view="${view}"`));
     assert.match(html,new RegExp(`id="${view}-view"`));
   }
-  // Four columns, not the original two.
-  assert.match(design,/\.app-tab-bar\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  // Five columns now that Log exists.
+  assert.match(design,/\.app-tab-bar\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
 });
 
 test('showAppView drives every view from one map of ids',()=>{
   assert.match(html,/const APP_VIEW_IDS = \{/);
-  for(const id of ['inspection-view','map-view','tools-view','settings-view']){
+  for(const id of ['inspection-view','log-view','map-view','tools-view','settings-view']){
     assert.match(html,new RegExp(`${id.replace('-','\\-')}`));
   }
   assert.match(html,/Object\.keys\(APP_VIEW_IDS\)\.forEach/);
@@ -27,18 +26,126 @@ test('showAppView drives every view from one map of ids',()=>{
   assert.doesNotMatch(html,/const showMap = viewName === 'map'/);
 });
 
-test('data controls live in Tools and the theme toggle lives in Settings',()=>{
+test('one register node is re-parented, never duplicated',()=>{
+  // The user needs the log in BOTH tabs for immediate delete access, but the
+  // rows, selection and swipe handlers must not fork. Exactly one node.
+  assert.equal((html.match(/id="log-register"/g)||[]).length,1,'exactly one register block');
+  assert.equal((html.match(/id="log-list"/g)||[]).length,1,'exactly one list');
+  assert.match(html,/id="log-host-inspection"/);
+  assert.match(html,/id="log-host-log"/);
+  assert.match(html,/function mountLogRegister/);
+  assert.match(html,/host\.appendChild\(block\)/);
+  // The shell must not hand-roll a second list renderer.
+  assert.equal((html.match(/function renderLog\(/g)||[]).length,1);
+});
+
+test('import/export live in Log; alignment lives in Tools',()=>{
+  const log = html.slice(html.indexOf('id="log-view"'),html.indexOf('id="tools-view"'));
   const tools = html.slice(html.indexOf('id="tools-view"'),html.indexOf('id="settings-view"'));
   const settings = html.slice(html.indexOf('id="settings-view"'),html.indexOf('<nav class="app-tab-bar"'));
-  for(const id of ['tools-export-actions','tools-import-actions','import-btn','import-history-btn','import-file','import-status']){
+  for(const id of ['log-export-actions','log-import-actions','import-btn','import-history-btn','import-file','import-status']){
+    assert.ok(log.includes(id),`Log should contain ${id}`);
+  }
+  for(const id of ['dataset-drawer','calib-reload','ramp-reload','calib-status','ramp-status']){
     assert.ok(tools.includes(id),`Tools should contain ${id}`);
   }
-  for(const id of ['theme-toggle','dataset-drawer','storage-status','calib-reload','ramp-reload']){
+  assert.ok(!tools.includes('import-btn'),'Tools should no longer hold import/export');
+  for(const id of ['theme-toggle','storage-status']){
     assert.ok(settings.includes(id),`Settings should contain ${id}`);
   }
+  assert.ok(!settings.includes('dataset-drawer'),'alignment moved out of Settings');
   // The masthead keeps only the brand and the clock.
   const header = html.slice(html.indexOf('<header>'),html.indexOf('</header>'));
   assert.doesNotMatch(header,/theme-toggle|storage-status|dataset-drawer/);
+});
+
+test('log-controls mounts into the Log tab, not Tools',()=>{  assert.match(controls,/getElementById\('log-export-actions'\)/);
+  assert.match(controls,/getElementById\('log-import-actions'\)/);
+  assert.doesNotMatch(controls,/tools-export-actions|tools-import-actions/);
+  assert.doesNotMatch(html,/tools-export-actions|tools-import-actions/);
+});
+
+test('the Select panel is gone and Select pairs with the records chip',()=>{
+  // The old full-width `.log-action-footer` card under the list is removed.
+  assert.doesNotMatch(controls,/className='log-action-footer'/);
+  assert.doesNotMatch(controls,/list\.after\(footer\)/);
+  assert.match(controls,/actions\.append\(count,toggle,selectAll,deleteSelected\)/);
+  // Mounted into the Log tab's head, in the same row as the records chip, so it
+  // no longer floats alone on its own row.
+  assert.match(controls,/getElementById\('log-select-actions'\)/);
+  assert.match(html,/id="log-select-actions"/);
+  // Appended straight into the mount (which is itself the flex item), so
+  // `margin-left:auto` actually pushes Select to the right. `actions` must stay
+  // in scope because sync() toggles `selection-mode` on it.
+  assert.match(controls,/let actions=selectMount;/);
+  assert.match(controls,/actions\.append\(count,toggle,selectAll,deleteSelected\)/);
+  assert.match(html,/class="ds-row log-select-actions" id="log-select-actions"/);
+  assert.match(design,/\.log-head-row\{/);
+  assert.match(design,/\.log-head-row \.ds-chip\{margin-top:0;\}/);
+  // Idle, only Select shows — the badge already carries the count.
+  assert.match(design,/\.log-select-actions:not\(\.selection-mode\) #selection-count\{display:none;\}/);
+});
+
+test('the Log head carries only the title, chip and Select',()=>{
+  const head = html.slice(html.indexOf('id="log-view"'), html.indexOf('log-data-row'));
+  assert.match(head,/<h2>Inspection log<\/h2>/);
+  assert.match(head,/class="ds-chip"/);
+  // The eyebrow and the description were removed as visual noise.
+  assert.doesNotMatch(head,/eyebrow/);
+  assert.doesNotMatch(head,/Every record keeps the fix/);
+});
+
+test('the Log tab uses a Base44 records chip instead of the red badge',()=>{
+  assert.match(html,/class="ds-chip"/);
+  assert.match(html,/id="log-records-chip"/);
+  assert.match(html,/<h2>Inspection log<\/h2>/);
+  assert.match(controls,/getElementById\('log-records-chip'\)/);
+  assert.match(design,/\.ds-chip\{/);
+  // Only the duplicate heading is hidden in the Log tab; the toolbar — and so
+  // Select — stays.
+  assert.match(design,/\.log-view \.log-header h2\{display:none;\}/);
+});
+
+test('the Log tab leads with a bare action row, then the register',()=>{
+  const log = html.slice(html.indexOf('id="log-view"'),html.indexOf('id="tools-view"'));
+  const row = log.indexOf('log-data-row');
+  const reg = log.indexOf('id="log-host-log"');
+  assert.ok(row !== -1, 'the action row must exist');
+  assert.ok(reg !== -1, 'the register mount must exist');
+  // Actions first: a register of hundreds of rows must not push them off-screen.
+  assert.ok(row < reg, 'the action row must come before the register');
+  // No card chrome around the actions any more.
+  assert.doesNotMatch(log.slice(row, reg), /ds-card/);
+  assert.doesNotMatch(html, /id="log-export-hint"/);
+  assert.match(design, /\.log-data-row\{/);
+  assert.match(design, /\.log-data-hint\{/);
+  // Export's explanatory line relocated into its dialog.
+  assert.match(controls, /export-hint/);
+  assert.match(design, /\.export-hint\{/);
+});
+
+test('view titles use the reference sentence case, not uppercase',()=>{
+  assert.match(design,/h2,\.section-title\{[^}]*text-transform:none/);
+  assert.match(design,/\.ds-view-head h2\{[^}]*text-transform:none/);
+  assert.match(design,/\.ds-view-head h2\{[^}]*font-size:30px/);
+});
+
+test('tab labels are copied from the reference verbatim',()=>{
+  const nav = html.slice(html.indexOf('class="app-tab-bar"'), html.indexOf('</nav>'));
+  const labels = [...nav.matchAll(/<span>([^<]+)<\/span>/g)].map((m)=>m[1]);
+  assert.deepEqual(labels,['Capture','Log','Map','Tools','Settings']);
+});
+
+test('buttons follow the Base44 .btn shape',()=>{
+  // Reference: min-height 42px, 0 14px padding, 10px control radius.
+  assert.match(design,/\.ds-btn\{[^}]*min-height:42px[^}]*padding:0 14px/);
+  assert.match(design,/\.ds-btn\{[^}]*border-radius:var\(--radius-control\)/);
+  assert.match(design,/--radius-control:10px/);
+  assert.match(design,/\.ds-btn-primary\{[^}]*background:var\(--ds-primary\)/);
+  assert.match(design,/\.ds-btn-quiet\{[^}]*background:var\(--ds-muted\)/);
+  // The new buttons use them.
+  assert.match(html,/class="ds-btn ds-btn-primary" id="import-btn"/);
+  assert.match(controls,/exportMenu\.className = 'ds-btn ds-btn-primary'/);
 });
 
 test('export buttons stay in the DOM so the export dialog can adopt them',()=>{
@@ -60,6 +167,8 @@ test('the design-system layer loads last so it wins the cascade',()=>{
 
 test('radii are preserved rather than re-tuned by the design layer',()=>{
   // AGENTS.md protects the restored corner values; the new layer must not
-  // redefine the radius scale.
+  // redefine the radius scale. It adds two named tokens only.
   assert.doesNotMatch(design,/--radius-(xs|sm|md|lg|xl|full)\s*:/);
+  assert.match(design,/--radius-card:14px/);
+  assert.match(design,/--radius-control:10px/);
 });

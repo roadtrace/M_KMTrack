@@ -24,13 +24,40 @@ test('#km-value stays inside .kmpost',()=>{
 
 test('every element the readout JS writes to still exists',()=>{
   for(const id of [
-    'km-value','acc','lat','lon','count-mini','gps-status',
-    'current-location-label','current-location-detail',
+    'km-value','acc','lat','lon','gps-status',
+    'current-location-label',
     'segment-tag','ramp-tag','nearby-asset-name','nearby-asset-station',
     'nearby-asset-distance','bridge-filter-toggle','bridge-filter-options',
   ]){
     assert.ok(html.includes(`id="${id}"`),`missing #${id}`);
   }
+});
+
+test('the removed readout fields are gone and their writers are null-safe',()=>{
+  // Dropped by request: the saved-record count and the "kilometers
+  // (interpolated)" caption. updateReadout() must not assume they exist.
+  assert.doesNotMatch(html,/id="count-mini"/);
+  assert.doesNotMatch(html,/id="current-location-detail"/);
+  assert.doesNotMatch(html,/locationDetail/);
+  assert.doesNotMatch(html,/getElementById\('count-mini'\)\.textContent/);
+  assert.match(html,/countMini\s*\)\s*countMini\.textContent/);
+});
+
+test('the station label reads Station, and Location inside an interchange',()=>{
+  assert.match(html,/id="current-location-label">Station</);
+  assert.match(html,/locationLabel\.textContent='Station'/);
+  assert.match(html,/interchangeMode\?'Location':'Station'/);
+  assert.doesNotMatch(html,/CURRENT KM STATION/);
+});
+
+test('cell order matches the reference: accuracy, corridor, station, bound',()=>{
+  const grid = html.slice(html.indexOf('instrument-metrics'),html.indexOf('id="nearby-asset-name"'));
+  const order = ['Accuracy','Corridor','metric-station','Bound'].map((m)=>grid.indexOf(m));
+  assert.ok(order.every((i)=>i>=0),'all four metric cells must be present');
+  assert.deepEqual(order,[...order].sort((a,b)=>a-b),'cells must appear in reference order');
+  // Stationing is the one value larger than the reference scale.
+  assert.match(design,/\.instrument-metrics \.metric-station \.kmvalue[\s\S]*?font-size:clamp\(/);
+  assert.match(design,/\.instrument-metrics \.metric-value\{[^}]*font-size:13px/);
 });
 
 test('#bound-toggle keeps only dynamic content',()=>{
@@ -40,6 +67,17 @@ test('#bound-toggle keeps only dynamic content',()=>{
   const inner = html.slice(start,html.indexOf('</div>',start));
   assert.ok(!/kmlabel/.test(inner),'the BOUND label must not be inside #bound-toggle');
   assert.match(html,/id="bound-auto-status"/);
+});
+
+test('the bridge filter lives in the bridge row',()=>{
+  const row = html.slice(html.indexOf('class="nearby-asset"'),html.indexOf('instrument-foot'));
+  assert.ok(row.includes('id="bridge-filter-toggle"'),'filter must sit in the bridge row');
+  assert.ok(row.includes('id="bridge-filter-menu"'),'its menu must travel with it');
+  const head = html.slice(html.indexOf('class="instrument-head"'),html.indexOf('instrument-metrics'));
+  assert.ok(!head.includes('bridge-filter-toggle'),'filter must not remain in the head strip');
+  // Redesigned with an inline lucide glyph instead of the old CSS mask.
+  assert.match(row,/<button[^>]*id="bridge-filter-toggle"[\s\S]*?<svg/);
+  assert.match(design,/\.bridge-filter-toggle::before\{content:none;\}/);
 });
 
 test('the panel is a theme-aware quiet card, not a dark hero',()=>{

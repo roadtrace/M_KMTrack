@@ -1256,22 +1256,12 @@ button {
   <section class="kmpost instrument-panel" id="instrument-panel" aria-label="Location and road match">
     <div class="instrument-head">
       <div class="status warn" id="gps-status">Requesting GPS permission...</div>
-      <div class="instrument-record" aria-live="polite">
-        <span class="instrument-record-value" id="count-mini">0</span>
-        <span class="eyebrow">saved</span>
-      </div>
-      <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification"></button>
-    </div>
-    <div class="bridge-filter-menu" id="bridge-filter-menu" role="menu" hidden>
-      <div class="bridge-filter-title">Bridge classification</div>
-      <div id="bridge-filter-options"></div>
     </div>
 
     <div class="instrument-metrics">
       <div class="metric">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg><span id="current-location-label">CURRENT KM STATION</span></div>
-        <div class="kmvalue" id="km-value">--.---</div>
-        <div class="kmunit" id="current-location-detail">kilometers (interpolated)</div>
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg><span>Accuracy</span></div>
+        <div class="metric-value" id="acc">--</div>
       </div>
 
       <div class="metric">
@@ -1280,9 +1270,9 @@ button {
         <div class="ramp-tag" id="ramp-tag"></div>
       </div>
 
-      <div class="metric">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg><span>Accuracy</span></div>
-        <div class="metric-value" id="acc">--</div>
+      <div class="metric metric-station">
+        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg><span id="current-location-label">Station</span></div>
+        <div class="kmvalue" id="km-value">--.---</div>
       </div>
 
       <div class="metric">
@@ -1293,11 +1283,20 @@ button {
     </div>
 
     <div class="nearby-asset" aria-live="polite">
-      <div class="kmlabel">Nearby bridge</div>
-      <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
-      <div class="nearby-asset-meta">
-        <span class="nearby-asset-station" id="nearby-asset-station">--</span>
-        <span class="nearby-asset-distance" id="nearby-asset-distance"></span>
+      <div class="nearby-asset-body">
+        <div class="kmlabel">Nearby bridge</div>
+        <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
+        <div class="nearby-asset-meta">
+          <span class="nearby-asset-station" id="nearby-asset-station">--</span>
+          <span class="nearby-asset-distance" id="nearby-asset-distance"></span>
+        </div>
+      </div>
+      <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      </button>
+      <div class="bridge-filter-menu" id="bridge-filter-menu" role="menu" hidden>
+        <div class="bridge-filter-title">Bridge classification</div>
+        <div id="bridge-filter-options"></div>
       </div>
     </div>
 
@@ -1367,7 +1366,8 @@ button {
 
   <div class="lane-divider"></div>
 
-  <section class="block">
+  <div id="log-host-inspection">
+  <section class="block" id="log-register">
     <div class="log-header">
       <h2>Inspection log</h2>
       <button type="button" class="select-toggle-btn" id="select-toggle-btn">Select</button>
@@ -1403,6 +1403,7 @@ button {
     </div>
     <div id="log-list"><div class="log-empty">No defects logged yet</div></div>
   </section>
+  </div>
 
 </main>
 </div>
@@ -1440,50 +1441,42 @@ button {
   </div>
 </section>
 
+<section class="app-view log-view" id="log-view" role="tabpanel" aria-labelledby="log-tab" hidden>
+  <div class="ds-view-head">
+    <h2>Inspection log</h2>
+    <div class="log-head-row">
+      <span class="ds-chip">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+        <span id="log-records-chip" role="status">0 records</span>
+      </span>
+      <div class="ds-row log-select-actions" id="log-select-actions"></div>
+    </div>
+  </div>
+
+  <div class="log-data-row">
+    <div class="ds-row" id="log-export-actions"></div>
+    <div class="ds-row" id="log-import-actions">
+      <button type="button" class="ds-btn ds-btn-primary" id="import-btn">Import</button>
+      <button type="button" id="import-history-btn" class="ds-btn ds-btn-quiet" hidden>Imported files</button>
+      <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
+    </div>
+  </div>
+  <p class="log-data-hint">Import .xlsx exports or Photos .zip archives.</p>
+  <div id="import-status" role="status"></div>
+
+  <div id="log-host-log"></div>
+</section>
+
 <section class="app-view tools-view" id="tools-view" role="tabpanel" aria-labelledby="tools-tab" hidden>
   <div class="ds-view-head">
     <span class="eyebrow">Local data control</span>
     <h2>Tools</h2>
-    <p>KMTrack keeps field data on this device until you choose to export it.</p>
+    <p>Stationing and bridge matching read from the network datasets on this device.</p>
   </div>
 
   <div class="ds-card">
-    <div class="ds-card-title">Export inspection log</div>
-    <p class="ds-card-hint" id="tools-export-hint">0 local records ready. Use Excel for review or a backup for a complete restore.</p>
-    <div class="ds-row" id="tools-export-actions"></div>
-  </div>
-
-  <div class="ds-card">
-    <div class="ds-card-title">Import records</div>
-    <p class="ds-card-hint">Import KMTrack Excel exports or Photos ZIP archives from another device.</p>
-    <div class="ds-row" id="tools-import-actions">
-      <button type="button" class="select-toggle-btn" id="import-btn">Import</button>
-      <button type="button" id="import-history-btn" class="select-toggle-btn" hidden>Imported files</button>
-      <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
-    </div>
-    <div id="import-status" role="status"></div>
-  </div>
-</section>
-
-<section class="app-view settings-view" id="settings-view" role="tabpanel" aria-labelledby="settings-tab" hidden>
-  <div class="ds-view-head">
-    <span class="eyebrow">Instrument configuration</span>
-    <h2>Settings</h2>
-    <p>Make the instrument match your inspection protocol.</p>
-  </div>
-
-  <div class="ds-card">
-    <div class="ds-card-title">Appearance</div>
-    <p class="ds-card-hint">Use the mode that stays legible in the cab.</p>
-    <div class="ds-row">
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
-      <span class="ds-status-line">Switch between light and dark</span>
-    </div>
-  </div>
-
-  <div class="ds-card">
-    <div class="ds-card-title">Network data</div>
-    <p class="ds-card-hint">Stationing and bridge matching read from these datasets on this device.</p>
+    <div class="ds-card-title">Alignment &amp; calibration</div>
+    <p class="ds-card-hint">Import the alignment provided by your engineering team before capturing.</p>
     <details class="dataset-drawer" id="dataset-drawer">
       <summary>
         <span class="dataset-state-dot" aria-hidden="true"></span>
@@ -1504,6 +1497,23 @@ button {
       </div>
     </details>
   </div>
+</section>
+
+<section class="app-view settings-view" id="settings-view" role="tabpanel" aria-labelledby="settings-tab" hidden>
+  <div class="ds-view-head">
+    <span class="eyebrow">Instrument configuration</span>
+    <h2>Settings</h2>
+    <p>Make the instrument match your inspection protocol.</p>
+  </div>
+
+  <div class="ds-card">
+    <div class="ds-card-title">Appearance</div>
+    <p class="ds-card-hint">Use the mode that stays legible in the cab.</p>
+    <div class="ds-row">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
+      <span class="ds-status-line">Switch between light and dark</span>
+    </div>
+  </div>
 
   <div class="ds-card">
     <div class="ds-card-title">Storage</div>
@@ -1515,7 +1525,11 @@ button {
 <nav class="app-tab-bar" role="tablist" aria-label="KMTrack sections">
   <button type="button" class="app-tab-btn active" id="inspection-tab" role="tab" aria-selected="true" aria-controls="inspection-view" data-app-view="inspection">
     <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="5" y1="12" y2="12"></line><line x1="19" x2="22" y1="12" y2="12"></line><line x1="12" x2="12" y1="2" y2="5"></line><line x1="12" x2="12" y1="19" y2="22"></line><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg>
-    <span>Inspection</span>
+    <span>Capture</span>
+  </button>
+  <button type="button" class="app-tab-btn" id="log-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="log-view" data-app-view="log">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+    <span>Log</span>
   </button>
   <button type="button" class="app-tab-btn" id="map-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="map-view" data-app-view="map">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"></path><path d="M15 5.764v15"></path><path d="M9 3.236v15"></path></svg>
@@ -2399,16 +2413,28 @@ function updateOsmLocation(forceCenter){
 
 const APP_VIEW_IDS = {
   inspection:'inspection-view',
+  log:'log-view',
   map:'map-view',
   tools:'tools-view',
   settings:'settings-view'
 };
+
+// The register is ONE DOM node shared by the Inspection and Log tabs. It is
+// re-parented on tab switch rather than duplicated, so its rows, selection
+// state, swipe handlers and MutationObservers are never forked.
+function mountLogRegister(viewName){
+  if(viewName !== 'log' && viewName !== 'inspection') return;
+  const block = document.getElementById('log-register');
+  const host = document.getElementById(viewName === 'log' ? 'log-host-log' : 'log-host-inspection');
+  if(block && host && block.parentElement !== host) host.appendChild(block);
+}
 
 function showAppView(viewName){
   Object.keys(APP_VIEW_IDS).forEach(name => {
     const view = document.getElementById(APP_VIEW_IDS[name]);
     if(view) view.hidden = name !== viewName;
   });
+  mountLogRegister(viewName);
   document.querySelectorAll('.app-tab-btn').forEach(button => {
     const active = button.dataset.appView === viewName;
     button.classList.toggle('active',active);
@@ -2585,7 +2611,6 @@ function updateReadout(){
   const tagEl = document.getElementById('segment-tag');
   const post=kmEl.closest('.kmpost');
   const locationLabel=document.getElementById('current-location-label');
-  const locationDetail=document.getElementById('current-location-detail');
 
   if(!result){
     kmEl.textContent = '--.---';
@@ -2593,8 +2618,7 @@ function updateReadout(){
     tagEl.textContent = calibData.length ? '--' : 'dataset not loaded';
     tagEl.classList.remove('faroff');
     post.classList.remove('interchange-mode');
-    locationLabel.textContent='CURRENT KM STATION';
-    locationDetail.textContent='kilometers (interpolated)';
+    locationLabel.textContent='Station';
     updateBridgeReadout(currentPos.lat, currentPos.lon, null, true);
     return;
   }
@@ -2602,8 +2626,7 @@ function updateReadout(){
   const isOffMappedNetwork = result.distance > offNetworkThresholdKm(currentPos.acc);
   const interchangeMode=isInterchangeLocationMode(resolution,currentPos);
   post.classList.toggle('interchange-mode',interchangeMode);
-  locationLabel.textContent=interchangeMode?'CURRENT LOCATION':'CURRENT KM STATION';
-  locationDetail.textContent=interchangeMode?interchangeSegmentLabel(resolution):'kilometers (interpolated)';
+  locationLabel.textContent=interchangeMode?'Location':'Station';
   kmEl.textContent = interchangeMode?resolution.interchange.name:(isOffMappedNetwork?'--.---':formatKmStation(result.km));
   document.getElementById('map-km-station').textContent=interchangeMode?resolution.interchange.name:`KM ${kmEl.textContent}`;
   const displayBound = userBound || '?';
@@ -4059,7 +4082,8 @@ function renderLog(){
   const list = document.getElementById('log-list');
   const exportBtn = document.getElementById('export-btn');
   const backupBtn = document.getElementById('backup-btn');
-  document.getElementById('count-mini').textContent = entries.length;
+  const countMini = document.getElementById('count-mini');
+  if(countMini) countMini.textContent = entries.length;
   document.getElementById('count-label').textContent = Object.values(getLogFilters()).some(Boolean)
     ? `${visible.length} of ${entries.length} entries`
     : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
