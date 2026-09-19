@@ -1462,18 +1462,22 @@ button {
   </div>
 
   <div class="log-data-row">
-    <div class="ds-row" id="log-export-actions"></div>
     <div class="ds-row" id="log-import-actions">
       <button type="button" class="ds-btn ds-btn-primary" id="import-btn">Import</button>
-      <button type="button" id="import-history-btn" class="ds-btn ds-btn-quiet" hidden>Imported files</button>
       <input type="file" id="import-file" accept=".xlsx,.zip" hidden>
     </div>
-    <div class="ds-row log-select-actions" id="log-select-actions"></div>
+    <div class="ds-row log-bulk-actions" id="log-bulk-actions" hidden></div>
   </div>
 
-  <div class="ds-row log-bulk-actions" id="log-bulk-actions" hidden></div>
+  <div class="log-hint-row">
+    <p class="log-data-hint">Import .xlsx exports or Photos .zip archives.</p>
+    <button type="button" id="import-history-btn" class="ds-btn ds-btn-quiet" hidden>Imported files</button>
+  </div>
 
-  <p class="log-data-hint">Import .xlsx exports or Photos .zip archives.</p>
+  <div class="log-data-row">
+    <div class="ds-row" id="log-export-actions"></div>
+    <div class="ds-row log-select-actions" id="log-select-actions"></div>
+  </div>
   <div id="import-status" role="status"></div>
 
   <div id="log-host-log"></div>
@@ -1482,33 +1486,53 @@ button {
 <section class="app-view tools-view" id="tools-view" role="tabpanel" aria-labelledby="tools-tab" hidden>
   <div class="ds-view-head">
     <span class="eyebrow">Local data control</span>
-    <h2>Tools</h2>
-    <p>Stationing and bridge matching read from the network datasets on this device.</p>
+    <h2>Data tools</h2>
+    <p>KMTrack keeps field data on this device until you choose to export it.</p>
   </div>
 
-  <div class="ds-card">
-    <div class="ds-card-title">Alignment &amp; calibration</div>
-    <p class="ds-card-hint">Import the alignment provided by your engineering team before capturing.</p>
-    <details class="dataset-drawer" id="dataset-drawer">
-      <summary>
-        <span class="dataset-state-dot" aria-hidden="true"></span>
-        <span class="dataset-state-label" id="dataset-state-label">Loading network data</span>
-        <span class="dataset-chevron" aria-hidden="true"></span>
-      </summary>
-      <div class="dataset-content">
-        <div class="dataset-panel">
-          <div class="dataset-panel-title">Network calibration data</div>
-          <div class="calib-hint" id="calib-status">Loading NLEX network alignment...</div>
-          <button class="calib-add" id="calib-reload">Reload dataset</button>
-        </div>
-        <div class="dataset-panel">
-          <div class="dataset-panel-title">Interchange line data</div>
-          <div class="calib-hint" id="ramp-status">Loading interchange line dataset...</div>
-          <button class="calib-add" id="ramp-reload">Reload dataset</button>
-        </div>
+  <section class="tool-card">
+    <div class="tool-head">
+      <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg></span>
+      <div class="tool-copy">
+        <h3>Alignment &amp; calibration</h3>
+        <p>Stationing and bridge matching read from the network datasets held on this device.</p>
       </div>
-    </details>
-  </div>
+    </div>
+    <div class="tool-body">
+      <details class="dataset-drawer" id="dataset-drawer">
+        <summary>
+          <span class="dataset-state-dot" aria-hidden="true"></span>
+          <span class="dataset-state-label" id="dataset-state-label">Loading network data</span>
+          <span class="dataset-chevron" aria-hidden="true"></span>
+        </summary>
+        <div class="dataset-content">
+          <div class="dataset-panel">
+            <div class="dataset-panel-title">Network calibration data</div>
+            <div class="calib-hint" id="calib-status">Loading NLEX network alignment...</div>
+            <button class="calib-add" id="calib-reload">Reload dataset</button>
+          </div>
+          <div class="dataset-panel">
+            <div class="dataset-panel-title">Interchange line data</div>
+            <div class="calib-hint" id="ramp-status">Loading interchange line dataset...</div>
+            <button class="calib-add" id="ramp-reload">Reload dataset</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="tool-card">
+    <div class="tool-head">
+      <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg></span>
+      <div class="tool-copy">
+        <h3>Installability</h3>
+        <p>For a faster field launch, add KMTrack to your home screen from the browser menu. Keep location permission set to Allow while using.</p>
+      </div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>Works offline with local storage</div>
+    </div>
+  </section>
 </section>
 
 <section class="app-view settings-view" id="settings-view" role="tabpanel" aria-labelledby="settings-tab" hidden>
@@ -1518,20 +1542,56 @@ button {
     <p>Make the instrument match your inspection protocol.</p>
   </div>
 
-  <div class="ds-card">
-    <div class="ds-card-title">Appearance</div>
-    <p class="ds-card-hint">Use the mode that stays legible in the cab.</p>
-    <div class="ds-row">
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"></button>
-      <span class="ds-status-line">Switch between light and dark</span>
+  <section class="settings-panel">
+    <div class="setting-head">
+      <svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+      <div class="setting-copy">
+        <h3>Inspector identity</h3>
+        <p>Saved with every new capture on this device.</p>
+        <input id="inspector-input" class="setting-field" type="text" autocomplete="off" placeholder="e.g. M. Santos / Team 04">
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div class="ds-card">
-    <div class="ds-card-title">Storage</div>
-    <p class="ds-card-hint">Inspection records and preferences are stored on this device.</p>
-    <div class="ds-status-line"><span id="storage-status" hidden></span></div>
-  </div>
+  <section class="settings-panel">
+    <div class="setting-head">
+      <svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg>
+      <div class="setting-copy">
+        <h3>Location confidence</h3>
+        <p>The instrument holds a capture until it has confirmed the road. Current alignment: <span id="settings-alignment-count">0</span> points.</p>
+        <dl class="setting-readouts">
+          <div><dt>Current accuracy</dt><dd id="settings-accuracy">--</dd></div>
+          <div><dt>Last fix</dt><dd id="settings-fix-age">--</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-panel">
+    <div class="setting-row">
+      <span class="setting-tile" id="appearance-tile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg></span>
+      <div class="setting-copy">
+        <h3>Appearance</h3>
+        <p>Use the mode that stays legible in the cab.</p>
+      </div>
+      <button type="button" class="switch" id="theme-toggle" role="switch" aria-checked="false" aria-label="Dark mode" title="Dark mode"><span class="switch-knob" aria-hidden="true"></span></button>
+    </div>
+  </section>
+
+  <section class="settings-panel">
+    <div class="setting-head">
+      <svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path><circle cx="12" cy="12" r="2"></circle><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path></svg>
+      <div class="setting-copy">
+        <h3>Connection &amp; status</h3>
+        <p>Live GPS comes from this browser. Road matching only uses the network datasets on this device; KMTrack never substitutes a guessed corridor.</p>
+        <div class="setting-pills">
+          <span class="status-pill status-fresh" id="storage-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg><span id="storage-pill-text">Local storage active</span></span>
+          <span class="status-pill status-warn" id="tiles-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 2 20 20"></path><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"></path><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"></path></svg><span id="tiles-pill-text">Map tiles unavailable</span></span>
+        </div>
+        <div class="ds-status-line"><span id="storage-status" hidden></span></div>
+      </div>
+    </div>
+  </section>
 </section>
 
 <nav class="app-tab-bar" role="tablist" aria-label="KMTrack sections">
@@ -1697,9 +1757,12 @@ function updateDatasetDrawerState(){
   const label = document.getElementById('dataset-state-label');
   if(!drawer || !label) return;
   drawer.classList.toggle('loaded', calibrationDatasetReady);
+  // Kept short on purpose: the summary is a single nowrap line, and
+  // "Network + interchange data loaded" needed 229px against 209px available at
+  // 390px — it was silently ellipsised. The expanded panels carry the detail.
   label.textContent = calibrationDatasetReady && rampDatasetReady
-    ? 'Network + interchange data loaded'
-    : calibrationDatasetReady ? 'Network data loaded' : 'Loading network data';
+    ? 'Both datasets ready'
+    : calibrationDatasetReady ? 'Network data ready' : 'Loading network data';
 }
 
 function testStorageWritable(){
@@ -1744,6 +1807,8 @@ function updateSyncStatus(){
 function updateNetStatus(){
   const pill = document.getElementById('net-status');
   if(pill) pill.hidden = navigator.onLine !== false;
+  // The Settings status pills report the same connection state.
+  updateStatusPills();
 }
 
 async function refreshConnection(){
@@ -2368,6 +2433,7 @@ function tickClock(){
   const saved = document.getElementById('clock-saved');
   if(saved) saved.textContent = ` · ${savedText}`;
   fitInstrumentFoot();
+  updateConfidenceReadouts();
 }
 
 /* The instrument footer carries the coordinates, the date/time and the saved
@@ -3002,6 +3068,7 @@ function logDefect(type, lane){
     timestamp: fullTimestamp(),
     ...snapshot,
     lane,
+    inspector: inspectorName,
     photoId: '',
     photoFilename: '',
     photoTimestamp: ''
@@ -3701,6 +3768,7 @@ async function captureContinuousLane(laneValue){
     entries.push(KMTrackEntry.createEntry({
       ...cameraDraftEntry,
       timestamp: fullTimestamp(),
+      inspector: inspectorName,
       photoId,
       photoFilename: result.filename,
       photoTimestamp: formatPhotoDate(result.stamp)
@@ -3841,6 +3909,7 @@ async function saveCapturedPhoto(){
       entries.push(KMTrackEntry.createEntry({
         ...cameraDraftEntry,
         timestamp: fullTimestamp(),
+        inspector: inspectorName,
         photoId,
         photoFilename: pendingCaptureFilename,
         photoTimestamp: formatPhotoDate(pendingCaptureStamp)
@@ -4062,6 +4131,11 @@ function hideSwipeUndo(){
   if(undoNotice){ undoNotice.remove(); undoNotice = null; }
 }
 
+// The Appearance tile glyph, matching the reference's Sun/Moon swap. Declared
+// before setTheme() runs — a `const` declared later would be in its dead zone.
+const SETTING_SUN_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>';
+const SETTING_MOON_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
+
 function setTheme(theme){
   const isLight = theme === 'light';
   document.documentElement.toggleAttribute('data-theme', isLight);
@@ -4070,8 +4144,15 @@ function setTheme(theme){
   const toggles = [document.getElementById('theme-toggle')];
   const nextLabel = isLight ? 'Switch to dark mode' : 'Switch to light mode';
   toggles.forEach(toggle => {
-    if(toggle){ toggle.setAttribute('aria-label', nextLabel); toggle.title = nextLabel; }
+    if(toggle){
+      toggle.setAttribute('aria-label', nextLabel);
+      toggle.title = nextLabel;
+      // The Appearance control is a real switch now, not a floating glyph button.
+      toggle.setAttribute('aria-checked', isLight ? 'false' : 'true');
+    }
   });
+  const appearanceTile = document.getElementById('appearance-tile');
+  if(appearanceTile) appearanceTile.innerHTML = isLight ? SETTING_SUN_ICON : SETTING_MOON_ICON;
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   if(themeMeta) themeMeta.content = isLight ? '#19384c' : '#07131f';
   updateOsmBasemap();
@@ -4084,6 +4165,77 @@ function toggleTheme(){
   try{ localStorage.setItem(STORAGE_KEY_THEME, nextTheme); }catch(e){ /* theme preference is non-critical */ }
 }
 document.getElementById('theme-toggle').addEventListener('click',toggleTheme);
+
+// ---------- Settings: inspector identity ----------
+// Records already carried an `inspector` field with no way to set a default.
+// This is that default: stored on the device and stamped on every new capture.
+const STORAGE_KEY_INSPECTOR = 'kmtrack_inspector_v1';
+let inspectorName = '';
+try{ inspectorName = localStorage.getItem(STORAGE_KEY_INSPECTOR) || ''; }catch(e){ /* non-critical */ }
+
+function setInspectorName(value){
+  inspectorName = String(value || '').trim();
+  try{
+    if(inspectorName) localStorage.setItem(STORAGE_KEY_INSPECTOR, inspectorName);
+    else localStorage.removeItem(STORAGE_KEY_INSPECTOR);
+  }catch(e){ /* non-critical */ }
+  syncInspectorFilterOptions();
+}
+
+/* The Inspector filter is built from the entries, so the current identity has to
+   be added explicitly — otherwise a freshly-named device shows no option until
+   its first capture. */
+function syncInspectorFilterOptions(){
+  const select = document.getElementById('entry-filter-inspector');
+  if(!select) return;
+  const previous = select.value;
+  const names = [...new Set(
+    entries.map(entry => String(entry.inspector || '').trim()).filter(Boolean)
+      .concat(inspectorName ? [inspectorName] : [])
+  )].sort();
+  select.replaceChildren(new Option('All inspectors',''), ...names.map(name => new Option(name,name)));
+  select.value = names.includes(previous) ? previous : '';
+}
+
+/* ---------- Settings: live read-outs ---------- */
+/* Read-only. The instrument's own freshness logic decides when a capture is
+   held, so these numbers are reported rather than configured. */
+function updateConfidenceReadouts(){
+  const count = document.getElementById('settings-alignment-count');
+  const accuracy = document.getElementById('settings-accuracy');
+  const age = document.getElementById('settings-fix-age');
+  if(count) count.textContent = (Array.isArray(calibData) ? calibData.length : 0).toLocaleString('en-US');
+  if(accuracy) accuracy.textContent = (currentPos && Number.isFinite(currentPos.acc)) ? `±${Math.round(currentPos.acc)} m` : '--';
+  if(age){
+    const stamp = currentPos && Number(currentPos.timestamp);
+    age.textContent = stamp ? `${Math.max(0, Math.round((Date.now() - stamp) / 1000))} s ago` : '--';
+  }
+}
+
+function updateStatusPills(){
+  const storagePill = document.getElementById('storage-pill');
+  const storageText = document.getElementById('storage-pill-text');
+  const tilesPill = document.getElementById('tiles-pill');
+  const tilesText = document.getElementById('tiles-pill-text');
+  if(storagePill && storageText){
+    const ok = storageAvailable !== false;
+    storagePill.classList.toggle('status-fresh', ok);
+    storagePill.classList.toggle('status-warn', !ok);
+    storageText.textContent = ok ? 'Local storage active' : 'Local storage blocked';
+  }
+  if(tilesPill && tilesText){
+    const online = navigator.onLine !== false;
+    tilesPill.classList.toggle('status-fresh', online);
+    tilesPill.classList.toggle('status-warn', !online);
+    tilesText.textContent = online ? 'Map tiles available' : 'Map tiles unavailable';
+  }
+}
+
+document.getElementById('inspector-input').value = inspectorName;
+document.getElementById('inspector-input').addEventListener('input', event => setInspectorName(event.target.value));
+syncInspectorFilterOptions();
+updateConfidenceReadouts();
+updateStatusPills();
 
 function showSwipeUndo(){
   hideSwipeUndo();
@@ -4220,6 +4372,7 @@ function exitSelectMode(){
 function renderLog(){
   openSwipeEntryId = null;
   syncEntryFilterOptions();
+  syncInspectorFilterOptions();
   syncSharingFilters();
   const visible = visibleEntries();
   const visibleIds = new Set(visible.map(entry => entry.id));

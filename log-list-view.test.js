@@ -58,31 +58,50 @@ test('the records chip doubles as the selection readout', () => {
   assert.doesNotMatch(controls, /`\$\{n\} selected`/);
 });
 
-test('Select rides at the right of the Export/Import data row', () => {
+test('Select rides at the right of the Export row', () => {
   // Row one: title + chip, chip flushed right.
   assert.match(html, /<div class="log-head-row">\s*<h2>Inspection log<\/h2>[\s\S]{0,400}?id="log-records-chip"/);
   assert.match(design, /\.log-head-row\{[\s\S]{0,220}?justify-content:space-between/);
-  // Select is the LAST child of the data row, pushed to its right edge.
-  const row = html.slice(html.indexOf('class="log-data-row"'), html.indexOf('log-data-hint'));
-  assert.ok(row.indexOf('id="log-export-actions"') < row.indexOf('id="log-import-actions"'), 'Export before Import');
-  assert.ok(row.indexOf('id="log-import-actions"') < row.indexOf('id="log-select-actions"'), 'Select after Import');
+  // Select sits in the Export row (which ends just before the import-status
+  // line), not the Import row.
+  const exportRow = html.slice(html.indexOf('id="log-export-actions"'), html.indexOf('id="import-status"'));
+  assert.match(exportRow, /id="log-select-actions"/);
+  const importRow = html.slice(html.indexOf('id="log-import-actions"'), html.indexOf('log-data-hint'));
+  assert.doesNotMatch(importRow, /id="log-select-actions"/);
   assert.match(design, /\.log-select-actions\{[\s\S]{0,220}?margin-left:auto/);
 });
 
-test('the bulk actions get a row below the data row, flushed right', () => {
-  const view = html.slice(html.indexOf('id="log-view"'), html.indexOf('log-data-hint'));
-  // BELOW, not above: above, the new row would shove the Export/Import row and
-  // the Cancel button 44px down the instant Select is pressed.
-  assert.ok(view.indexOf('id="log-bulk-actions"') > view.indexOf('class="log-data-row"'), 'bulk row is below');
-  assert.match(design, /\.log-bulk-actions\{[\s\S]{0,240}?justify-content:flex-end/);
-  assert.match(design, /\.log-bulk-actions\{[\s\S]{0,240}?margin:8px 0 0;/);
+test('Import shares its row with the bulk actions; Export with Select', () => {
+  // Row 1: Import + the bulk actions (revealed on Select). Row 2: Export +
+  // Select/Cancel. The hint stays directly under Import, the button it describes.
+  const view = html.slice(html.indexOf('id="log-view"'), html.indexOf('id="log-host-log"'));
+  const importAt = view.indexOf('id="log-import-actions"');
+  const bulkAt = view.indexOf('id="log-bulk-actions"');
+  const hintAt = view.indexOf('log-data-hint');
+  const exportAt = view.indexOf('id="log-export-actions"');
+  const selectAt = view.indexOf('id="log-select-actions"');
+  assert.ok(importAt < bulkAt, 'Import and the bulk actions share row 1');
+  assert.ok(bulkAt < hintAt, 'the hint follows row 1');
+  assert.ok(hintAt < exportAt, 'Export row follows the hint');
+  assert.ok(exportAt < selectAt, 'Export and Select share row 2');
+  // Both right-hand groups are pushed to their row's right edge.
+  assert.match(design, /\.log-bulk-actions\{[\s\S]{0,260}?margin-left:auto/);
+  assert.match(design, /\.log-select-actions\{[\s\S]{0,220}?margin-left:auto/);
   // The `[hidden]` guard is required: display:flex outranks it otherwise.
   assert.match(design, /\.log-bulk-actions\[hidden\]\{display:none;\}/);
   // Mounted separately from the toggle.
   assert.match(controls, /\(bulkMount \|\| actions\)\.append\(selectAll,deleteSelected\)/);
   assert.match(controls, /bulkMount\.hidden=!selectMode/);
-  // The toggle itself stays in the data row.
   assert.match(controls, /actions\.append\(toggle\)/);
+});
+
+test('the two data rows do not overflow the way a single row did', () => {
+  // Measured: one row needed 386px in selection mode against 362px available at
+  // 390px, so Cancel wrapped to a second line. Splitting it so each row carries
+  // one data action plus one right-hand control keeps both under.
+  assert.match(design, /\.log-data-row\{[\s\S]{0,160}?flex-wrap:wrap/);
+  // The hint is spaced between the rows, not flush against the first.
+  assert.match(design, /\.log-data-hint\{[\s\S]{0,80}?margin:8px 0 10px/);
 });
 
 test('the bulk controls share the Select button geometry', () => {

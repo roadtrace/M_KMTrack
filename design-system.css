@@ -1056,22 +1056,38 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   padding:14px;
 }
 
-/* Log tab data actions: a bare button row rather than a card, so the actions
-   stay reachable instead of sitting below a register that can run to hundreds
-   of rows. Their explanatory copy lives in the export dialog and in one muted
-   hint line. */
+/* Log tab data actions. Two rows, one job each, so neither can overflow:
+   row 1 Import + Select, row 2 Export + the bulk actions (revealed on Select).
+   The hint stays directly under Import, which is the button it describes. */
 .log-data-row{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   gap:8px;
-  margin-bottom:6px;
 }
 .log-data-hint{
-  margin:0 0 12px;
+  margin:8px 0 10px;
   font-size:12.5px;
   line-height:1.5;
   color:var(--ds-fg-muted);
+}
+/* The import-history control lives here rather than in the Import row.
+   Measured with everything selected: row 1 needed 367px against 362px
+   available at 390px (332px at 360px), so Delete wrapped to a second line.
+   This line already talks about imports, and it frees 52px. */
+.log-hint-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:8px 0 10px;
+}
+.log-hint-row .log-data-hint{margin:0;flex:1 1 auto;min-width:0;}
+.log-hint-row #import-history-btn{
+  flex:0 0 auto;
+  width:34px;
+  min-height:34px;
+  padding:0;
+  border-radius:var(--radius-sm);
 }
 .export-hint{
   margin:8px 0 0;
@@ -1388,17 +1404,14 @@ html:root .inspection-view .inspection-record-list .swipe-row + .swipe-row .log-
   margin-left:auto;
 }
 
-/* Revealed by clicking Select: the bulk actions get a row BELOW the data row,
-   flushed to the same right edge. It must sit BELOW — above, the new row would
-   push the Export/Import row (and Cancel) 44px down the moment Select is
-   pressed, so the control you just tapped would jump. */
+/* Shares the Import row, flushed right. Hidden until Select is pressed. */
 .log-bulk-actions{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   justify-content:flex-end;
   gap:8px;
-  margin:8px 0 0;
+  margin-left:auto;
 }
 /* `[hidden]` loses to the `display:flex` above. */
 .log-bulk-actions[hidden]{display:none;}
@@ -1506,6 +1519,168 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
   font-size:12.5px;
   white-space:normal;
 }
+
+/* ---------- Data tools & Settings: reference card language ---------------
+   Values copied from the reference's ToolCard and SettingsPage:
+     ToolCard   = `.panel p-5` + a 40px tile (`rounded-xl`, icon in
+                  --secondary) + `gap-3` head + bold title + `text-sm` copy
+     Settings   = `space-y-4`, each `.panel p-5` with a 20px icon in
+                  --secondary; Appearance uses a real switch; Connection &
+                  status uses `.status-pill` badges. */
+.tool-card,
+.settings-panel{
+  border:1px solid var(--ds-border);
+  border-radius:var(--radius-card);
+  background:var(--ds-card);
+  padding:20px;
+}
+.tool-card + .tool-card,
+.settings-panel + .settings-panel,
+.tool-card + .settings-panel,
+.settings-panel + .tool-card{margin-top:16px;}
+
+.tool-head,
+.setting-head{display:flex;align-items:flex-start;gap:12px;}
+.tool-icon{
+  width:40px;height:40px;flex:0 0 40px;
+  display:grid;place-items:center;
+  border-radius:12px;
+  background:var(--ds-accent);
+  color:var(--ds-secondary);
+}
+.tool-icon svg{
+  width:20px;height:20px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.tool-copy,.setting-copy{flex:1 1 auto;min-width:0;}
+.tool-copy h3,.setting-copy h3,.setting-row h3{
+  margin:0;
+  font-family:var(--font-ui);
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:-.02em;
+  color:var(--ds-fg);
+}
+.tool-copy p,.setting-copy p{
+  margin:4px 0 0;
+  font-size:14px;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+}
+.tool-body{margin-top:20px;}
+
+/* Installability note: `gap-2 text-sm font-semibold` in --secondary. */
+.tool-note{
+  display:flex;align-items:center;gap:8px;
+  font-size:14px;font-weight:600;color:var(--ds-secondary);
+}
+.tool-note svg{
+  width:17px;height:17px;flex:0 0 17px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+
+/* The two dataset blocks read like the reference's accepted-formats note:
+   a muted rounded block of 12px text with a quiet action. */
+.dataset-content{display:grid;gap:12px;}
+.dataset-panel{
+  padding:12px;
+  border-radius:10px;
+  background:color-mix(in srgb, var(--ds-muted) 65%, transparent);
+}
+.dataset-panel-title{
+  font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.dataset-panel .calib-hint{
+  margin:8px 0 0;font-size:12px;line-height:1.6;color:var(--ds-fg-muted);
+}
+.dataset-panel .calib-add{margin-top:12px;}
+
+/* Settings: a 20px icon in --secondary, no tile. */
+.setting-icon{
+  width:20px;height:20px;flex:0 0 20px;margin-top:2px;
+  fill:none;stroke:var(--ds-secondary);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.setting-field{
+  display:block;width:100%;box-sizing:border-box;margin-top:16px;
+  padding:11px 12px;
+  border:1px solid var(--ds-input);border-radius:10px;
+  background:var(--ds-bg);color:var(--ds-fg);
+  font-family:var(--font-ui);font-size:14px;
+}
+.setting-field:focus{
+  outline:none;
+  border-color:var(--ds-secondary);
+  box-shadow:0 0 0 3px hsl(182 42% 49% / .12);
+}
+.setting-readouts{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+  margin:16px 0 0;
+}
+.setting-readouts div{
+  padding:11px 12px;
+  border:1px solid var(--ds-border);border-radius:10px;
+  background:var(--ds-muted);
+}
+.setting-readouts dt{
+  font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.setting-readouts dd{
+  margin:4px 0 0;
+  font-family:var(--font-readout);font-variant-numeric:tabular-nums;
+  font-size:13px;font-weight:500;color:var(--ds-fg);
+}
+
+/* Appearance: `flex items-center gap-3`, a 36px muted tile, and the switch. */
+.setting-row{display:flex;align-items:center;gap:12px;}
+.setting-tile{
+  width:36px;height:36px;flex:0 0 36px;
+  display:grid;place-items:center;
+  border-radius:8px;
+  background:var(--ds-muted);color:var(--ds-fg);
+}
+.setting-tile svg{
+  width:18px;height:18px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+/* Reference switch: `h-7 w-12 rounded-full` with a `size-5` knob. */
+.switch{
+  position:relative;flex:0 0 auto;
+  width:48px;height:28px;padding:0;
+  border:0;border-radius:999px;
+  background:color-mix(in srgb, var(--ds-fg-muted) 35%, transparent);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.switch[aria-checked="true"]{background:var(--ds-secondary);}
+.switch-knob{
+  position:absolute;top:4px;left:4px;
+  width:20px;height:20px;border-radius:999px;
+  background:var(--ds-card);
+  transition:transform 140ms ease;
+}
+.switch[aria-checked="true"] .switch-knob{transform:translateX(20px);}
+
+/* Connection & status pills, on the reference's own tones. */
+.setting-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.setting-pills .status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 9px;border-radius:999px;
+  font-family:var(--font-ui);font-size:11px;font-weight:700;
+}
+.setting-pills .status-pill svg{
+  width:13px;height:13px;flex:0 0 13px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.setting-pills .status-fresh{color:hsl(162 62% 31%);background:hsl(161 47% 87%);}
+.setting-pills .status-warn{color:hsl(32 72% 31%);background:hsl(39 87% 87%);}
+html[data-theme="dark"] .setting-pills .status-fresh{color:hsl(161 58% 77%);background:hsl(162 35% 21%);}
+html[data-theme="dark"] .setting-pills .status-warn{color:hsl(40 90% 76%);background:hsl(34 37% 22%);}
 
 /* ---------- Motion & accessibility -------------------------------------- */
 

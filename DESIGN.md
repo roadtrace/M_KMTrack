@@ -125,28 +125,69 @@ coordinates. `"· N saved"` is dropped when the row cannot fit it — measured, 
 guessed, because the date string moves with the month and the locale. It fits at
 320px and drops at 285px.
 
-### Where Select lives
+### Data tools & Settings follow the reference
 
-`Select` rides at the **right end of the Export / Import data row**, pushed there
-by `margin-left:auto` on `.log-select-actions`. Clicking it does two things: the
-button becomes `Cancel` in the same slot, and `.log-bulk-actions` — a separate
-mount **below** the data row, `justify-content:flex-end` — is revealed with
-`Select all` and `Delete (5)`, flushed to the same right edge.
+Both tabs are copies of the reference's `ToolsPage` / `SettingsPage`:
 
-**It must stay BELOW.** Placed above, the new row shoved the Export/Import row —
-and the button you had just tapped — 44px down the instant Select was pressed.
-Measured: the data row's `top` and the toggle's right edge are now identical in
-both states. (The toggle's *left* edge shifts ~2px, purely because "Cancel" is a
-wider word than "Select" in a right-anchored slot.)
+- **ToolCard** = `.panel p-5` with a 40px accent tile (`rounded-xl`, icon in
+  `--secondary`), a `gap-3` head, a bold title and `text-sm` copy; children at
+  `mt-20`.
+- **Settings** = `space-y-4`, each panel `p-5` with a 20px icon in
+  `--secondary`. App is a real **switch** (`h-7 w-12` with a `size-5` knob), and
+  Connection & status uses `.status-pill` badges.
 
-This replaced an earlier arrangement where the actions owned a permanent row and
-nothing moved at all. The owner preferred Select grouped with the data actions;
-the bulk row appearing on click is now intended, not a regression.
+**Deliberate departures from the reference**, because our app differs:
 
-**Measured**, so a future button cannot silently break the row: `Export` 100px +
-`Import` 99px + `Select` 70px = **285px against 362px available** at 390px
-(287px in selection mode with `Cancel` / `Export selected`). At 360px there is
-still 47px of slack. Anything added to that row has to fit in what is left.
+- The **Export inspection log** panel is gone — exporting lives in the Log tab.
+- **No "Import alignment" button**: our alignment ships as
+  `calibration.json` and auto-loads, so the two dataset panels *are* the
+  Alignment & calibration content. Both keep their real status lines and their
+  Reload buttons, restyled as the reference's muted note blocks.
+- **No "Restore a device backup" panel**: we have no JSON record backup;
+  restoring is the Log tab's Import. Adding the panel would be an inert control.
+- **Location confidence is read-only** — it reports the live accuracy and the age
+  of the last fix. Our resolver decides freshness from fix events rather than a
+  numeric threshold, so there is no configured value to show or gate on.
+
+**Inspector identity works.** The record already carried an `inspector` field
+with no way to set it; the panel now stores a default on the device, stamps it on
+every new capture (all three creation sites), and adds it to the Inspector filter
+options — otherwise a freshly-named device would show no option until its first
+capture.
+
+One trap fixed: the dataset summary is a single nowrap line, and
+`Network + interchange data loaded` needed 229px against 209px available at
+390px, so it was silently ellipsised. Shortened to `Both datasets ready`.
+
+
+```
+Inspection log                          [30 of 30 selected]
+
+[Import]                        [Deselect all] [Delete (30)]
+Import .xlsx exports or Photos .zip archives.            [≡]
+
+[Export selected]                                [Cancel]
+```
+
+`Import` shares row 1 with the bulk actions, flushed right. `Export` shares row 2
+with `Select` / `Cancel`, flushed right. The **import-history icon sits at the end
+of the hint line**, which already talks about imports.
+
+**Why the icon is not in the button row.** With everything selected row 1 needs
+`Import` 99 + bulk 205 + 8 = **367px against 362px available** at 390px (332px at
+360px), so `Delete` wrapped to a second line — the exact thing the split was meant
+to prevent. Moving the icon frees 52px; the row needs **312px** and fits both
+widths with room.
+
+**Three arrangements were tried and rejected:**
+
+- One row for everything — overflowed by 24px the moment anything was selected,
+  so `Cancel` wrapped.
+- The bulk actions sharing `Export`'s row — fitted at 390px but **wrapped at
+  360px**, so the layout changed with the phone.
+- The bulk actions on a row *above* — shoved the button just tapped 44px down.
+
+**Select and Cancel share a slot** on row 2, so pressing Select moves nothing.
 
 The chip is the selection readout: `N records` idle, `S of N selected` while
 selecting. `#selection-count` was removed so two counters never compete.
