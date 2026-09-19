@@ -195,6 +195,23 @@ Three things cost real time here, all recorded because they will recur:
    style, so the map looks plausible while showing the wrong basemap. The key is
    passed as `apiKey`, not embedded in the URL.
 
+4. **The plugin's `updateInterval` default of 32ms causes the drag jitter.**
+   The GL container is pinned to the viewport from the plugin's `move` handler,
+   which that throttle gates. A 60-120Hz drag outruns it, so the canvas travelled
+   along with the map pane and snapped back each time the handler finally ran —
+   the basemap lurched while the markers glided. **Dark mode only:** the light
+   raster is a pane child and needs no re-pinning, which is why it was always
+   smooth. Fixed with `updateInterval: 0`, collapsing the throttle into a
+   per-tick coalescer. Measured over 30 frames of continuous panning, the
+   container went from **4 distinct screen positions to 1**. `syncVectorCamera`
+   was **not** at fault — camera lag was already 0 and stays 0.
+
+The distinction that made this hard to see by eye: **camera lag**, **container
+pinning** and **render timing** are independent. Checking only "is the basemap
+pointing at the right place" (lag = 0) looks perfect while the container is still
+visibly lurching. Instrument the container's own screen rect, not just the
+camera.
+
 `interactive: false` is the plugin's own default; it is set explicitly only so
 the intent is obvious. It was **not** the cause of the panning problem.
 

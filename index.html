@@ -2573,7 +2573,17 @@ function updateOsmBasemap(){
       /* Leaflet owns every gesture. The plugin already defaults this to false;
        * it is set explicitly so the intent is obvious — MapLibre must not run
        * its own drag/zoom handlers on top of Leaflet's. */
-      interactive: false
+      interactive: false,
+      /* Keep the GL container pinned to the viewport on EVERY frame.
+       *
+       * The plugin's default is 32ms, which a 60-120Hz drag outruns: the canvas
+       * then drifts along with the map pane and snaps back each time the
+       * throttled handler finally runs, so the basemap visibly lurches while the
+       * markers glide — dark mode only, because the light raster is a pane child
+       * and needs no re-pinning. 0 collapses the throttle into a per-tick
+       * coalescer, so it stays in step at any refresh rate. Measured before the
+       * fix: the container occupied 4 different screen positions over 30 frames. */
+      updateInterval: 0
     }).addTo(osmMap);
     osmVectorLayer = layer;
     /* Drive the GL camera from Leaflet.

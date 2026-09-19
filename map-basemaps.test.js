@@ -90,6 +90,12 @@ test('dark uses the MapTiler vector style — not a raster tile layer, not an if
   assert.match(html,/L\.maptilerLayer\(\{/);
   assert.match(html,/style: KMTrackMapConfig\.styleUrl/);
   assert.match(html,/apiKey: KMTrackMapConfig\.apiKey/);
+  // The GL container is pinned to the viewport from the plugin's `move` handler.
+  // Its default 32ms throttle is outrun by a 60-120Hz drag, so the canvas drifted
+  // with the map pane and snapped back — the basemap lurched while the markers
+  // glided. It must stay a per-tick update.
+  assert.match(html,/updateInterval: 0/);
+  assert.doesNotMatch(html,/updateInterval: 32/);
   // `bringToBack` is a GridLayer/Path method, not an L.Layer one, and the
   // MapTiler layer is a plain L.Layer — calling it threw and the catch then read
   // it as a basemap failure.
@@ -104,6 +110,10 @@ test('dark uses the MapTiler vector style — not a raster tile layer, not an if
   assert.match(html,/gl\.jumpTo\(\{ center: osmMap\.getCenter\(\), zoom: osmMap\.getZoom\(\) - 1 \}\)/);
   assert.match(html,/osmMap\.on\('move', syncVectorCamera\)/);
   assert.match(html,/osmMap\.on\('zoom', syncVectorCamera\)/);
+  // Continuous tracking, NOT deferred to the end of the gesture — deferring was
+  // the frozen-background bug.
+  assert.doesNotMatch(html,/osmMap\.on\('moveend', syncVectorCamera\)/);
+  assert.doesNotMatch(html,/osmMap\.on\('moveend', \(\) => \{[\s\S]{0,120}?jumpTo/);
   // ...and it is detached when the layer goes away.
   assert.match(html,/osmMap\.off\('move', syncVectorCamera\)/);
   // Dark is chosen by theme.
