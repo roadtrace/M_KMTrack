@@ -110,9 +110,41 @@ exist only as brand assets.
   reimplemented, so `updateOsmLocation()` and the station writers keep working
   untouched. The map's own topbar is gone with it.
 - **The map tab no longer has its own dark/light toggle**; it follows the app.
-- The refresh button re-checks `navigator.onLine` and drains the sync queue.
-  Until a transport is supplied that queue is inert, so today it effectively just
-  re-tests the connection.
+- The refresh button re-checks `navigator.onLine`, drains the sync queue, then
+  **reloads the page** so the app re-reads its datasets and shell. The drain runs
+  first so an in-flight sync is not cut off by the navigation. Until a transport
+  is supplied that queue is inert, so today it is effectively a plain reload.
+
+**A reload must not cost the inspector their place.** The reload is a *recovery*
+action — you reach for it when something is broken — so being dumped back on
+Capture and losing the map would make recovery itself disruptive. Both are
+remembered in **`sessionStorage`**:
+
+| Remembered | Restored |
+| --- | --- |
+| The active tab | `restoreActiveView()` after the initial render |
+| The map centre and zoom | `initOsmMap()` creates the map there, re-asserted by `applySavedMapView()` once the pane has been measured |
+
+`sessionStorage`, not `localStorage`, on purpose: a reload keeps it, a fresh
+launch starts clean. An in-progress **camera draft is deliberately not
+restored** — resurrecting a half-taken photo is exactly the state worth losing.
+
+Two details worth keeping:
+
+- When a view is restored, `osmHasCenteredOnLocation` is set so the first GPS fix
+  does **not** yank the map onto the current position — that would discard
+  precisely what the reload was preserving.
+- The map is first created while its tab may still be hidden, so it has no size
+  and `setView` lands a few metres off. `applySavedMapView()` runs again after
+  `invalidateSize()`; it is idempotent, so it is a no-op on an ordinary tab
+  switch. Residual snap is sub-pixel (~11 m at zoom 12).
+
+**The reload does not bypass the service worker.** Anything in `APP_SHELL` comes
+from cache — `interchanges.json` and `map-landmarks.json` included — so it is not
+re-fetched. `calibration.json` is re-fetched because the SW gives it a
+network-first branch, and the in-app **Reload dataset** buttons use `no-store`
+fetches that the SW lets through. Retrying those datasets is their job, not the
+header button's.
 
 `--app-header-h` is measured by `syncHeaderHeight()`, not hard-coded: the map
 height subtracts the header as well as the tab tray, and the header's height
@@ -143,17 +175,32 @@ published MapTiler style through the **official Leaflet integration**
   the style never arrives within 8s, the raster dark basemap is used so the map
   is never blank.
 
-Two things cost real time here, both recorded because they will recur:
+Three things cost real time here, all recorded because they will recur:
 
-1. **`bringToBack()` is a `GridLayer`/`Path` method, not an `L.Layer` one.** The
+1. **The plugin does not actually sync the basemap on a pan.** `leaflet-maptilersdk`
+   v1.0.0 predates this SDK: its `_transformGL()` assigns `transform.center`
+   directly, which MapLibre 5 recomputes and discards. The basemap therefore
+   stayed at its opening position while Leaflet panned its panes — so the markers
+   slid across a frozen map and looked like a detached layer floating above it.
+   `syncVectorCamera()` now drives the GL camera from Leaflet's `move`/`zoom`
+   with `jumpTo`, and is detached in `clearBasemaps()`. Measured: Leaflet and
+   MapLibre hold identical centre and (Leaflet − 1) zoom after a pan and a zoom.
+2. **`bringToBack()` is a `GridLayer`/`Path` method, not an `L.Layer` one.** The
    MapTiler layer is a plain `L.Layer`, so calling it threw — and the surrounding
    `.catch` then read that as a basemap failure and silently fell back to raster.
-   The call was never needed: the plugin renders into the tile pane (z-index 200)
-   and Leaflet's overlay pane is 400, so markers and overlays stay on top.
-2. **`style` must be a full style URL.** A bare map id is rejected
+   It was never needed: the plugin renders into the tile pane (z-index 200) and
+   Leaflet's overlay pane is 400.
+3. **`style` must be a full style URL.** A bare map id is rejected
    (`[Map.setStyle]: Invalid style`) and the SDK quietly loads its own default
-   style instead, so the map looks plausible while showing the wrong basemap. The
-   key is passed as `apiKey`, not embedded in the URL.
+   style, so the map looks plausible while showing the wrong basemap. The key is
+   passed as `apiKey`, not embedded in the URL.
+
+`interactive: false` is the plugin's own default; it is set explicitly only so
+the intent is obvious. It was **not** the cause of the panning problem.
+
+Also worth knowing: plugin v3.0.0 on the CDN exports to
+`window.leafletmaptilersdk`, not `L.maptilerLayer`, so swapping versions silently
+fails to register. The vendored pair is SDK 4.1.0 + plugin 1.0.0.
 
 Verified in the browser: light makes **zero** MapTiler requests; dark loads all
 three vendored files and requests the configured style; the view (centre and

@@ -1251,7 +1251,7 @@ button {
     </div>
     <div class="header-actions">
       <span class="header-net" id="net-status" hidden><span class="net-dot" aria-hidden="true">●</span>Off network</span>
-      <button type="button" class="header-refresh" id="net-refresh" aria-label="Re-check connection" title="Re-check connection"></button>
+      <button type="button" class="header-refresh" id="net-refresh" aria-label="Re-check connection and reload" title="Re-check connection and reload"></button>
     </div>
   </header>
 </div>
@@ -1817,15 +1817,19 @@ async function refreshConnection(){
   if(button) button.disabled = true;
   try{
     updateNetStatus();
+    // Flush the queue BEFORE reloading, so an in-flight sync is not cut off.
     const result = await syncQueue.drain(entries);
     if(result && result.ok && (result.uploaded || result.failed)) saveEntries();
     updateSyncStatus();
   }catch(e){
     // The queue never throws; this is a backstop so a tap can never break the UI.
     console.warn('Refresh failed', e);
-  }finally{
-    if(button) button.disabled = false;
   }
+  /* Then reload the page, so the app re-reads its datasets and shell from
+   * scratch. Everything durable is already in local storage, so nothing is lost
+   * — but this does discard in-memory state, so an open camera draft and the
+   * current map position are not preserved. */
+  window.location.reload();
 }
 
 window.addEventListener('online', updateNetStatus);
@@ -2495,6 +2499,7 @@ const MAP_BASEMAPS = {
 // on demand, because the SDK is ~1.4 MB and only dark mode needs it.
 let osmVectorLayer = null;
 let mapTilerSdkPromise = null;
+let syncVectorCamera = null;
 
 function ensureMapTilerSdk(){
   if(mapTilerSdkPromise) return mapTilerSdkPromise;
@@ -2536,6 +2541,11 @@ function addRasterBasemap(theme){
 }
 
 function clearBasemaps(){
+  if(syncVectorCamera && osmMap){
+    osmMap.off('move', syncVectorCamera);
+    osmMap.off('zoom', syncVectorCamera);
+  }
+  syncVectorCamera = null;
   if(osmBaseLayer){ osmBaseLayer.remove(); osmBaseLayer = null; }
   if(osmVectorLayer){ osmVectorLayer.remove(); osmVectorLayer = null; }
 }
@@ -2559,14 +2569,33 @@ function updateOsmBasemap(){
     clearBasemaps();
     const layer = L.maptilerLayer({
       style: KMTrackMapConfig.styleUrl,
-      apiKey: KMTrackMapConfig.apiKey
+      apiKey: KMTrackMapConfig.apiKey,
+      /* Leaflet owns every gesture. The plugin already defaults this to false;
+       * it is set explicitly so the intent is obvious — MapLibre must not run
+       * its own drag/zoom handlers on top of Leaflet's. */
+      interactive: false
     }).addTo(osmMap);
     osmVectorLayer = layer;
-    /* No bringToBack() here: that is a GridLayer/Path method, NOT an L.Layer one,
-     * and this layer is a plain L.Layer. Calling it threw, which the catch below
-     * then read as a basemap failure. It is unnecessary anyway — the plugin
-     * renders into the tile pane (z-index 200) and Leaflet's overlay pane sits
-     * at 400, so markers and overlays stay on top. */
+    /* Drive the GL camera from Leaflet.
+     *
+     * The vendored plugin (v1.0.0) predates this SDK. Its _transformGL() assigns
+     * `transform.center` directly, which MapLibre 5 recomputes and discards — so
+     * the basemap stayed at its opening position while Leaflet panned its panes,
+     * and the markers slid across a frozen map as if they were a detached layer
+     * floating above it. `jumpTo` is the supported API and is idempotent, so this
+     * stays harmless if a future plugin release fixes the sync itself.
+     *
+     * No bringToBack() either: that is a GridLayer/Path method, not an L.Layer
+     * one, and this is a plain L.Layer. It is unnecessary — the plugin renders
+     * into the tile pane (z-index 200) and Leaflet's overlay pane is 400. */
+    syncVectorCamera = () => {
+      const gl = layer._maptilerMap;
+      if(!gl || osmVectorLayer !== layer || !osmMap) return;
+      gl.jumpTo({ center: osmMap.getCenter(), zoom: osmMap.getZoom() - 1 });
+    };
+    osmMap.on('move', syncVectorCamera);
+    osmMap.on('zoom', syncVectorCamera);
+    syncVectorCamera();
     /* The plugin adds the MapTiler + OpenStreetMap attribution itself, but it
      * does not report basemap failures. If the style never arrives — offline, or
      * the key refused — fall back to the raster dark basemap rather than leaving
@@ -2593,12 +2622,64 @@ function updateOsmBasemap(){
   });
 }
 
+/* Reload continuity. The header refresh reloads the page, which would otherwise
+ * dump the inspector back on Capture and reset the map — so recovery would cost
+ * them their place. Both are remembered for the SESSION only, so a fresh launch
+ * still starts clean. An in-progress camera draft is deliberately NOT restored:
+ * resurrecting a half-taken photo is exactly the state worth losing. */
+const STORAGE_KEY_ACTIVE_VIEW = 'kmtrack_active_view_v1';
+const STORAGE_KEY_MAP_VIEW = 'kmtrack_map_view_v1';
+
+function rememberActiveView(viewName){
+  try{ sessionStorage.setItem(STORAGE_KEY_ACTIVE_VIEW, viewName); }catch(e){ /* non-critical */ }
+}
+
+function restoreActiveView(){
+  let view = null;
+  try{ view = sessionStorage.getItem(STORAGE_KEY_ACTIVE_VIEW); }catch(e){ /* non-critical */ }
+  if(view && APP_VIEW_IDS[view]) showAppView(view);
+}
+
+function loadMapView(){
+  try{
+    const parsed = JSON.parse(sessionStorage.getItem(STORAGE_KEY_MAP_VIEW) || 'null');
+    if(!parsed) return null;
+    const {lat,lng,zoom} = parsed;
+    if(!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return null;
+    return {lat,lng,zoom};
+  }catch(e){ return null; }
+}
+
+function rememberMapView(){
+  if(!osmMap) return;
+  try{
+    const center = osmMap.getCenter();
+    sessionStorage.setItem(STORAGE_KEY_MAP_VIEW, JSON.stringify({lat:center.lat,lng:center.lng,zoom:osmMap.getZoom()}));
+  }catch(e){ /* non-critical */ }
+}
+
+/* Re-assert the remembered view. The map is first created while its tab may
+ * still be hidden, so it has no real size yet and `setView` lands a few metres
+ * off; this runs again once the pane has been measured. Idempotent — the view is
+ * saved on every moveend, so it is a no-op on a normal tab switch. */
+function applySavedMapView(){
+  const saved = loadMapView();
+  if(osmMap && saved) osmMap.setView([saved.lat,saved.lng], saved.zoom, {animate:false});
+}
+
 function initOsmMap(){
   if(osmMap || typeof L === 'undefined') return;
-  osmMap = L.map('osm-map',{zoomControl:false,attributionControl:true}).setView([14.86,120.88],10);
+  const saved = loadMapView();
+  osmMap = L.map('osm-map',{zoomControl:false,attributionControl:true})
+    .setView(saved ? [saved.lat,saved.lng] : [14.86,120.88], saved ? saved.zoom : 10);
+  // A restored view must not be yanked onto the current fix — that would discard
+  // exactly the position the reload was meant to preserve.
+  if(saved) osmHasCenteredOnLocation = true;
   updateOsmBasemap();
   osmMap.on('moveend',updateMapEntries);
   osmMap.on('zoomend',updateMapLandmarks);
+  osmMap.on('moveend',rememberMapView);
+  osmMap.on('zoomend',rememberMapView);
   updateMapLandmarks();
   fetch('map-landmarks.json').then(r=>{if(!r.ok) throw new Error(r.status);return r.json();}).then(data=>{if(!Array.isArray(data.assets)) throw new Error('Invalid landmark dataset');supplementalMapLandmarks=data.assets;updateMapLandmarks();}).catch(err=>console.warn('Additional interchange markers unavailable',err));
   updateOsmLocation();
@@ -2727,6 +2808,8 @@ function syncHeaderContext(viewName){
 }
 
 function showAppView(viewName){
+  // Remembered so a page reload — the header refresh — comes back to this view.
+  rememberActiveView(viewName);
   Object.keys(APP_VIEW_IDS).forEach(name => {
     const view = document.getElementById(APP_VIEW_IDS[name]);
     if(view) view.hidden = name !== viewName;
@@ -2745,6 +2828,8 @@ function showAppView(viewName){
     initOsmMap();
     requestAnimationFrame(() => {
       osmMap?.invalidateSize(false);
+      // Now that the pane has a size, re-assert the remembered view exactly.
+      applySavedMapView();
       updateOsmLocation();
     });
   }
@@ -4575,6 +4660,11 @@ function renderLog(){
   updateSyncStatus();
 }
 renderLog();
+
+/* Reopen whatever tab this session was last on. Runs after the initial render
+ * so everything a view needs already exists; if it restores the map it also
+ * re-creates the map at its remembered position. */
+restoreActiveView();
 
 document.getElementById('select-toggle-btn').addEventListener('click', () => {
   if(!selectMode){

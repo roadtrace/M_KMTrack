@@ -94,12 +94,39 @@ test('the saved count is dropped when the footer cannot fit it', () => {
   assert.match(html, /syncHeaderContext\(viewName\);[\s\S]{0,120}?fitInstrumentFoot\(\);/);
 });
 
-test('the refresh button re-checks the connection and drains the queue', () => {
+test('the refresh button re-checks the connection, drains the queue, then reloads', () => {
   assert.match(html, /function updateNetStatus\(\)/);
   assert.match(html, /navigator\.onLine !== false/);
   assert.match(html, /window\.addEventListener\('online', updateNetStatus\)/);
   assert.match(html, /window\.addEventListener\('offline', updateNetStatus\)/);
   assert.match(html, /document\.getElementById\('net-refresh'\)\.addEventListener\('click', refreshConnection\)/);
-  // Inert until a transport exists, so it just re-tests the connection.
+  // Inert until a transport exists, so the drain just re-tests the connection.
   assert.match(html, /await syncQueue\.drain\(entries\)/);
+  // Then a full page reload — AFTER the drain, so an in-flight sync is not cut
+  // off by the navigation itself.
+  assert.match(html, /await syncQueue\.drain\(entries\)[\s\S]{0,900}?window\.location\.reload\(\)/);
+  // ...and the label says so, since it now does more than re-test the network.
+  assert.match(html, /id="net-refresh" aria-label="Re-check connection and reload"/);
+});
+
+test('a reload comes back to the same tab and map position', () => {
+  // The reload is a recovery action, so it must not cost the inspector their
+  // place. Both are remembered for the SESSION only, so a fresh launch is clean.
+  assert.match(html, /function rememberActiveView\(viewName\)/);
+  assert.match(html, /sessionStorage\.setItem\(STORAGE_KEY_ACTIVE_VIEW, viewName\)/);
+  assert.match(html, /function restoreActiveView\(\)/);
+  assert.match(html, /restoreActiveView\(\);/);
+  assert.match(html, /function rememberMapView\(\)/);
+  assert.match(html, /function loadMapView\(\)/);
+  assert.match(html, /function applySavedMapView\(\)/);
+  assert.match(html, /osmMap\.on\('moveend',rememberMapView\)/);
+  assert.match(html, /osmMap\.on\('zoomend',rememberMapView\)/);
+  // A restored view must not be yanked onto the current fix, which would discard
+  // exactly the position the reload was meant to keep.
+  assert.match(html, /if\(saved\) osmHasCenteredOnLocation = true;/);
+  // The map has no size while its tab is hidden, so the view is re-asserted once
+  // the pane has been measured.
+  assert.match(html, /osmMap\?\.invalidateSize\(false\);[\s\S]{0,120}?applySavedMapView\(\)/);
+  // sessionStorage, not localStorage: a reload keeps it, a fresh launch does not.
+  assert.doesNotMatch(html, /localStorage\.setItem\(STORAGE_KEY_ACTIVE_VIEW/);
 });

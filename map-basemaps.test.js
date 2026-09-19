@@ -96,6 +96,16 @@ test('dark uses the MapTiler vector style — not a raster tile layer, not an if
   assert.doesNotMatch(html,/osmVectorLayer\.bringToBack|layer\.bringToBack/);
   assert.doesNotMatch(html,/createElement\('iframe'\)/);
   assert.doesNotMatch(html,/L\.tileLayer\([^)]*style\.json/);
+  // The GL camera is driven from Leaflet. The vendored plugin's own
+  // _transformGL() assigns `transform.center` directly, which MapLibre 5
+  // recomputes and discards — the basemap then sat still while the markers
+  // panned, which reads as a detached layer floating over the map.
+  assert.match(html,/syncVectorCamera = \(\) => \{/);
+  assert.match(html,/gl\.jumpTo\(\{ center: osmMap\.getCenter\(\), zoom: osmMap\.getZoom\(\) - 1 \}\)/);
+  assert.match(html,/osmMap\.on\('move', syncVectorCamera\)/);
+  assert.match(html,/osmMap\.on\('zoom', syncVectorCamera\)/);
+  // ...and it is detached when the layer goes away.
+  assert.match(html,/osmMap\.off\('move', syncVectorCamera\)/);
   // Dark is chosen by theme.
   assert.match(html,/const theme = document\.documentElement\.dataset\.theme === 'light' \? 'light' : 'dark';/);
 
