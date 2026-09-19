@@ -1619,6 +1619,7 @@ button {
 
 <script src="./entry-model.js"></script>
 <script src="./sync-queue.js"></script>
+<script src="./map-config.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="./swipe-actions.js"></script>
 <script src="./entry-filters.js"></script>
@@ -2487,11 +2488,43 @@ const MAP_BASEMAPS = {
   }
 };
 
-function updateOsmBasemap(){
-  if(!osmMap) return;
-  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+// Dark mode uses the published MapTiler VECTOR style through the official
+// Leaflet integration (`L.maptilerLayer`), never an iframe and never
+// style.json handed to L.tileLayer. Light mode keeps the CARTO raster
+// untouched. The SDK, its stylesheet and the plugin are vendored and fetched
+// on demand, because the SDK is ~1.4 MB and only dark mode needs it.
+let osmVectorLayer = null;
+let mapTilerSdkPromise = null;
+
+function ensureMapTilerSdk(){
+  if(mapTilerSdkPromise) return mapTilerSdkPromise;
+  mapTilerSdkPromise = new Promise((resolve, reject) => {
+    if(typeof KMTrackMapConfig === 'undefined' || typeof L === 'undefined'){
+      reject(new Error('MapTiler configuration unavailable'));
+      return;
+    }
+    if(window.maptilersdk && L.maptilerLayer){ resolve(); return; }
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = KMTrackMapConfig.sdkCssPath;
+    document.head.append(link);
+    const sdk = document.createElement('script');
+    sdk.src = KMTrackMapConfig.sdkPath;
+    sdk.onload = () => {
+      const plugin = document.createElement('script');
+      plugin.src = KMTrackMapConfig.leafletPluginPath;
+      plugin.onload = () => L.maptilerLayer ? resolve() : reject(new Error('MapTiler Leaflet layer unavailable'));
+      plugin.onerror = () => reject(new Error('MapTiler Leaflet plugin failed to load'));
+      document.head.append(plugin);
+    };
+    sdk.onerror = () => reject(new Error('MapTiler SDK failed to load'));
+    document.head.append(sdk);
+  });
+  return mapTilerSdkPromise;
+}
+
+function addRasterBasemap(theme){
   const basemap = MAP_BASEMAPS[theme];
-  if(osmBaseLayer) osmBaseLayer.remove();
   osmBaseLayer = L.tileLayer(`${basemap.url}?key=${encodeURIComponent(CARTO_BASEMAP_KEY)}`,{
     subdomains:'abcd',
     maxZoom:20,
@@ -2500,6 +2533,64 @@ function updateOsmBasemap(){
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
   }).addTo(osmMap);
   osmBaseLayer.bringToBack();
+}
+
+function clearBasemaps(){
+  if(osmBaseLayer){ osmBaseLayer.remove(); osmBaseLayer = null; }
+  if(osmVectorLayer){ osmVectorLayer.remove(); osmVectorLayer = null; }
+}
+
+/* Nothing here touches the map's view: adding or removing a Leaflet layer leaves
+ * the center and zoom alone, so switching themes preserves both. */
+function updateOsmBasemap(){
+  if(!osmMap) return;
+  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+
+  clearBasemaps();
+
+  if(theme !== 'dark'){
+    addRasterBasemap(theme);
+    return;
+  }
+
+  ensureMapTilerSdk().then(() => {
+    // The theme may have flipped again while the SDK was loading.
+    if(!osmMap || document.documentElement.dataset.theme === 'light') return;
+    clearBasemaps();
+    const layer = L.maptilerLayer({
+      style: KMTrackMapConfig.styleUrl,
+      apiKey: KMTrackMapConfig.apiKey
+    }).addTo(osmMap);
+    osmVectorLayer = layer;
+    /* No bringToBack() here: that is a GridLayer/Path method, NOT an L.Layer one,
+     * and this layer is a plain L.Layer. Calling it threw, which the catch below
+     * then read as a basemap failure. It is unnecessary anyway — the plugin
+     * renders into the tile pane (z-index 200) and Leaflet's overlay pane sits
+     * at 400, so markers and overlays stay on top. */
+    /* The plugin adds the MapTiler + OpenStreetMap attribution itself, but it
+     * does not report basemap failures. If the style never arrives — offline, or
+     * the key refused — fall back to the raster dark basemap rather than leaving
+     * the map blank. A later theme switch retries the vector style. */
+    const vectorMap = layer._maptilerMap;
+    if(vectorMap && typeof vectorMap.once === 'function'){
+      let vectorReady = false;
+      vectorMap.once('load', () => { vectorReady = true; });
+      window.setTimeout(() => {
+        if(vectorReady || !osmMap || osmVectorLayer !== layer) return;
+        if(document.documentElement.dataset.theme === 'light') return;
+        console.warn('MapTiler style did not load; using the raster dark basemap');
+        clearBasemaps();
+        addRasterBasemap('dark');
+      }, 8000);
+    }
+  }).catch((error) => {
+    // Offline, or the SDK could not load. Fall back to the raster dark basemap
+    // so the map still renders instead of going blank.
+    console.warn('MapTiler basemap unavailable', error);
+    if(!osmMap || document.documentElement.dataset.theme === 'light') return;
+    clearBasemaps();
+    addRasterBasemap('dark');
+  });
 }
 
 function initOsmMap(){

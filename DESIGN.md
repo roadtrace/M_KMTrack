@@ -125,7 +125,41 @@ coordinates. `"· N saved"` is dropped when the row cannot fit it — measured, 
 guessed, because the date string moves with the month and the locale. It fits at
 320px and drops at 285px.
 
-### Data tools & Settings follow the reference
+### The dark basemap is a MapTiler vector style
+
+Light mode keeps the CARTO Voyager raster exactly as before. Dark mode uses the
+published MapTiler style through the **official Leaflet integration**
+(`L.maptilerLayer`) — never an iframe, and never `style.json` handed to
+`L.tileLayer`.
+
+- The key lives in **`map-config.js`** and nowhere else. It is a public browser
+  key, necessarily visible in tile requests, restricted to `roadtrace.github.io`
+  — exactly like the CARTO key beside it.
+- The SDK (~1.4 MB), its stylesheet and the plugin are **vendored** under
+  `vendor/maptiler/` and fetched **on demand**, so light-mode users never
+  download them; the service worker caches them on first use via its existing
+  fetch-and-cache rule.
+- The CARTO dark raster is kept as the **fallback**: if the SDK cannot load, or
+  the style never arrives within 8s, the raster dark basemap is used so the map
+  is never blank.
+
+Two things cost real time here, both recorded because they will recur:
+
+1. **`bringToBack()` is a `GridLayer`/`Path` method, not an `L.Layer` one.** The
+   MapTiler layer is a plain `L.Layer`, so calling it threw — and the surrounding
+   `.catch` then read that as a basemap failure and silently fell back to raster.
+   The call was never needed: the plugin renders into the tile pane (z-index 200)
+   and Leaflet's overlay pane is 400, so markers and overlays stay on top.
+2. **`style` must be a full style URL.** A bare map id is rejected
+   (`[Map.setStyle]: Invalid style`) and the SDK quietly loads its own default
+   style instead, so the map looks plausible while showing the wrong basemap. The
+   key is passed as `apiKey`, not embedded in the URL.
+
+Verified in the browser: light makes **zero** MapTiler requests; dark loads all
+three vendored files and requests the configured style; the view (centre and
+zoom) is identical across light → dark → light; 48 markers survive the swap; and
+the MapTiler + OpenStreetMap attribution is added by the plugin.
+
 
 Both tabs are copies of the reference's `ToolsPage` / `SettingsPage`:
 

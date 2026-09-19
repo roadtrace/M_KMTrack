@@ -47,7 +47,7 @@ test('map title mirrors the existing KM display and zoom buttons are disabled',(
   assert.match(html,/L\.map\('osm-map',\{zoomControl:false,attributionControl:true\}/);
 });
 
-test('both CARTO themes authenticate tile requests and preserve attribution and map overlays', () => {
+test('light keeps the CARTO raster, authenticates tile requests, and stays behind overlays', () => {
   const html = fs.readFileSync(require.resolve('./index.html'),'utf8');
   const start = html.indexOf('const CARTO_BASEMAP_KEY =');
   const end = html.indexOf('function initOsmMap()',start);
@@ -55,7 +55,7 @@ test('both CARTO themes authenticate tile requests and preserve attribution and 
   const layers = [];
   const map = {};
   const context = vm.createContext({
-    osmMap:map,osmBaseLayer:null,
+    osmMap:map,osmBaseLayer:null,osmVectorLayer:null,
     document:{documentElement:{dataset:{theme:'light'}}},
     L:{tileLayer(url,options){
       const layer = {url,options,removed:false,addTo(target){assert.equal(target,map);return this;},remove(){this.removed=true;},bringToBack(){this.behindOverlays=true;}};
@@ -65,20 +65,53 @@ test('both CARTO themes authenticate tile requests and preserve attribution and 
   });
   vm.runInContext(html.slice(start,end),context);
   context.updateOsmBasemap();
-  context.document.documentElement.dataset.theme = 'dark';
-  context.updateOsmBasemap();
-  assert.equal(layers.length,2);
+  // Light mode must NOT reach for MapTiler; exactly one CARTO raster appears.
+  assert.equal(layers.length,1);
   assert.match(layers[0].url,/\/rastertiles\/voyager\//);
-  assert.match(layers[1].url,/\/dark_all\//);
-  for(const layer of layers){
-    const key = new URL(layer.url).searchParams.get('key');
-    assert.ok(key && key.startsWith('cb1_'),'Configured browser key is required');
-    assert.equal(new URL(layer.url).searchParams.getAll('key').length,1);
-    assert.match(layer.options.attribution,/openstreetmap.org\/copyright/);
-    assert.match(layer.options.attribution,/carto.com\/attributions/);
-    assert.equal(layer.behindOverlays,true);
-  }
-  assert.equal(layers[0].removed,true);
-  assert.equal(layers[1].removed,false);
+  const key = new URL(layers[0].url).searchParams.get('key');
+  assert.ok(key && key.startsWith('cb1_'),'Configured browser key is required');
+  assert.equal(new URL(layers[0].url).searchParams.getAll('key').length,1);
+  assert.match(layers[0].options.attribution,/openstreetmap.org\/copyright/);
+  assert.match(layers[0].options.attribution,/carto.com\/attributions/);
+  assert.equal(layers[0].behindOverlays,true);
+  assert.equal(layers[0].removed,false);
   assert.equal(context.osmMap,map);
+});
+
+test('dark uses the MapTiler vector style — not a raster tile layer, not an iframe', () => {
+  const html = fs.readFileSync(require.resolve('./index.html'),'utf8');
+  const config = require('./map-config.js');
+  const path = require('node:path');
+
+  // The CARTO dark raster survives ONLY as the failure fallback; the primary
+  // dark path is the vector layer.
+  assert.match(html,/dark_all/);
+  assert.match(html,/addRasterBasemap\('dark'\)/);
+  assert.match(html,/L\.maptilerLayer\(\{/);
+  assert.match(html,/style: KMTrackMapConfig\.styleUrl/);
+  assert.match(html,/apiKey: KMTrackMapConfig\.apiKey/);
+  // `bringToBack` is a GridLayer/Path method, not an L.Layer one, and the
+  // MapTiler layer is a plain L.Layer — calling it threw and the catch then read
+  // it as a basemap failure.
+  assert.doesNotMatch(html,/osmVectorLayer\.bringToBack|layer\.bringToBack/);
+  assert.doesNotMatch(html,/createElement\('iframe'\)/);
+  assert.doesNotMatch(html,/L\.tileLayer\([^)]*style\.json/);
+  // Dark is chosen by theme.
+  assert.match(html,/const theme = document\.documentElement\.dataset\.theme === 'light' \? 'light' : 'dark';/);
+
+  // The key lives in the project config, matching the published style. `style`
+  // must be the full URL: a bare map id is rejected by the SDK.
+  assert.equal(config.mapId,'01a0b86c-b154-7221-96a7-fc8197fe0662');
+  assert.equal(config.apiKey,'lkkR5aAqoFyDhXsqqFQE');
+  assert.equal(config.styleUrl,'https://api.maptiler.com/maps/01a0b86c-b154-7221-96a7-fc8197fe0662/style.json');
+  assert.doesNotMatch(config.styleUrl,/\?key=/, 'the key is passed as apiKey, not embedded in the style URL');
+
+  // Everything the SDK needs is vendored, so there is no CDN dependency at runtime.
+  for(const rel of [config.sdkPath,config.sdkCssPath,config.leafletPluginPath]){
+    assert.match(rel,/^vendor\/maptiler\//);
+    assert.ok(fs.existsSync(path.join(__dirname,rel)),`${rel} must be vendored`);
+  }
+  // ...and the shell caches the config itself.
+  const sw = fs.readFileSync(require.resolve('./sw.js'),'utf8');
+  assert.match(sw,/\.\/map-config\.js/);
 });
