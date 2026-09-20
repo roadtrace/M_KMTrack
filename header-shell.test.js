@@ -68,10 +68,12 @@ test('the map swaps the wordmark for its station and status, in place', () => {
 });
 
 test('the map fills the viewport minus the tab tray AND the global header', () => {
-  assert.match(design, /\.map-view\{\s*height:calc\(100dvh - var\(--app-header-h,0px\) - 56px - env\(safe-area-inset-bottom\)\)/);
+  assert.match(design, /\.map-view\{[^}]*height:calc\(100dvh - var\(--app-header-h,0px\) - var\(--app-nav-h\)\)/);
+  assert.match(design, /\.map-view\{[^}]*min-height:0/);
   // The header height moves with the safe-area inset and the logo, so it is measured.
   assert.match(html, /function syncHeaderHeight\(\)/);
   assert.match(html, /setProperty\('--app-header-h'/);
+  assert.match(html, /ResizeObserver\(syncHeaderHeight\)/);
 });
 
 test('the clock moved out of the header into the instrument footer', () => {

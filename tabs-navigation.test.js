@@ -16,6 +16,20 @@ test('the tab bar exposes inspection, log, map, tools and settings',()=>{
   assert.match(design,/\.app-tab-bar\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
 });
 
+test('bottom navigation uses the correct surface for each theme and a shared teal accent',()=>{
+  assert.match(design,/\.app-tab-bar\{[^}]*background:#1b2737/);
+  assert.match(design,/html\[data-theme="light"\] \.app-tab-bar\{[^}]*background:var\(--ds-card\)/);
+  assert.match(design,/html\[data-theme="light"\] \.app-tab-btn\{color:var\(--ds-fg-muted\)/);
+  assert.match(design,/\.app-tab-btn\.active,\s*html\[data-theme="light"\] \.app-tab-btn\.active\{[^}]*background:transparent;[^}]*color:#48aeb1/);
+  assert.match(design,/\.app-tab-btn\.active::after\{[^}]*background:currentColor/);
+  assert.doesNotMatch(design,/:is\(\.lane-btn,\.app-tab-btn,\.switch,\[role="button"\]\):focus-within/);
+  assert.match(design,/--app-nav-h:calc\(64px \+ env\(safe-area-inset-bottom\)\)/);
+});
+
+test('capture bound buttons retain their previous compact height',()=>{
+  assert.match(design,/\.instrument-metrics button\.bound-btn\{[^}]*min-height:32px/);
+});
+
 test('showAppView drives every view from one map of ids',()=>{
   assert.match(html,/const APP_VIEW_IDS = \{/);
   for(const id of ['inspection-view','log-view','map-view','tools-view','settings-view']){

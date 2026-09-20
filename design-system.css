@@ -97,6 +97,7 @@
   --ds-space-4:16px;
   --ds-border-width:1px;
   --ds-control-min:44px;
+  --app-nav-h:calc(64px + env(safe-area-inset-bottom));
 
   /* Radii intentionally inherit from the existing scale (radius-system.css). */
 
@@ -448,7 +449,6 @@ html:root .instrument-panel .bridge-filter-menu{
 }
 /* Tab glyphs are the reference's nav icons: locate-fixed / map / database /
    settings, 19px, stroke-width 2. */
-.app-tab-btn svg{width:19px;height:19px;stroke-width:2;}
 /* Reference Metric: every value is `mt-1 truncate font-mono text-[13px]
    font-medium`. No metric — stationing included — gets its own scale. */
 .instrument-metrics .kmvalue,
@@ -522,7 +522,7 @@ html:root .instrument-panel .bridge-filter-menu{
 .instrument-metrics button.bound-btn{
   width:auto;
   min-width:46px;
-  min-height:var(--ds-control-min);
+  min-height:32px;
   padding:5px 10px;
   font-size:13px;
   border:1px solid var(--ds-border);
@@ -614,7 +614,9 @@ html:root .instrument-panel .bridge-filter-menu{
    the header. The header's height moves with the safe-area inset and the logo,
    so it is measured into --app-header-h rather than hard-coded here. */
 .map-view{
-  height:calc(100dvh - var(--app-header-h,0px) - 56px - env(safe-area-inset-bottom));
+  height:calc(100vh - var(--app-header-h,0px) - var(--app-nav-h));
+  height:calc(100dvh - var(--app-header-h,0px) - var(--app-nav-h));
+  min-height:0;
 }
 
 /* The date/time and saved count live here now, not in the header. Children are
@@ -1019,37 +1021,68 @@ html[data-theme="light"] #defect-section.gps-pending .defect-gate{
 
 /* ---------- Tab bar ------------------------------------------------------ */
 
-/* Rectangular tray preserved; only the selected tab is highlighted.
-   Widened from two columns to four now that Tools and Settings exist. */
+/* Replit's five-item mobile navigation, using the same dark instrument surface
+   in both app themes. The accent is an underline, never a filled active pill. */
 .app-tab-bar{
+  position:fixed;
+  z-index:900;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:min(100%,560px);
+  height:var(--app-nav-h);
+  display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
   gap:4px;
+  padding:6px 8px env(safe-area-inset-bottom);
+  border:0;
+  border-top:1px solid #364556;
+  border-radius:0;
+  background:#1b2737;
+  box-shadow:0 -8px 24px rgba(0,0,0,.18);
+}
+html[data-theme="light"] .app-tab-bar{
   background:var(--ds-card);
-  border:1px solid var(--ds-border);
-  border-bottom:0;
-  box-shadow:var(--ds-shadow-sm);
+  border-top-color:var(--ds-border);
+  box-shadow:0 -7px 22px rgba(27,39,55,.08);
 }
-html[data-theme="light"] .app-tab-bar{background:var(--ds-card);border-color:var(--ds-border);}
 .app-tab-btn{
+  position:relative;
   min-width:0;
-  padding:3px 2px;
-  color:var(--ds-fg-muted);
-}
-.app-tab-btn span{
-  max-width:100%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.app-tab-btn.active{
-  color:var(--ds-primary-fg);
-  background:var(--ds-primary);
+  min-height:44px;
+  padding:4px 2px 8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#a4acb7;
+  font-size:10px;
+  font-weight:600;
+  cursor:pointer;
 }
 html[data-theme="light"] .app-tab-btn{color:var(--ds-fg-muted);}
+.app-tab-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.app-tab-btn span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.app-tab-btn.active,
 html[data-theme="light"] .app-tab-btn.active{
-  background:var(--ds-primary);
-  color:var(--ds-primary-fg);
+  background:transparent;
+  color:#48aeb1;
 }
+.app-tab-btn.active::after{
+  content:"";
+  position:absolute;
+  bottom:2px;
+  left:14%;
+  right:14%;
+  height:2px;
+  border-radius:2px;
+  background:currentColor;
+}
+.app-tab-btn:focus-visible{outline:2px solid #48aeb1;outline-offset:-2px;}
 
 /* ---------- Map ---------------------------------------------------------- */
 
@@ -1699,7 +1732,7 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
 :is(.ds-btn,.select-toggle-btn,.export-btn,.calib-add,.log-view-all,
     .category-camera-btn,.bridge-filter-toggle,.map-filter-menu > summary,
     .map-locate-btn,.map-theme-toggle):focus-visible,
-:is(.lane-btn,.app-tab-btn,.switch,[role="button"]):focus-within{
+:is(.lane-btn,.switch,[role="button"]):focus-within{
   outline:2px solid var(--ds-ring);
   outline-offset:2px;
 }

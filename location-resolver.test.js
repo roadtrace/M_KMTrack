@@ -41,6 +41,23 @@ test('consistent movement through an interchange can switch to the connected cor
   assert.equal(result.confirmedCorridor,'C3-SEG 8.1');assert.equal(result.result.expressway,'C3-SEG 8.1');
 });
 
+test('a closer crossing road cannot switch the confirmed corridor without a connection',()=>{
+  const resolver=createResolver();
+  for(let i=0;i<3;i++) resolver.resolve({lat:15+i*.0001,lon:120.7,accuracy:8,timestamp:i*1000,candidates:[row('NLEX',.005,80),row('C3-SEG 8.1',.09,19)]});
+  let result;
+  for(let i=3;i<12;i++) result=resolver.resolve({lat:15+i*.0001,lon:120.7,accuracy:8,timestamp:i*1000,candidates:[row('C3-SEG 8.1',.004,19),row('NLEX',.09,80)]});
+  assert.equal(result.confirmedCorridor,'NLEX');
+  assert.equal(result.result.expressway,'NLEX');
+});
+
+test('stationary GPS drift near an interchange cannot provide switch movement evidence',()=>{
+  const resolver=createResolver();
+  for(let i=0;i<3;i++) resolver.resolve({lat:15,lon:120.7,accuracy:8,timestamp:i*1000,candidates:[row('NLEX',.005,80),row('C3-SEG 8.1',.09,19)],interchange});
+  let result;
+  for(let i=3;i<12;i++) result=resolver.resolve({lat:15,lon:120.7,accuracy:8,timestamp:i*1000,candidates:[row('C3-SEG 8.1',.004,19),row('NLEX',.09,80)],interchange});
+  assert.equal(result.confirmedCorridor,'NLEX');
+});
+
 test('startup ambiguity requires consistent readings before saving is allowed',()=>{
   const resolver=createResolver();let result;
   for(let i=0;i<4;i++){

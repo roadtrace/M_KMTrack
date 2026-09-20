@@ -88,8 +88,6 @@ html:root :is(.entry-filters,.map-entry-controls) input[type="date"]::-webkit-ca
   position:absolute;left:0;top:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;
 }
 
-html:root .app-tab-bar{border-radius:0;padding:4px 12px env(safe-area-inset-bottom);}
-html:root .app-tab-btn{border-radius:12px;}
 html:root .photo-card{border-radius:8px;overflow:hidden;}
 html:root #photo-preview{border-radius:0;display:block;}
 :where(button,input,select,a,[role="button"],[role="tab"]):focus-visible{outline:2px solid var(--line-yellow);outline-offset:2px;}
