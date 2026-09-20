@@ -26,7 +26,7 @@ test('the header carries the mark, a two-tone wordmark, the net pill and refresh
   assert.match(design, /\.header-wordmark\[hidden\]\{display:none;\}/);
 });
 
-test('the header copies the reference literal values', () => {
+test('the header uses the shared surface and control values', () => {
   // No speculation: these are read straight from the reference's App.tsx +
   // index.css. The header FOLLOWS the theme (bg is --background at 93%).
   const bar = design.slice(design.indexOf('html:root .top-shell header{'), design.indexOf('html:root .top-shell header{') + 700);
@@ -47,12 +47,12 @@ test('the header copies the reference literal values', () => {
   assert.match(word, /letter-spacing:-\.05em/);
   assert.match(word, /color:var\(--ds-fg\)/);
   assert.match(design, /\.header-track\{color:var\(--ds-primary\);\}/);
-  // .status-pill .status-bad, and .btn .btn-ghost !min-h-9 !px-2.
+  // Offline status uses the shared error tone; refresh keeps a full tap target.
   assert.match(design, /\.header-net\{[\s\S]{0,400}?padding:5px 9px/);
-  assert.match(design, /\.header-net\{[\s\S]{0,400}?border-radius:999px/);
-  assert.match(design, /html\[data-theme="dark"\] \.header-net\{/);
-  assert.match(design, /\.header-refresh\{[\s\S]{0,400}?min-height:36px/);
-  assert.match(design, /\.header-actions\{[\s\S]{0,120}?gap:8px/);
+  assert.match(design, /\.header-net\{[\s\S]{0,400}?border-radius:var\(--radius-full\)/);
+  assert.match(design, /\.header-net\{[\s\S]{0,400}?color:var\(--ds-error\)/);
+  assert.match(design, /\.header-refresh\{[\s\S]{0,400}?min-height:var\(--ds-control-min\)/);
+  assert.match(design, /\.header-actions\{[\s\S]{0,120}?gap:var\(--ds-space-2\)/);
 });
 
 test('the map swaps the wordmark for its station and status, in place', () => {

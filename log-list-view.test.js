@@ -112,7 +112,7 @@ test('the bulk controls share the Select button geometry', () => {
   assert.doesNotMatch(design, /#log-select-actions :is\(#bulk-select-all-btn/);
   assert.doesNotMatch(design, /#log-select-actions #bulk-delete-btn/);
   const block = design.slice(design.indexOf('#bulk-select-all-btn,#bulk-delete-btn{'));
-  assert.match(block.slice(0, 420), /min-height:44px/);
+  assert.match(block.slice(0, 420), /min-height:var\(--ds-control-min\)/);
   assert.match(block.slice(0, 420), /border-radius:var\(--radius-md\)/);
   assert.match(block.slice(0, 420), /font-size:12px/);
   assert.doesNotMatch(design, /selection-count/);

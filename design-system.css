@@ -55,40 +55,54 @@
 /* ---------- Design tokens ------------------------------------------------ */
 
 :root{
+  color-scheme:dark;
   /* Evidence / surface ramp (dark is the default instrument mode) */
-  --ds-bg:            hsl(214 35% 11%);
-  --ds-bg-2:          hsl(214 34% 14%);
-  --ds-card:          hsl(214 30% 15%);
-  --ds-card-2:        hsl(214 27% 19%);
-  --ds-muted:         hsl(214 22% 22%);
-  --ds-sidebar:       hsl(214 37% 7.5%);
+  --ds-bg:            #121b26;
+  --ds-bg-2:          #1b2532;
+  --ds-card:          #1b2532;
+  --ds-card-2:        #2c3644;
+  --ds-muted:         #2c3644;
+  --ds-sidebar:       #0c121a;
 
-  --ds-fg:            hsl(40 22% 92%);
-  --ds-fg-muted:      hsl(214 12% 68%);
-  --ds-fg-subtle:     hsl(214 14% 50%);
+  --ds-fg:            #efece6;
+  --ds-fg-muted:      #a4acb7;
+  --ds-fg-subtle:     hsl(214 14% 62%);
 
-  --ds-border:        hsl(214 19% 27%);
-  --ds-input:         hsl(214 19% 33%);
+  --ds-border:        #384352;
+  --ds-input:         #445264;
   --ds-border-strong: var(--ds-input);
 
-  /* Amber advances the inspection; teal verifies it; red destroys it. */
-  --ds-primary:       hsl(43 96% 52%);
-  --ds-primary-strong:hsl(40 96% 46%);
-  --ds-primary-fg:    hsl(214 34% 14%);
-  --ds-secondary:     hsl(182 42% 49%);
-  --ds-accent:        hsl(186 27% 23%);
-  --ds-accent-fg:     hsl(183 49% 87%);
-  --ds-destructive:   hsl(2 70% 55%);
-  --ds-destructive-fg:hsl(40 22% 92%);
+  /* Reference palette: amber actions, teal confirmed states, red failures. */
+  --ds-primary:       #fab80f;
+  --ds-primary-strong:color-mix(in srgb, var(--ds-primary) 95%, #000);
+  --ds-primary-fg:    #182230;
+  --ds-secondary:     #48aeb1;
+  --ds-secondary-fg:  #121b26;
+  --ds-accent:        #2b474a;
+  --ds-accent-fg:     #ceecee;
+  --ds-destructive:   #dd413c;
+  --ds-destructive-fg:#efece6;
+  --ds-warning:       hsl(43 96% 72%);
+  --ds-warning-bg:    hsl(40 60% 18%);
+  --ds-error:         hsl(2 80% 78%);
+  --ds-error-bg:      hsl(2 40% 20%);
 
-  --ds-ring:          hsl(43 96% 52%);
+  --ds-ring:          #fab80f;
   --ds-shadow:        0 10px 32px rgba(5,10,15,.34);
   --ds-shadow-sm:     0 8px 24px rgba(5,10,15,.22);
+
+  --ds-space-1:4px;
+  --ds-space-2:8px;
+  --ds-space-3:12px;
+  --ds-space-4:16px;
+  --ds-border-width:1px;
+  --ds-control-min:44px;
 
   /* Radii intentionally inherit from the existing scale (radius-system.css). */
 
   /* Type */
   --font-ui:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  --font-heading:var(--font-ui);
   --font-readout:'DM Mono',ui-monospace,'Courier New',monospace;
   --mono:var(--font-readout);
   --sans:var(--font-ui);
@@ -117,30 +131,32 @@
 html[data-theme="light"]{
   color-scheme:light;
 
-  --ds-bg:            hsl(42 25% 93%);
-  --ds-bg-2:          hsl(42 27% 90%);
-  --ds-card:          hsl(42 28% 97%);
-  --ds-card-2:        hsl(42 32% 99%);
-  --ds-muted:         hsl(40 16% 87%);
-  --ds-sidebar:       hsl(214 34% 16%);
+  --ds-bg:            #f2efe9;
+  --ds-bg-2:          #e3e0d9;
+  --ds-card:          #f9f8f5;
+  --ds-card-2:        #fff;
+  --ds-muted:         #e3e0d9;
+  --ds-sidebar:       #1b2737;
 
-  --ds-fg:            hsl(214 34% 16%);
-  --ds-fg-muted:      hsl(214 13% 41%);
-  --ds-fg-subtle:     hsl(214 12% 52%);
+  --ds-fg:            #1b2737;
+  --ds-fg-muted:      #5b6776;
+  --ds-fg-subtle:     hsl(214 12% 43%);
 
-  --ds-border:        hsl(39 17% 80%);
-  --ds-input:         hsl(39 17% 74%);
+  --ds-border:        #d5cfc3;
+  --ds-input:         #c8c0b1;
   --ds-border-strong: var(--ds-input);
 
-  --ds-primary:       hsl(43 96% 52%);
-  --ds-primary-strong:hsl(40 96% 46%);
-  --ds-primary-fg:    hsl(214 34% 14%);
-  --ds-secondary:     hsl(188 36% 31%);
-  --ds-accent:        hsl(183 49% 87%);
-  --ds-accent-fg:     hsl(188 46% 20%);
-  --ds-destructive:   hsl(2 66% 47%);
-  --ds-destructive-fg:hsl(48 24% 96%);
-  --ds-ring:          hsl(40 91% 51%);
+  --ds-secondary:     #33646c;
+  --ds-secondary-fg:  #f7f6f2;
+  --ds-accent:        #ceecee;
+  --ds-accent-fg:     #1c444a;
+  --ds-destructive:   #c72e29;
+  --ds-destructive-fg:#f7f6f2;
+  --ds-warning:       hsl(35 72% 26%);
+  --ds-warning-bg:    hsl(42 82% 86%);
+  --ds-error:         hsl(2 66% 32%);
+  --ds-error-bg:      hsl(2 70% 92%);
+  --ds-ring:          #f4a810;
 
   --ds-shadow:        0 8px 24px rgba(27,39,55,.10);
   --ds-shadow-sm:     0 6px 18px rgba(27,39,55,.08);
@@ -149,6 +165,10 @@ html[data-theme="light"]{
 /* ---------- Base type ---------------------------------------------------- */
 
 html,body{font-family:var(--font-ui);}
+button,input,select,textarea{font-family:var(--font-ui);}
+h1,h2,h3,h4,.section-title,.ds-card-title,.category-label-text{
+  font-family:var(--font-heading);
+}
 html[data-theme="light"],html[data-theme="light"] body{color:var(--ds-fg);}
 
 /* Quiet the old flat washes in favour of the paper/ink base. */
@@ -161,10 +181,13 @@ html:not([data-theme="light"]) body{background:var(--ds-bg);}
 /* Evidence values are always mono: coordinates, stations, timestamps. */
 .readout-main .field .value,
 .kmpost .kmvalue,
+.instrument-foot .coordinate-value,
 .nearby-asset-station,
 .nearby-asset-distance,
 .log-entry .info .meta,
-#clock,.header-copy .sub,
+#clock,.header-copy .sub,.inspection-view .log-count-badge,
+#count-label,#last-time,#count-mini,#settings-alignment-count,
+.ds-chip:not(.ds-chip-sync),
 .photo-status,
 .camera-info .capture-time,
 .camera-info .capture-meta{
@@ -191,6 +214,7 @@ html:not([data-theme="light"]) body{background:var(--ds-bg);}
 }
 
 h2,.section-title{
+  font-family:var(--font-heading);
   font-size:19px;
   font-weight:700;
   letter-spacing:-.03em;
@@ -498,7 +522,7 @@ html:root .instrument-panel .bridge-filter-menu{
 .instrument-metrics button.bound-btn{
   width:auto;
   min-width:46px;
-  min-height:32px;
+  min-height:var(--ds-control-min);
   padding:5px 10px;
   font-size:13px;
   border:1px solid var(--ds-border);
@@ -663,7 +687,7 @@ html:root .top-shell header{
    the second half in --primary. The header follows the theme, so this is
    token-driven rather than hard-coded white. */
 .header-wordmark{
-  font-family:var(--font-ui);
+  font-family:var(--font-heading);
   font-size:17px;
   font-weight:700;
   line-height:1;
@@ -699,7 +723,7 @@ html:root .top-shell header{
 .header-actions{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:var(--ds-space-2);
   flex:0 0 auto;
 }
 /* Reference `.status-pill .status-bad` — the off-network tone — verbatim. */
@@ -709,17 +733,13 @@ html:root .top-shell header{
   gap:6px;
   flex:0 0 auto;
   padding:5px 9px;
-  border-radius:999px;
+  border-radius:var(--radius-full);
   font-family:var(--font-ui);
   font-size:11px;
   font-weight:700;
   white-space:nowrap;
-  color:hsl(2 65% 37%);
-  background:hsl(2 71% 91%);
-}
-html[data-theme="dark"] .header-net{
-  color:hsl(2 82% 79%);
-  background:hsl(2 34% 22%);
+  color:var(--ds-error);
+  background:var(--ds-error-bg);
 }
 .header-net[hidden]{display:none;}
 .header-net .net-dot{font-size:9px;line-height:1;}
@@ -730,7 +750,7 @@ html[data-theme="dark"] .header-net{
   align-items:center;
   justify-content:center;
   gap:8px;
-  min-height:36px;
+  min-height:var(--ds-control-min);
   padding:0 8px;
   border:1px solid transparent;
   border-radius:10px;
@@ -849,7 +869,7 @@ select,textarea,.edit-select{
 }
 .field:focus,select:focus,input:focus,textarea:focus{
   border-color:var(--ds-secondary);
-  box-shadow:0 0 0 3px hsl(188 36% 31% / .18);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--ds-secondary) 20%, transparent);
 }
 ::placeholder{color:var(--ds-fg-subtle);}
 
@@ -910,20 +930,17 @@ html[data-theme="light"] .defect-focus-select{background-color:var(--ds-card-2);
   letter-spacing:.01em;
 }
 .status.ok,.status-fresh{
-  color:hsl(182 42% 62%);
-  background:hsl(186 27% 23%);
+  color:var(--ds-accent-fg);
+  background:var(--ds-accent);
 }
 .status.warn,.status-warn{
-  color:hsl(43 96% 62%);
-  background:hsl(40 60% 18%);
+  color:var(--ds-warning);
+  background:var(--ds-warning-bg);
 }
 .status.err,.status-bad{
-  color:hsl(2 70% 72%);
-  background:hsl(2 40% 20%);
+  color:var(--ds-error);
+  background:var(--ds-error-bg);
 }
-html[data-theme="light"] .status.ok{color:hsl(188 46% 22%);background:hsl(183 49% 87%);}
-html[data-theme="light"] .status.warn{color:hsl(35 72% 26%);background:hsl(42 82% 86%);}
-html[data-theme="light"] .status.err{color:hsl(2 66% 32%);background:hsl(2 70% 92%);}
 
 /* ---------- Header -------------------------------------------------------
 
@@ -1097,14 +1114,14 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
 }
 
 /* ---------- Buttons (Base44 `.btn`) ------------------------------------- */
-/* Mirrors the reference: min-height 42px, 0 14px padding, 10px control radius,
+/* Shared 44px tap target, 14px inline padding, and one control radius.
    bold label, 8px icon gap. */
 .ds-btn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  min-height:42px;
+  gap:var(--ds-space-2);
+  min-height:var(--ds-control-min);
   padding:0 14px;
   border:1px solid transparent;
   border-radius:var(--radius-control);
@@ -1146,7 +1163,7 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   color:var(--ds-fg-muted);
 }
 .ds-card{
-  border-radius:var(--radius-md);
+  border-radius:var(--radius-card);
   padding:14px 16px;
   margin-bottom:12px;
 }
@@ -1172,8 +1189,7 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   color:var(--ds-fg-muted);
   margin:0 0 10px;
 }
-.ds-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-.ds-row .export-btn,.ds-row .select-toggle-btn{min-height:42px;}
+.ds-row{display:flex;flex-wrap:wrap;gap:var(--ds-space-2);align-items:center;}
 .ds-field{margin-bottom:10px;}
 .ds-field:last-child{margin-bottom:0;}
 .ds-field label{
@@ -1236,8 +1252,8 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
   border-radius:var(--radius-full);
   background:var(--ds-fg-subtle);
 }
-.ds-chip-sync.is-error{color:var(--ds-destructive);}
-.ds-chip-sync.is-error .sync-dot{background:var(--ds-destructive);}
+.ds-chip-sync.is-error{color:var(--ds-error);}
+.ds-chip-sync.is-error .sync-dot{background:var(--ds-error);}
 
 /* Title and records chip share one row, chip flushed right. Measured with real
    text metrics: the title runs 182px and the chip 99px idle / 129px selecting,
@@ -1256,7 +1272,7 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
 /* Capture tab: the register is capped, so offer the way to the full list. */
 .log-view-all{
   width:100%;
-  min-height:42px;
+  min-height:var(--ds-control-min);
   margin-top:8px;
   border:1px dashed var(--ds-border-strong);
   border-radius:var(--radius-control);
@@ -1373,7 +1389,7 @@ html:root .inspection-view .inspection-record-list .swipe-row + .swipe-row .log-
   background:none;
   box-shadow:none;
   transform:none;
-  font-family:var(--font-ui);
+  font-family:var(--font-readout);
   font-size:30px;
   font-weight:700;
   line-height:1.1;
@@ -1428,7 +1444,7 @@ html:root .inspection-view .inspection-record-list .swipe-row + .swipe-row .log-
    Without this they fall back to raw native buttons: square corners, 1px/6px
    padding, default 13.3px type, and a 2px outset bevel on Delete. */
 #bulk-select-all-btn,#bulk-delete-btn{
-  min-height:44px;
+  min-height:var(--ds-control-min);
   padding:0 16px;
   border:1px solid var(--ds-border);
   border-radius:var(--radius-md);
@@ -1467,7 +1483,7 @@ html:root .inspection-view .inspection-record-list .swipe-row + .swipe-row .log-
 .settings-view .theme-toggle,
 html[data-theme="light"] .settings-view .theme-toggle{
   position:static;
-  width:42px;height:42px;
+  width:var(--ds-control-min);height:var(--ds-control-min);
   background:var(--ds-card-2);
   border:1px solid var(--ds-border);
   color:var(--ds-fg);
@@ -1556,7 +1572,7 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
 .tool-copy,.setting-copy{flex:1 1 auto;min-width:0;}
 .tool-copy h3,.setting-copy h3,.setting-row h3{
   margin:0;
-  font-family:var(--font-ui);
+  font-family:var(--font-heading);
   font-size:17px;
   font-weight:700;
   letter-spacing:-.02em;
@@ -1606,15 +1622,10 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
 }
 .setting-field{
   display:block;width:100%;box-sizing:border-box;margin-top:16px;
-  padding:11px 12px;
-  border:1px solid var(--ds-input);border-radius:10px;
+  min-height:var(--ds-control-min);padding:11px 12px;
+  border:var(--ds-border-width) solid var(--ds-input);border-radius:var(--radius-control);
   background:var(--ds-bg);color:var(--ds-fg);
   font-family:var(--font-ui);font-size:14px;
-}
-.setting-field:focus{
-  outline:none;
-  border-color:var(--ds-secondary);
-  box-shadow:0 0 0 3px hsl(182 42% 49% / .12);
 }
 .setting-readouts{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
@@ -1666,7 +1677,7 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
 .switch[aria-checked="true"] .switch-knob{transform:translateX(20px);}
 
 /* Connection & status pills, on the reference's own tones. */
-.setting-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.setting-pills{display:flex;flex-wrap:wrap;gap:var(--ds-space-2);margin-top:var(--ds-space-4);}
 .setting-pills .status-pill{
   display:inline-flex;align-items:center;gap:6px;
   padding:5px 9px;border-radius:999px;
@@ -1677,10 +1688,25 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
   fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;
 }
-.setting-pills .status-fresh{color:hsl(162 62% 31%);background:hsl(161 47% 87%);}
-.setting-pills .status-warn{color:hsl(32 72% 31%);background:hsl(39 87% 87%);}
-html[data-theme="dark"] .setting-pills .status-fresh{color:hsl(161 58% 77%);background:hsl(162 35% 21%);}
-html[data-theme="dark"] .setting-pills .status-warn{color:hsl(40 90% 76%);background:hsl(34 37% 22%);}
+.setting-pills .status-fresh{color:var(--ds-accent-fg);background:var(--ds-accent);}
+.setting-pills .status-warn{color:var(--ds-warning);background:var(--ds-warning-bg);}
+
+/* Reusable control treatment. Icon-only controls retain their visible size,
+   while their tappable box and keyboard ring stay consistent. */
+:is(.ds-btn,.select-toggle-btn,.export-btn,.calib-add,.log-view-all,
+    .category-camera-btn,.bridge-filter-toggle,.map-filter-menu > summary,
+    .map-locate-btn,.map-theme-toggle){min-height:var(--ds-control-min);}
+:is(.ds-btn,.select-toggle-btn,.export-btn,.calib-add,.log-view-all,
+    .category-camera-btn,.bridge-filter-toggle,.map-filter-menu > summary,
+    .map-locate-btn,.map-theme-toggle):focus-visible,
+:is(.lane-btn,.app-tab-btn,.switch,[role="button"]):focus-within{
+  outline:2px solid var(--ds-ring);
+  outline-offset:2px;
+}
+html:root .map-filter-menu > summary{min-height:var(--ds-control-min);width:var(--ds-control-min);}
+html:root :is(.entry-filters,.map-entry-controls) :is(input[type="date"],select,button){
+  min-height:var(--ds-control-min);
+}
 
 /* ---------- Motion & accessibility -------------------------------------- */
 

@@ -135,9 +135,9 @@ test('tab labels are copied from the reference verbatim',()=>{
   assert.deepEqual(labels,['Capture','Log','Map','Tools','Settings']);
 });
 
-test('buttons follow the Base44 .btn shape',()=>{
-  // Reference: min-height 42px, 0 14px padding, 10px control radius.
-  assert.match(design,/\.ds-btn\{[^}]*min-height:42px[^}]*padding:0 14px/);
+test('buttons follow the shared touch-target and control shape',()=>{
+  assert.match(design,/--ds-control-min:44px/);
+  assert.match(design,/\.ds-btn\{[^}]*min-height:var\(--ds-control-min\)[^}]*padding:0 14px/);
   assert.match(design,/\.ds-btn\{[^}]*border-radius:var\(--radius-control\)/);
   assert.match(design,/--radius-control:10px/);
   assert.match(design,/\.ds-btn-primary\{[^}]*background:var\(--ds-primary\)/);
@@ -145,6 +145,28 @@ test('buttons follow the Base44 .btn shape',()=>{
   // The new buttons use them.
   assert.match(html,/class="ds-btn ds-btn-primary" id="import-btn"/);
   assert.match(controls,/exportMenu\.className = 'ds-btn ds-btn-primary'/);
+});
+
+test('the visual system adapts the reference typography and semantic status tones',()=>{
+  assert.match(design,/--font-ui:'Space Grotesk'/);
+  assert.match(design,/--font-heading:var\(--font-ui\)/);
+  assert.match(design,/--font-readout:'DM Mono'/);
+  assert.match(design,/h1,h2,h3,h4[^}]*font-family:var\(--font-heading\)/);
+  assert.match(design,/\.status\.ok,\.status-fresh\{[^}]*color:var\(--ds-accent-fg\)/);
+  assert.match(design,/\.status\.err,\.status-bad\{[^}]*color:var\(--ds-error\)/);
+  assert.match(design,/\.setting-pills \.status-fresh\{color:var\(--ds-accent-fg\)/);
+  assert.match(design,/:focus-visible[^}]*outline:2px solid var\(--ds-ring\)/);
+});
+
+test('the local foundation uses the reference light and dark palette without adding a runtime dependency',()=>{
+  for(const value of ['#121b26','#1b2532','#0c121a','#efece6','#fab80f','#48aeb1','#2b474a','#dd413c',
+                      '#f2efe9','#f9f8f5','#1b2737','#33646c','#ceecee','#c72e29']){
+    assert.ok(design.includes(value),`missing reference token ${value}`);
+  }
+  assert.match(design,/--radius-card:14px/);
+  assert.match(design,/--radius-control:10px/);
+  assert.match(design,/--ds-space-1:4px/);
+  assert.doesNotMatch(html,/@workspace\/kmtrack-design-system|tailwindcss/);
 });
 
 test('export buttons stay in the DOM so the export dialog can adopt them',()=>{
