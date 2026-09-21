@@ -54,6 +54,8 @@ test('GPS callback rejects old and duplicate fixes, then expires capture eligibi
     navigator: { geolocation: { watchPosition: (onSuccess, onFailure) => { success = onSuccess; failure = onFailure; } } },
     Date: { now: () => 20000 }, GPS_FRESH_MS: 12000,
     currentPos: null, currentResolvedLocation: null, gpsFreshnessTimer: null,
+    gpsPermissionDenied: false,
+    updateGpsConfidence: () => {},
     gpsFilter: { process: (lat, lon) => { filtered++; return { lat, lon }; } },
     resolveFreshLocation: () => ({ confirmed: true, uncertain: false }),
     markGpsUncertain: () => { uncertain++; if (app.currentPos) app.currentPos.fresh = false; },

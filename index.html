@@ -1236,61 +1236,83 @@ button {
 <main>
 
   <section class="kmpost instrument-panel" id="instrument-panel" aria-label="Location and road match">
+    <!-- Dominant station readout: the one thing the inspector reads at a glance.
+         The state chip is derived from the resolver, never from the visual layer
+         — see updateGpsConfidence(). -->
     <div class="instrument-head">
-      <div class="status warn" id="gps-status">Requesting GPS permission...</div>
+      <span class="gps-chip" id="gps-chip" data-state="checking">
+        <span class="gps-dot" aria-hidden="true"></span>
+        <span id="gps-chip-text">Acquiring device location</span>
+      </span>
     </div>
 
-    <div class="instrument-metrics">
-      <div class="metric">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg><span>Accuracy</span></div>
-        <div class="metric-value" id="acc">--</div>
+    <div class="instrument-station">
+      <div class="station-road">
+        <span class="segment-tag" id="segment-tag">--</span>
+        <span class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></span>
       </div>
-
-      <div class="metric">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg><span>Corridor</span></div>
-        <div class="segment-tag" id="segment-tag">--</div>
-      </div>
-
-      <div class="metric metric-station">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg><span id="current-location-label">Station</span></div>
-        <div class="kmvalue" id="km-value">--.---</div>
-      </div>
-
-      <div class="metric">
-        <div class="kmlabel"><svg class="metric-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"></path><circle cx="12" cy="12" r="10"></circle></svg><span>Bound</span></div>
-        <div class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></div>
-        <div class="bound-auto-status" id="bound-auto-status"></div>
-      </div>
+      <div class="kmvalue" id="km-value">--.---</div>
+      <div class="station-caption" id="current-location-label">Station</div>
     </div>
 
-    <div class="instrument-interchange">
-      <svg class="metric-icon interchange-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
-      <span>Interchange identity</span>
-      <strong class="ramp-tag" id="ramp-tag"></strong>
-    </div>
+    <!-- Engineering detail. Collapsed by default, and every element keeps the ID
+         its existing writer expects. -->
+    <details class="instrument-details" id="instrument-details">
+      <summary>
+        <span class="instrument-details-label">Location detail</span>
+        <span class="instrument-details-hint" id="instrument-details-hint"></span>
+        <span class="dataset-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="instrument-details-body">
+        <div class="status warn" id="gps-status">Requesting GPS permission...</div>
 
-    <div class="nearby-asset" aria-live="polite">
-      <div class="nearby-asset-body">
-        <div class="kmlabel">Nearby bridge</div>
-        <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
-        <div class="nearby-asset-meta">
-          <span class="nearby-asset-station" id="nearby-asset-station">--</span>
-          <span class="nearby-asset-distance" id="nearby-asset-distance"></span>
+        <div class="instrument-metrics">
+          <div class="metric">
+            <div class="kmlabel"><span>Accuracy</span></div>
+            <div class="metric-value" id="acc">--</div>
+          </div>
+
+          <div class="metric">
+            <div class="kmlabel"><span>Fix age</span></div>
+            <div class="metric-value" id="fix-age">--</div>
+          </div>
+
+          <div class="metric metric-wide">
+            <div class="kmlabel"><span>Bound</span></div>
+            <div class="bound-auto-status" id="bound-auto-status"></div>
+          </div>
+        </div>
+
+        <div class="instrument-interchange">
+          <svg class="metric-icon interchange-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
+          <span>Interchange identity</span>
+          <strong class="ramp-tag" id="ramp-tag"></strong>
+        </div>
+
+        <div class="nearby-asset" aria-live="polite">
+          <div class="nearby-asset-body">
+            <div class="kmlabel">Nearby bridge</div>
+            <div class="nearby-asset-name" id="nearby-asset-name">Loading bridge data...</div>
+            <div class="nearby-asset-meta">
+              <span class="nearby-asset-station" id="nearby-asset-station">--</span>
+              <span class="nearby-asset-distance" id="nearby-asset-distance"></span>
+            </div>
+          </div>
+          <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+          </button>
+          <div class="bridge-filter-menu" id="bridge-filter-menu" role="menu" hidden>
+            <div class="bridge-filter-title">Bridge classification</div>
+            <div id="bridge-filter-options"></div>
+          </div>
+        </div>
+
+        <div class="instrument-foot">
+          <span class="coordinate-value"><span id="lat">--</span><span aria-hidden="true">, </span><span id="lon">--</span></span>
+          <span class="foot-clock"><span id="clock"></span><span class="foot-saved" id="clock-saved"></span></span>
         </div>
       </div>
-      <button type="button" class="bridge-filter-toggle" id="bridge-filter-toggle" aria-label="Filter bridges by classification" aria-haspopup="true" aria-expanded="false" title="Filter bridges by classification">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-      </button>
-      <div class="bridge-filter-menu" id="bridge-filter-menu" role="menu" hidden>
-        <div class="bridge-filter-title">Bridge classification</div>
-        <div id="bridge-filter-options"></div>
-      </div>
-    </div>
-
-    <div class="instrument-foot">
-      <span class="coordinate-value"><span id="lat">--</span><span aria-hidden="true">, </span><span id="lon">--</span></span>
-      <span class="foot-clock"><span id="clock"></span><span class="foot-saved" id="clock-saved"></span></span>
-    </div>
+    </details>
   </section>
 
   <section class="block gps-pending" id="defect-section">
@@ -1632,6 +1654,7 @@ const locationResolver = KMTrackLocation.createResolver();
 let currentPos = null; // {lat, lon, acc, timestamp, fresh}; coordinates are Kalman-smoothed
 let currentResolvedLocation = null;
 let gpsFreshnessTimer = null;
+let gpsPermissionDenied = false;
 const GPS_FRESH_MS = 12000;
 let calibData = [];    // {e, b, k, lat, lon} — loaded from the NLEX network dataset
 let entries = [];      // {id, type, timestamp, lat, lon, km, expressway, bound, lane, photoId, photoFilename, photoTimestamp}
@@ -3052,6 +3075,45 @@ function updateMapKmStation(){
   document.getElementById('map-km-station').textContent = `KM ${document.getElementById('km-value').textContent}`;
 }
 
+/* ---------- GPS confidence ----------
+ * The panel's single claim about the location, and the only place it is decided.
+ * Copy is the design system's own wording for these states. Every branch reads
+ * the resolver's state, so the chip cannot disagree with the road match, and a
+ * stale or unconfirmed fix can never read as fresh. Nothing here touches the
+ * capture safeguards — those stay in resolvedLocationCanSave() and
+ * setGpsCaptureReady(). */
+const GPS_CONFIDENCE = {
+  fresh:'Location verified',
+  held:'Road match held',
+  stale:'Last reading is stale',
+  'off-network':'No honest road match',
+  permission:'Location permission needed',
+  checking:'Acquiring device location',
+  unsupported:'Location unavailable'
+};
+
+function gpsConfidenceState(isOffMappedNetwork, resolution){
+  if(!navigator.geolocation) return 'unsupported';
+  if(!currentPos) return gpsPermissionDenied ? 'permission' : 'checking';
+  if(!currentPos.fresh) return 'stale';
+  if(!resolution || !resolution.confirmed) return 'checking';
+  if(resolution.uncertain) return 'held';
+  if(isOffMappedNetwork) return 'off-network';
+  return 'fresh';
+}
+
+function updateGpsConfidence(isOffMappedNetwork, resolution){
+  const panel = document.getElementById('instrument-panel');
+  const chip = document.getElementById('gps-chip');
+  const text = document.getElementById('gps-chip-text');
+  if(!panel || !chip || !text) return;
+  const state = gpsConfidenceState(isOffMappedNetwork, resolution);
+  chip.dataset.state = state;
+  text.textContent = GPS_CONFIDENCE[state];
+  // Dresses the station readout too: a stale or held match must not look live.
+  panel.dataset.gpsState = state;
+}
+
 function updateReadout(){
   if(!currentPos) return;
   updateOsmLocation();
@@ -3111,6 +3173,9 @@ function updateReadout(){
   updateBoundAutoStatus(result.expressway);
   updateRampReadout(interchangeMode?null:resolution.interchange);
   refreshCameraDraftFromLiveGPS();
+  // One call, from the same scope that just computed the road match, so the chip
+  // can never be derived from anything else.
+  updateGpsConfidence(isOffMappedNetwork, resolution);
 }
 
 // Keeps the in-camera overlay (and, since it edits cameraDraftEntry directly,
@@ -3277,12 +3342,16 @@ if(navigator.geolocation){
       updateReadout();
     },
     (err) => {
+      // 1 === PERMISSION_DENIED. The panel needs to tell "not allowed" apart
+      // from "no fix yet", so the state comes from here rather than the message.
+      gpsPermissionDenied = !!err && err.code === 1;
       if(currentPos) markGpsUncertain('GPS signal lost — holding the last confirmed road');
       else {
         gpsStatus.textContent = 'GPS error: ' + err.message;
         gpsStatus.className = 'status err';
         setGpsCaptureReady(false);
       }
+      updateGpsConfidence();
     },
     { enableHighAccuracy:true, maximumAge:1000, timeout:10000 }
   );
@@ -4454,6 +4523,12 @@ function updateConfidenceReadouts(){
   if(age){
     const stamp = currentPos && Number(currentPos.timestamp);
     age.textContent = stamp ? `${Math.max(0, Math.round((Date.now() - stamp) / 1000))} s ago` : '--';
+  }
+  // The Capture panel reports the same age, in the collapsed detail section.
+  const fixAge = document.getElementById('fix-age');
+  if(fixAge){
+    const stamp = currentPos && Number(currentPos.timestamp);
+    fixAge.textContent = stamp ? `${Math.max(0, Math.round((Date.now() - stamp) / 1000))} s` : '--';
   }
 }
 

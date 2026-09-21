@@ -349,24 +349,136 @@ html[data-theme="light"] .kmpost.instrument-panel{
 
 /* Top strip. Reference header: `px-4 py-4 bg-[hsl(var(--muted)/.65)]`, and it
    carries no bottom border — the tint alone separates it from the metrics. */
+/* ---------- Capture instrument: station-dominant --------------------------
+   The station reading is what the inspector actually needs at a glance, so it
+   leads. Corridor, bound and the resolver's confidence sit around it; every
+   engineering number moved into the collapsed detail section below. */
 .instrument-head{
   display:flex;
   align-items:center;
+  justify-content:space-between;
   gap:12px;
-  padding:16px;
-  background:var(--ds-muted);
-  background:color-mix(in srgb, var(--ds-muted) 65%, transparent);
+  padding:14px 16px 0;
+  background:transparent;
   border-bottom:0;
 }
-.instrument-head .status{
-  /* Shrink to the message: with the count and filter gone, a stretched pill
-     would read as a full-width banner. */
-  flex:0 1 auto;
-  min-width:0;
-  justify-content:flex-start;
+.gps-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:5px 10px;
+  border-radius:var(--radius-full);
+  font-family:var(--font-ui);
+  font-size:11px;
+  font-weight:700;
+  color:var(--ds-fg-muted);
+  background:var(--ds-muted);
 }
-/* Bridge filter now lives in the bridge row, right-aligned, as a quiet
-   card-matched control with the app's lucide glyph. */
+.gps-chip .gps-dot{
+  width:7px;
+  height:7px;
+  flex:0 0 7px;
+  border-radius:var(--radius-full);
+  background:currentColor;
+}
+/* StatusPill tones. `fresh` is reserved for a verified match: never a stale or
+   held one. */
+.gps-chip[data-state="fresh"]{color:var(--ds-secondary);background:var(--ds-accent);}
+.gps-chip[data-state="held"],
+.gps-chip[data-state="checking"]{color:var(--ds-warning);background:var(--ds-warning-bg);}
+.gps-chip[data-state="stale"],
+.gps-chip[data-state="off-network"],
+.gps-chip[data-state="permission"],
+.gps-chip[data-state="unsupported"]{color:var(--ds-error);background:var(--ds-error-bg);}
+
+.instrument-station{
+  display:grid;
+  gap:6px;
+  padding:10px 16px 16px;
+}
+.station-road{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+}
+.instrument-station .segment-tag{
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.02em;
+  color:var(--ds-fg-muted);
+  background:none;
+  border:0;
+  padding:0;
+}
+.instrument-station .segment-tag.faroff{color:var(--ds-warning);}
+.instrument-station .kmvalue{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:clamp(30px,11vw,44px);
+  font-weight:500;
+  line-height:1.05;
+  letter-spacing:-.03em;
+  color:var(--ds-fg);
+}
+.station-caption{
+  font-family:var(--font-ui);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+/* A stale or unconfirmed match must never read as live. */
+.instrument-panel[data-gps-state="stale"] .kmvalue,
+.instrument-panel[data-gps-state="off-network"] .kmvalue,
+.instrument-panel[data-gps-state="permission"] .kmvalue,
+.instrument-panel[data-gps-state="unsupported"] .kmvalue{color:var(--ds-fg-subtle);}
+.instrument-panel[data-gps-state="held"] .kmvalue{opacity:.75;}
+.instrument-panel[data-gps-state="stale"] .station-caption::after{content:' · not live';color:var(--ds-error);}
+
+/* Manual correction stays one tap away, in the head row. */
+.station-road .bound-toggle{margin-left:auto;flex:0 0 auto;}
+
+/* Collapsed engineering detail. */
+.instrument-details{border-top:1px solid var(--ds-border);}
+.instrument-details > summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:var(--ds-control-min);
+  padding:0 16px;
+  cursor:pointer;
+  list-style:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.instrument-details > summary::-webkit-details-marker{display:none;}
+.instrument-details > summary::marker{content:'';}
+.instrument-details-label{
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:700;
+  color:var(--ds-fg);
+}
+.instrument-details-hint{
+  flex:1 1 auto;
+  min-width:0;
+  text-align:right;
+  font-size:11px;
+  color:var(--ds-fg-muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.instrument-details-body{display:grid;gap:12px;padding:0 16px 14px;}
+.instrument-details-body .status{margin:0;}
+.instrument-details-body .instrument-metrics{padding:0;}
+.instrument-details-body .instrument-interchange,
+.instrument-details-body .nearby-asset{padding:0;}
+.instrument-metrics .metric-wide{grid-column:1 / -1;}
+.instrument-details .instrument-foot{padding:0;}
 .bridge-filter-toggle{
   position:relative;
   flex:0 0 34px;

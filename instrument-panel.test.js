@@ -50,17 +50,25 @@ test('the station label reads Station, and Location inside an interchange',()=>{
   assert.doesNotMatch(html,/CURRENT KM STATION/);
 });
 
-test('cell order matches the reference: accuracy, corridor, station, bound',()=>{
-  const grid = html.slice(html.indexOf('instrument-metrics'),html.indexOf('id="nearby-asset-name"'));
-  const order = ['Accuracy','Corridor','metric-station','Bound'].map((m)=>grid.indexOf(m));
-  assert.ok(order.every((i)=>i>=0),'all four metric cells must be present');
-  assert.deepEqual(order,[...order].sort((a,b)=>a-b),'cells must appear in reference order');
-  // Every value uses the reference's ONE value scale: `mt-1 truncate font-mono
-  // text-[13px] font-medium`. No metric gets its own size.
-  assert.match(design,/\.instrument-metrics \.kmvalue,\n\.instrument-metrics \.metric-value,\n\.instrument-metrics \.segment-tag\{[\s\S]{0,320}?font-size:13px/);
-  assert.doesNotMatch(design,/\.metric-station \.kmvalue[\s\S]{0,80}?font-size:clamp\(/);
-  // The interchange row sits BELOW the metric grid, full width.
-  assert.ok(grid.indexOf('instrument-interchange') > grid.indexOf('Bound'),'interchange row is below the grid');
+test('the station leads, and the engineering detail is collapsed',()=>{
+  // The station readout is the dominant type on the panel.
+  assert.match(design,/\.instrument-station \.kmvalue\{[\s\S]{0,260}?font-size:clamp\(/);
+  // Confidence chip leads; corridor and bound stay visible by default.
+  const head = html.slice(html.indexOf('class="instrument-head"'),html.indexOf('instrument-station'));
+  assert.ok(head.includes('id="gps-chip"'),'the confidence chip leads the panel');
+  const station = html.slice(html.indexOf('instrument-station'),html.indexOf('instrument-details'));
+  assert.ok(station.includes('id="segment-tag"'),'corridor shows by default');
+  assert.ok(station.includes('id="bound-toggle"'),'manual bound correction stays one tap away');
+  assert.ok(station.includes('id="km-value"'),'the station is the dominant readout');
+  // Coordinates, accuracy, fix age, interchange and bridge are collapsed by
+  // default, but keep their IDs so every existing writer still finds them.
+  const details = html.slice(html.indexOf('id="instrument-details"'),html.indexOf('id="defect-section"'));
+  for(const id of ['acc','fix-age','lat','lon','ramp-tag','nearby-asset-name','gps-status','bound-auto-status']){
+    assert.ok(details.includes(`id="${id}"`),`#${id} must be inside the collapsed detail`);
+  }
+  assert.match(html,/<details class="instrument-details" id="instrument-details">/);
+  assert.match(design,/\.instrument-details > summary\{[\s\S]{0,260}?min-height:var\(--ds-control-min\)/);
+  // The interchange row stays full width below the grid.
   assert.match(design,/\.instrument-interchange\{[\s\S]{0,240}?border-top:1px solid var\(--ds-border\)/);
   assert.match(design,/\.instrument-interchange:not\(:has\(\.ramp-tag\.show\)\)\{display:none;\}/);
 });
