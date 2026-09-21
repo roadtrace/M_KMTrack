@@ -186,7 +186,7 @@ html:not([data-theme="light"]) body{background:var(--ds-bg);}
 .nearby-asset-station,
 .nearby-asset-distance,
 .log-entry .info .meta,
-#clock,.header-copy .sub,.inspection-view .log-count-badge,
+#capture-session-time,.header-copy .sub,.inspection-view .log-count-badge,
 #count-label,#last-time,#count-mini,#settings-alignment-count,
 .ds-chip,
 .photo-status,
@@ -353,15 +353,55 @@ html[data-theme="light"] .kmpost.instrument-panel{
    The station reading is what the inspector actually needs at a glance, so it
    leads. Corridor, bound and the resolver's confidence sit around it; every
    engineering number moved into the collapsed detail section below. */
+.capture-session-bar{
+  width:min(calc(100% - 28px),1144px);
+  margin:0 auto;
+  padding:12px 0 0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-ui);
+  font-size:10px;
+  font-weight:700;
+  line-height:1.4;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.capture-session-bar time{
+  font-family:var(--font-readout);
+  font-weight:500;
+  letter-spacing:.02em;
+}
 .instrument-head{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:12px 16px 0;
+  padding:14px 16px 8px;
   background:transparent;
   border-bottom:0;
 }
+.instrument-accuracy{
+  display:grid;
+  justify-items:end;
+  gap:2px;
+  flex:0 0 auto;
+}
+.instrument-accuracy > span{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.instrument-accuracy strong{
+  font-family:var(--font-readout);
+  font-size:13px;
+  font-weight:500;
+  color:var(--ds-fg);
+}
+.instrument-accuracy strong::before{content:'⌖ ';color:var(--ds-secondary);}
 .gps-chip{
   display:inline-flex;
   align-items:center;
@@ -394,17 +434,7 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-station{
   display:grid;
   gap:4px;
-  padding:8px 16px 10px;
-}
-/* Corridor above the station, NB/SB immediately beside it. Previously the
-   corridor row sat above the station AND carried the 44px bound control, which
-   alone accounted for the slack in a 128px station block. */
-.station-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  min-width:0;
+  padding:6px 16px 14px;
 }
 .instrument-station .segment-tag{
   font-family:var(--font-ui);
@@ -420,11 +450,20 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-station .kmvalue{
   font-family:var(--font-readout);
   font-variant-numeric:tabular-nums;
-  font-size:clamp(30px,11vw,44px);
+  font-size:clamp(28px,8vw,32px);
   font-weight:500;
   line-height:1.05;
   letter-spacing:-.03em;
   color:var(--ds-fg);
+}
+.instrument-nearby{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px;
+  line-height:1.45;
+  color:var(--ds-fg-muted);
 }
 .station-caption{
   display:none; /* the KM prefix below carries this; the writer still runs */
@@ -440,77 +479,6 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-panel[data-gps-state="unsupported"] .kmvalue{color:var(--ds-fg-subtle);}
 .instrument-panel[data-gps-state="held"] .kmvalue{opacity:.75;}
 .instrument-panel[data-gps-state="stale"] .station-caption::after{content:' · not live';color:var(--ds-error);}
-
-/* Manual correction stays one tap away, beside the station. */
-.station-row .bound-toggle{margin-left:auto;flex:0 0 auto;}
-
-/* ---------- Compact evidence row -----------------------------------------
-   Three glanceable values only. Metric treatment, but a single row of text
-   rather than three cards. */
-.instrument-evidence{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:1px;
-  padding:0;
-  border-top:1px solid var(--ds-border);
-  background:var(--ds-border);
-}
-.instrument-evidence .metric{
-  display:grid;
-  gap:2px;
-  padding:8px 12px;
-  background:var(--ds-card);
-  min-width:0;
-}
-.instrument-evidence .ev-label{
-  font-family:var(--font-ui);
-  font-size:9px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  color:var(--ds-fg-muted);
-}
-.instrument-evidence .metric-value,
-.instrument-evidence .ev-value{
-  font-family:var(--font-readout);
-  font-variant-numeric:tabular-nums;
-  font-size:13px;
-  font-weight:500;
-  line-height:1.35;
-  color:var(--ds-fg);
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-/* ID-level: #gps-status also carries `.status`, and an ID rule elsewhere in the
-   sheets sets its flex display, which would survive and let the long message
-   wrap the row open. */
-#instrument-panel #gps-status,
-#instrument-panel #bound-auto-status{
-  display:-webkit-box;
-  -webkit-line-clamp:1;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-  font-family:var(--font-readout);
-  font-size:12px;
-  font-weight:500;
-}
-.instrument-evidence .metric .ev-value{
-  font-size:12px;
-}
-/* #gps-status keeps being written with `status ok|warn|err`, but the pill tone
-   now belongs to #gps-chip alone — this is the one short secondary line. */
-#instrument-panel #gps-status{
-  /* `display` is deliberately NOT set here: an ID rule would outrank the
-     .ev-value clamp and the long message would wrap the row open again. */
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:none;
-  font-family:var(--font-readout);
-  font-size:12px;
-  font-weight:500;
-  color:var(--ds-fg-muted);
-}
 
 /* Collapsed engineering detail. */
 .instrument-details{border-top:1px solid var(--ds-border);}
@@ -532,6 +500,7 @@ html[data-theme="light"] .kmpost.instrument-panel{
   font-weight:700;
   color:var(--ds-fg);
 }
+.instrument-details > summary .dataset-chevron{margin-left:auto;}
 .instrument-details-hint{
   flex:1 1 auto;
   min-width:0;
@@ -545,25 +514,65 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-details-body{display:grid;gap:12px;padding:0 16px 14px;}
 .instrument-details-body .status{margin:0;}
 .instrument-details-body .instrument-metrics{padding:0;}
+.instrument-details-body .instrument-metrics .metric-wide{
+  grid-column:1 / -1;
+  border-top:1px solid var(--ds-border);
+  border-left:0;
+}
 .instrument-details-body .instrument-interchange,
 .instrument-details-body .nearby-asset{padding:0;}
-.instrument-details .instrument-foot{padding:0;}
-.bridge-filter-toggle{
+.instrument-details .instrument-foot{padding:12px 0 2px;}
+
+/* The confidence pill already explains why capture is waiting. */
+#defect-section.gps-pending .defect-gate,
+#defect-section:not(.gps-pending) .defect-gate{display:none !important;}
+#instrument-panel #gps-status[hidden]{display:none;}
+#defect-section{margin-top:12px;}
+#defect-section.focused .focused-category .lane-btn-row{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+#defect-section.focused .focused-category .lane-btn{
+  min-height:76px;
+  padding:18px 8px;
+  border-radius:var(--radius-control);
+  font-family:var(--font-readout);
+  font-size:26px;
+}
+#defect-section.focused .focused-category .lane-btn.others-btn{
+  grid-column:1 / -1;
+  min-height:56px;
+  padding:12px;
+  flex-direction:column;
+  font-family:var(--font-ui);
+  font-size:15px;
+}
+html:root .instrument-panel .bridge-filter-toggle{
   position:relative;
-  flex:0 0 34px;
-  width:34px;
-  height:34px;
+  right:auto;
+  top:auto;
+  flex:0 0 44px;
+  width:44px;
+  height:44px;
+  padding:0;
   background:var(--ds-card-2);
   border:1px solid var(--ds-border);
+  border-radius:var(--radius-control);
   color:var(--ds-fg-muted);
+  box-shadow:none;
 }
-.bridge-filter-toggle:hover{background:var(--ds-muted);color:var(--ds-fg);}
+html:root .instrument-panel .bridge-filter-toggle:hover{background:var(--ds-muted);color:var(--ds-fg);}
 /* The old CSS-mask funnel is replaced by the inline SVG. */
-.bridge-filter-toggle::before{content:none;}
-.bridge-filter-toggle svg{
+html:root .instrument-panel .bridge-filter-toggle::before{content:none;}
+html:root .instrument-panel .bridge-filter-toggle svg{
   width:15px;height:15px;
   fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;
+}
+html:root .instrument-panel .bridge-filter-toggle.filtered{
+  color:var(--ds-primary);
+  border-color:var(--ds-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--ds-primary) 14%,transparent);
 }
 .instrument-panel .nearby-asset{position:relative;}
 /* Anchored to the bridge row and opening just below it.
@@ -603,6 +612,7 @@ html:root .instrument-panel .bridge-filter-menu{
   min-width:0;
   padding:12px;
 }
+.instrument-metrics .metric-wide{grid-column:1 / -1;}
 /* Reference cells: `px-3 py-3 first:pl-4`. The grid is `divide-x` only —
    a vertical rule between columns and deliberately NO horizontal rule
    between the metric rows. */
@@ -693,6 +703,7 @@ html:root .instrument-panel .bridge-filter-menu{
   color:var(--ds-fg);
 }
 .instrument-metrics .bound-toggle{
+  display:flex;
   flex-direction:row;
   flex-wrap:wrap;
   gap:6px;
@@ -701,8 +712,8 @@ html:root .instrument-panel .bridge-filter-menu{
 .instrument-metrics button.bound-btn{
   width:auto;
   min-width:46px;
-  min-height:32px;
-  padding:5px 10px;
+  min-height:44px;
+  padding:8px 14px;
   font-size:13px;
   border:1px solid var(--ds-border);
   background:var(--ds-card-2);
@@ -776,7 +787,7 @@ html:root .instrument-panel .bridge-filter-menu{
 .instrument-foot{
   display:flex;
   flex-wrap:nowrap;
-  align-items:baseline;
+  align-items:center;
   gap:8px;
   border-top:1px solid var(--ds-border);
   padding:12px 16px;
@@ -786,6 +797,13 @@ html:root .instrument-panel .bridge-filter-menu{
   font-variant-numeric:tabular-nums;
   font-size:11px;
   font-weight:400;
+  line-height:1.5;
+  color:var(--ds-fg-muted);
+  white-space:nowrap;
+}
+.instrument-foot .foot-separator{
+  font-family:var(--font-readout);
+  font-size:11px;
   line-height:1.5;
   color:var(--ds-fg-muted);
 }
@@ -798,11 +816,9 @@ html:root .instrument-panel .bridge-filter-menu{
   min-height:0;
 }
 
-/* The date/time and saved count live here now, not in the header. Children are
-   `flex:0 0 auto` so fitInstrumentFoot() measures true intrinsic widths rather
-   than flex-squeezed ones. */
+/* Coordinates and date/time stay on one exact-value line. */
 .instrument-foot > *{flex:0 0 auto;min-width:0;}
-.foot-clock{
+.foot-saved{
   font-family:var(--font-readout);
   font-variant-numeric:tabular-nums;
   font-size:11px;
@@ -810,7 +826,6 @@ html:root .instrument-panel .bridge-filter-menu{
   color:var(--ds-fg-muted);
   white-space:nowrap;
 }
-.foot-saved[hidden]{display:none;}
 
 /* ---------- Global header ------------------------------------------------
    Shown on every tab. The brand is the mark plus a TEXT wordmark rather than the

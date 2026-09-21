@@ -87,24 +87,23 @@ test('the map fills the viewport minus the tab tray AND the global header', () =
   assert.match(html, /ResizeObserver\(syncHeaderHeight\)/);
 });
 
-test('the clock moved out of the header into the instrument footer', () => {
+test('the live inspection time sits below the header and outside location details', () => {
   const header = html.slice(html.indexOf('<div class="top-shell">'), html.indexOf('id="inspection-view"'));
-  assert.doesNotMatch(header, /id="clock"/);
+  assert.doesNotMatch(header, /id="capture-session-time"/);
+  const session = html.slice(html.indexOf('class="capture-session-bar"'),html.indexOf('<main>'));
+  assert.match(session,/Live inspection/);
+  assert.match(session,/id="capture-session-time"/);
   const foot = html.slice(html.indexOf('class="instrument-foot"'), html.indexOf('class="instrument-foot"') + 400);
   assert.match(foot, /id="lat"/);
-  assert.match(foot, /id="clock"/);
+  assert.doesNotMatch(foot, /capture-session-time/);
   assert.match(foot, /id="clock-saved"/);
 });
 
-test('the saved count is dropped when the footer cannot fit it', () => {
-  assert.match(html, /function fitInstrumentFoot\(\)/);
-  assert.match(html, /if\(needed > foot\.clientWidth\) saved\.hidden = true;/);
-  // tickClock fires every second whatever tab is showing. While Capture is hidden
-  // this element has no layout, clientWidth is 0, and every comparison "fails" —
-  // which would hide the count and strand it hidden.
-  assert.match(html, /function fitInstrumentFoot\(\)\{[\s\S]{0,900}?if\(!foot\.clientWidth\) return;/);
-  // Re-checked when the view is shown again.
-  assert.match(html, /syncHeaderContext\(viewName\);[\s\S]{0,120}?fitInstrumentFoot\(\);/);
+test('the location footer contains coordinates and the saved count only', () => {
+  const foot = html.slice(html.indexOf('class="instrument-foot"'), html.indexOf('class="instrument-foot"') + 400);
+  assert.doesNotMatch(foot, /capture-session-time/);
+  assert.match(foot,/id="clock-saved">0 saved/);
+  assert.match(foot, /class="foot-separator"[^>]*>·</);
 });
 
 test('syncing and reloading are separate actions', () => {

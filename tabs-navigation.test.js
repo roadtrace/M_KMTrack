@@ -53,8 +53,10 @@ test('bottom navigation uses each theme’s surface and teal accent',()=>{
   assert.match(design,/--app-nav-h:calc\(64px \+ env\(safe-area-inset-bottom\)\)/);
 });
 
-test('capture bound buttons retain their previous compact height',()=>{
-  assert.match(design,/\.instrument-metrics button\.bound-btn\{[^}]*min-height:32px/);
+test('capture keeps bound correction inside collapsed location details',()=>{
+  const capture = html.slice(html.indexOf('id="inspection-view"'),html.indexOf('id="log-view"'));
+  assert.match(capture,/id="instrument-details"[\s\S]*id="bound-toggle"/);
+  assert.match(capture,/id="segment-tag"/);
 });
 
 test('showAppView drives every view from one map of ids',()=>{
