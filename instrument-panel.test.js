@@ -60,14 +60,24 @@ test('the station leads, and the engineering detail is collapsed',()=>{
   assert.ok(station.includes('id="segment-tag"'),'corridor shows by default');
   assert.ok(station.includes('id="bound-toggle"'),'manual bound correction stays one tap away');
   assert.ok(station.includes('id="km-value"'),'the station is the dominant readout');
-  // Coordinates, accuracy, fix age, interchange and bridge are collapsed by
-  // default, but keep their IDs so every existing writer still finds them.
+  // Coordinates, fix age, interchange and bridge are collapsed by default, but
+  // keep their IDs so every existing writer still finds them.
   const details = html.slice(html.indexOf('id="instrument-details"'),html.indexOf('id="defect-section"'));
-  for(const id of ['acc','fix-age','lat','lon','ramp-tag','nearby-asset-name','gps-status','bound-auto-status']){
+  for(const id of ['fix-age','lat','lon','ramp-tag','nearby-asset-name']){
     assert.ok(details.includes(`id="${id}"`),`#${id} must be inside the collapsed detail`);
   }
   assert.match(html,/<details class="instrument-details" id="instrument-details">/);
   assert.match(design,/\.instrument-details > summary\{[\s\S]{0,260}?min-height:var\(--ds-control-min\)/);
+  // The three glanceable values stay OUT of the detail, in one compact row.
+  const evidence = html.slice(html.indexOf('instrument-evidence'),html.indexOf('id="instrument-details"'));
+  for(const id of ['acc','gps-status','bound-auto-status']){
+    assert.ok(evidence.includes(`id="${id}"`),`#${id} must sit in the compact evidence row`);
+  }
+  // NB/SB is beside the station, not floating on a row above it.
+  assert.ok(station.includes('station-row'),'the station and bound controls share a row');
+  assert.ok(station.includes('id="bound-toggle"'),'bound controls sit beside the station');
+  assert.ok(!station.includes('station-road'),'the old corridor-above row is gone');
+  assert.doesNotMatch(design,/\.instrument-metrics \.metric-wide/);
   // The interchange row stays full width below the grid.
   assert.match(design,/\.instrument-interchange\{[\s\S]{0,240}?border-top:1px solid var\(--ds-border\)/);
   assert.match(design,/\.instrument-interchange:not\(:has\(\.ramp-tag\.show\)\)\{display:none;\}/);

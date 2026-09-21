@@ -1236,9 +1236,8 @@ button {
 <main>
 
   <section class="kmpost instrument-panel" id="instrument-panel" aria-label="Location and road match">
-    <!-- Dominant station readout: the one thing the inspector reads at a glance.
-         The state chip is derived from the resolver, never from the visual layer
-         — see updateGpsConfidence(). -->
+    <!-- 1. Status. ONE pill carries the tone; #gps-status is the single short
+         secondary line. Both are written by the existing GPS writers. -->
     <div class="instrument-head">
       <span class="gps-chip" id="gps-chip" data-state="checking">
         <span class="gps-dot" aria-hidden="true"></span>
@@ -1246,40 +1245,44 @@ button {
       </span>
     </div>
 
+    <!-- 2. Road identity, then 3. the station with NB/SB alongside it. -->
     <div class="instrument-station">
-      <div class="station-road">
-        <span class="segment-tag" id="segment-tag">--</span>
-        <span class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></span>
+      <span class="segment-tag" id="segment-tag">--</span>
+      <div class="station-row">
+        <div class="kmvalue" id="km-value">--.---</div>
+        <div class="bound-toggle" id="bound-toggle"><span class="bound-hint">detecting segment…</span></div>
       </div>
-      <div class="kmvalue" id="km-value">--.---</div>
       <div class="station-caption" id="current-location-label">Station</div>
     </div>
 
-    <!-- Engineering detail. Collapsed by default, and every element keeps the ID
-         its existing writer expects. -->
+    <!-- 4. Compact evidence row: the three glanceable values only. -->
+    <div class="instrument-evidence">
+      <div class="metric">
+        <span class="ev-label">Accuracy</span>
+        <span class="metric-value" id="acc">--</span>
+      </div>
+      <div class="metric">
+        <span class="ev-label">Road match</span>
+        <span class="ev-value status warn" id="gps-status">Requesting GPS permission...</span>
+      </div>
+      <div class="metric">
+        <span class="ev-label">Bound</span>
+        <span class="ev-value" id="bound-auto-status"></span>
+      </div>
+    </div>
+
+    <!-- 5. Everything else, collapsed. Every element keeps its writer's ID. -->
     <details class="instrument-details" id="instrument-details">
       <summary>
-        <span class="instrument-details-label">Location detail</span>
+        <span class="instrument-details-label">Location details</span>
         <span class="instrument-details-hint" id="instrument-details-hint"></span>
         <span class="dataset-chevron" aria-hidden="true"></span>
       </summary>
       <div class="instrument-details-body">
-        <div class="status warn" id="gps-status">Requesting GPS permission...</div>
-
         <div class="instrument-metrics">
-          <div class="metric">
-            <div class="kmlabel"><span>Accuracy</span></div>
-            <div class="metric-value" id="acc">--</div>
-          </div>
-
           <div class="metric">
             <div class="kmlabel"><span>Fix age</span></div>
             <div class="metric-value" id="fix-age">--</div>
-          </div>
-
-          <div class="metric metric-wide">
-            <div class="kmlabel"><span>Bound</span></div>
-            <div class="bound-auto-status" id="bound-auto-status"></div>
           </div>
         </div>
 

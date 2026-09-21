@@ -357,8 +357,8 @@ html[data-theme="light"] .kmpost.instrument-panel{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  padding:14px 16px 0;
+  gap:8px;
+  padding:12px 16px 0;
   background:transparent;
   border-bottom:0;
 }
@@ -393,14 +393,17 @@ html[data-theme="light"] .kmpost.instrument-panel{
 
 .instrument-station{
   display:grid;
-  gap:6px;
-  padding:10px 16px 16px;
+  gap:4px;
+  padding:8px 16px 10px;
 }
-.station-road{
+/* Corridor above the station, NB/SB immediately beside it. Previously the
+   corridor row sat above the station AND carried the 44px bound control, which
+   alone accounted for the slack in a 128px station block. */
+.station-row{
   display:flex;
   align-items:center;
-  flex-wrap:wrap;
-  gap:8px;
+  justify-content:space-between;
+  gap:12px;
   min-width:0;
 }
 .instrument-station .segment-tag{
@@ -424,13 +427,12 @@ html[data-theme="light"] .kmpost.instrument-panel{
   color:var(--ds-fg);
 }
 .station-caption{
-  font-family:var(--font-ui);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  color:var(--ds-fg-muted);
+  display:none; /* the KM prefix below carries this; the writer still runs */
 }
+/* "KM" is added here rather than in the writer so #km-value stays the bare
+   station that updateReadout() formats, and the header keeps matching it. */
+.instrument-station .kmvalue::before{content:'KM ';}
+.instrument-panel.interchange-mode .instrument-station .kmvalue::before{content:'';}
 /* A stale or unconfirmed match must never read as live. */
 .instrument-panel[data-gps-state="stale"] .kmvalue,
 .instrument-panel[data-gps-state="off-network"] .kmvalue,
@@ -439,8 +441,76 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-panel[data-gps-state="held"] .kmvalue{opacity:.75;}
 .instrument-panel[data-gps-state="stale"] .station-caption::after{content:' · not live';color:var(--ds-error);}
 
-/* Manual correction stays one tap away, in the head row. */
-.station-road .bound-toggle{margin-left:auto;flex:0 0 auto;}
+/* Manual correction stays one tap away, beside the station. */
+.station-row .bound-toggle{margin-left:auto;flex:0 0 auto;}
+
+/* ---------- Compact evidence row -----------------------------------------
+   Three glanceable values only. Metric treatment, but a single row of text
+   rather than three cards. */
+.instrument-evidence{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1px;
+  padding:0;
+  border-top:1px solid var(--ds-border);
+  background:var(--ds-border);
+}
+.instrument-evidence .metric{
+  display:grid;
+  gap:2px;
+  padding:8px 12px;
+  background:var(--ds-card);
+  min-width:0;
+}
+.instrument-evidence .ev-label{
+  font-family:var(--font-ui);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.instrument-evidence .metric-value,
+.instrument-evidence .ev-value{
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:13px;
+  font-weight:500;
+  line-height:1.35;
+  color:var(--ds-fg);
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* ID-level: #gps-status also carries `.status`, and an ID rule elsewhere in the
+   sheets sets its flex display, which would survive and let the long message
+   wrap the row open. */
+#instrument-panel #gps-status,
+#instrument-panel #bound-auto-status{
+  display:-webkit-box;
+  -webkit-line-clamp:1;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  font-family:var(--font-readout);
+  font-size:12px;
+  font-weight:500;
+}
+.instrument-evidence .metric .ev-value{
+  font-size:12px;
+}
+/* #gps-status keeps being written with `status ok|warn|err`, but the pill tone
+   now belongs to #gps-chip alone — this is the one short secondary line. */
+#instrument-panel #gps-status{
+  /* `display` is deliberately NOT set here: an ID rule would outrank the
+     .ev-value clamp and the long message would wrap the row open again. */
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:none;
+  font-family:var(--font-readout);
+  font-size:12px;
+  font-weight:500;
+  color:var(--ds-fg-muted);
+}
 
 /* Collapsed engineering detail. */
 .instrument-details{border-top:1px solid var(--ds-border);}
@@ -477,7 +547,6 @@ html[data-theme="light"] .kmpost.instrument-panel{
 .instrument-details-body .instrument-metrics{padding:0;}
 .instrument-details-body .instrument-interchange,
 .instrument-details-body .nearby-asset{padding:0;}
-.instrument-metrics .metric-wide{grid-column:1 / -1;}
 .instrument-details .instrument-foot{padding:0;}
 .bridge-filter-toggle{
   position:relative;
