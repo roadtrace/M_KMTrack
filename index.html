@@ -1198,8 +1198,36 @@ button {
       </div>
     </div>
     <div class="header-actions">
-      <span class="header-net" id="net-status" hidden><span class="net-dot" aria-hidden="true">●</span>Off network</span>
-      <button type="button" class="header-refresh" id="net-refresh" aria-label="Re-check connection and reload" title="Re-check connection and reload"></button>
+      <!-- Sync status is the one always-present state control. Tapping it opens
+           the detail panel; the two actions inside are deliberately separate, so
+           "Sync now" never navigates. -->
+      <details class="sync-menu" id="sync-menu">
+        <summary class="sync-pill" id="sync-pill">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span class="sync-pill-text" id="sync-status-text" role="status">Saved locally</span>
+        </summary>
+        <div class="sync-panel" role="group" aria-label="Synchronization">
+          <div class="sync-panel-head">
+            <span class="sync-dot" aria-hidden="true"></span>
+            <div class="sync-panel-copy">
+              <span class="sync-panel-title" id="sync-panel-title">Saved locally</span>
+              <span class="sync-panel-sub" id="sync-panel-sub">&nbsp;</span>
+            </div>
+          </div>
+          <dl class="sync-counts">
+            <div><dt>Records</dt><dd id="sync-total">0</dd></div>
+            <div><dt>Pending</dt><dd id="sync-pending">0</dd></div>
+            <div><dt>Synced</dt><dd id="sync-synced">0</dd></div>
+            <div><dt>Failed</dt><dd id="sync-failed">0</dd></div>
+          </dl>
+          <div class="sync-actions">
+            <button type="button" class="ds-btn ds-btn-primary" id="sync-now-btn">Sync now</button>
+            <button type="button" class="ds-btn ds-btn-quiet" id="reload-app-btn">Reload app</button>
+          </div>
+          <p class="sync-note" id="sync-note"></p>
+        </div>
+      </details>
+      <button type="button" class="header-refresh" id="net-refresh" aria-label="Reload app" title="Reload app"></button>
     </div>
   </header>
 </div>
@@ -1403,10 +1431,6 @@ button {
         <span id="log-records-chip" role="status">0 records</span>
       </span>
     </div>
-    <span class="ds-chip ds-chip-sync" id="sync-status-chip" hidden>
-      <span class="sync-dot" aria-hidden="true"></span>
-      <span id="sync-status-text" role="status"></span>
-    </span>
   </div>
 
   <div class="log-data-row">
@@ -1735,58 +1759,126 @@ function testStorageWritable(){
 // model, the queue and the indicator all stay unchanged.
 const syncQueue = KMTrackSync.createQueue({});
 
-/* Unobtrusive by design: the indicator only speaks up when there is something
- * actionable. Until a transport exists a local record is not "waiting" for
- * anything, so it stays hidden. */
-function updateSyncStatus(){
-  const chip = document.getElementById('sync-status-chip');
-  const text = document.getElementById('sync-status-text');
-  if(!chip || !text) return;
-  const counts = KMTrackSync.summary(entries);
-  const showFailed = counts.failed > 0;
-  const showPending = counts.pending > 0 && syncQueue.ready();
-  if(!showFailed && !showPending){ chip.hidden = true; return; }
-  chip.hidden = false;
-  chip.classList.toggle('is-error', showFailed);
-  text.textContent = showFailed
-    ? `${counts.failed} failed to sync`
-    : `${counts.pending} waiting to sync`;
+/* The indicator speaks in six states, most actionable first. Every one is read
+ * from real data: `navigator.onLine` and the queue's own summary of the records.
+ * A running sync outranks everything; only when there is nothing to do do the
+ * quieter states show. */
+let syncInFlight = false;
+
+function syncState(counts, online, ready, syncing){
+  if(syncing) return 'syncing';
+  if(counts.failed > 0) return 'failed';
+  if(ready && counts.pending > 0) return 'pending';
+  if(!online) return 'offline';
+  if(counts.total > 0 && counts.pending === 0 && counts.failed === 0) return 'synced';
+  return 'local';
 }
 
-// ---------- Header: connection status + refresh ----------
-// The pill shows only when the browser reports no connection. Refresh re-checks
-// that and drains the sync queue, which is inert until a transport is supplied —
-// so today it effectively just re-tests the connection.
+/* Tone follows the design system's StatusPill vocabulary: warn = caution/held,
+ * bad = failure/blocked, fresh = verified, neutral = merely informative. */
+const SYNC_COPY = {
+  syncing:{tone:'warn',    pill:'Syncing…',      title:'Syncing',           sub:'Uploading records now.'},
+  failed: {tone:'bad',     pill:'{n} failed',    title:'Sync failed',       sub:'{n} record(s) need retrying.'},
+  pending:{tone:'warn',    pill:'{n} pending',   title:'Waiting to upload', sub:'{n} record(s) not on the server yet.'},
+  offline:{tone:'bad',     pill:'Off network',   title:'Off network',       sub:'Records are safe on this device.'},
+  synced: {tone:'fresh',   pill:'All synced',    title:'All synced',        sub:'Every record is on the server.'},
+  local:  {tone:'neutral', pill:'Saved locally', title:'Saved locally',     sub:'Records are stored on this device.'}
+};
+
+function updateSyncStatus(){
+  const menu = document.getElementById('sync-menu');
+  const text = document.getElementById('sync-status-text');
+  if(!menu || !text) return;
+  const counts = KMTrackSync.summary(entries);
+  const online = navigator.onLine !== false;
+  const ready = syncQueue.ready();
+  const state = syncState(counts, online, ready, syncInFlight);
+  const copy = SYNC_COPY[state];
+  const fill = value => String(value).replace('{n}', counts.failed || counts.pending);
+
+  menu.dataset.syncState = state;
+  text.textContent = fill(copy.pill);
+  const title = document.getElementById('sync-panel-title');
+  const sub = document.getElementById('sync-panel-sub');
+  if(title) title.textContent = fill(copy.title);
+  if(sub) sub.textContent = fill(copy.sub);
+
+  const set = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = String(value); };
+  set('sync-total', counts.total);
+  set('sync-pending', counts.pending);
+  set('sync-synced', counts.synced);
+  set('sync-failed', counts.failed);
+
+  const now = document.getElementById('sync-now-btn');
+  if(now){
+    now.disabled = syncInFlight || !ready;
+    now.textContent = syncInFlight ? 'Syncing…' : 'Sync now';
+  }
+  const note = document.getElementById('sync-note');
+  if(note){
+    note.textContent = ready
+      ? (syncInFlight ? 'Uploading…' : 'Uploads are keyed to each record\'s own ID, so a retry cannot duplicate one.')
+      : 'Cloud sync is not configured yet, so records stay on this device. Sync now becomes available once it is.';
+  }
+}
+
+/* Sync only. Deliberately does NOT navigate — a page reload must never be a side
+ * effect of syncing. */
+async function syncNow(){
+  if(syncInFlight) return;
+  syncInFlight = true;
+  updateSyncStatus();
+  try{
+    const result = await syncQueue.drain(entries);
+    if(result && result.ok && (result.uploaded || result.failed)) saveEntries();
+  }catch(e){
+    // The queue never throws; this is a backstop so a tap can never break the UI.
+    console.warn('Sync failed', e);
+  }finally{
+    syncInFlight = false;
+  }
+  updateSyncStatus();
+}
+
+// ---------- Header: connection status + reload ----------
+// Connectivity needs no separate pill: the indicator reports it as the offline
+// state, so the two can never disagree.
 function updateNetStatus(){
-  const pill = document.getElementById('net-status');
-  if(pill) pill.hidden = navigator.onLine !== false;
+  updateSyncStatus();
   // The Settings status pills report the same connection state.
   updateStatusPills();
 }
 
-async function refreshConnection(){
+/* Reload only — the recovery action, kept separate from syncing. Flushes the
+ * queue first so an in-flight upload is not cut off by the navigation. */
+async function reloadApp(){
   const button = document.getElementById('net-refresh');
   if(button) button.disabled = true;
   try{
-    updateNetStatus();
-    // Flush the queue BEFORE reloading, so an in-flight sync is not cut off.
     const result = await syncQueue.drain(entries);
     if(result && result.ok && (result.uploaded || result.failed)) saveEntries();
-    updateSyncStatus();
   }catch(e){
-    // The queue never throws; this is a backstop so a tap can never break the UI.
-    console.warn('Refresh failed', e);
+    console.warn('Reload drain failed', e);
   }
-  /* Then reload the page, so the app re-reads its datasets and shell from
-   * scratch. Everything durable is already in local storage, so nothing is lost
-   * — but this does discard in-memory state, so an open camera draft and the
-   * current map position are not preserved. */
+  /* Everything durable is already in local storage, so nothing is lost — but
+   * this does discard in-memory state, so an open camera draft is not preserved.
+   * The active tab and map position ARE restored; see restoreActiveView(). */
   window.location.reload();
 }
 
 window.addEventListener('online', updateNetStatus);
 window.addEventListener('offline', updateNetStatus);
-document.getElementById('net-refresh').addEventListener('click', refreshConnection);
+document.getElementById('net-refresh').addEventListener('click', reloadApp);
+document.getElementById('sync-now-btn').addEventListener('click', syncNow);
+document.getElementById('reload-app-btn').addEventListener('click', reloadApp);
+/* Choosing an action closes the panel, and so does tapping away from it. */
+document.getElementById('sync-menu').addEventListener('click', event => {
+  if(event.target.closest('.sync-actions')) event.currentTarget.removeAttribute('open');
+});
+document.addEventListener('click', event => {
+  const menu = document.getElementById('sync-menu');
+  if(menu && menu.open && !menu.contains(event.target)) menu.removeAttribute('open');
+});
 updateNetStatus();
 
 /* The map fills the viewport minus the tab tray and the header. The header is

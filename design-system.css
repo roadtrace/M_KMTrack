@@ -188,7 +188,7 @@ html:not([data-theme="light"]) body{background:var(--ds-bg);}
 .log-entry .info .meta,
 #clock,.header-copy .sub,.inspection-view .log-count-badge,
 #count-label,#last-time,#count-mini,#settings-alignment-count,
-.ds-chip:not(.ds-chip-sync),
+.ds-chip,
 .photo-status,
 .camera-info .capture-time,
 .camera-info .capture-meta{
@@ -653,6 +653,10 @@ html:root .top-shell header{
   align-items:center;
   justify-content:space-between;
   gap:12px;
+  /* The sync panel is positioned against the header, NOT the pill: the pill sits
+     left of the reload button, so anchoring to it pushed the panel off the left
+     edge on a 320px screen. */
+  position:relative;
   border:0;
   border-bottom:1px solid var(--ds-border);
   background:color-mix(in srgb, var(--ds-bg) 93%, transparent);
@@ -726,23 +730,98 @@ html:root .top-shell header{
   gap:var(--ds-space-2);
   flex:0 0 auto;
 }
-/* Reference `.status-pill .status-bad` — the off-network tone — verbatim. */
-.header-net{
+/* ---------- Sync indicator (header) ---------------------------------------
+   The design system's StatusPill: fully rounded, 11px bold, ~10/6 padding, with
+   a leading dot. The whole pill is the tap target for the detail panel and keeps
+   the 44px control height, so it is a control, not just a label. */
+.sync-menu{position:static;flex:0 0 auto;}
+.sync-menu > summary{
+  list-style:none;
   display:inline-flex;
   align-items:center;
   gap:6px;
-  flex:0 0 auto;
-  padding:5px 9px;
+  min-height:var(--ds-control-min);
+  padding:6px 10px;
   border-radius:var(--radius-full);
+  background:var(--ds-muted);
+  color:var(--ds-fg-muted);
   font-family:var(--font-ui);
   font-size:11px;
   font-weight:700;
   white-space:nowrap;
-  color:var(--ds-error);
-  background:var(--ds-error-bg);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
-.header-net[hidden]{display:none;}
-.header-net .net-dot{font-size:9px;line-height:1;}
+.sync-menu > summary::-webkit-details-marker{display:none;}
+.sync-menu > summary::marker{content:'';}
+.sync-pill-text{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.sync-dot{
+  width:7px;height:7px;flex:0 0 7px;
+  border-radius:var(--radius-full);
+  background:currentColor;
+}
+/* Tones follow the StatusPill contract: warn = caution/held, bad = failure or
+   blocked, fresh = verified, neutral = merely informative. */
+.sync-menu[data-sync-state="synced"] > summary{color:var(--ds-secondary);background:var(--ds-accent);}
+.sync-menu[data-sync-state="pending"] > summary,
+.sync-menu[data-sync-state="syncing"] > summary{color:var(--ds-warning);background:var(--ds-warning-bg);}
+.sync-menu[data-sync-state="failed"] > summary,
+.sync-menu[data-sync-state="offline"] > summary{color:var(--ds-error);background:var(--ds-error-bg);}
+
+/* Detail panel, positioned against the header so it is clamped to the viewport's
+   padding edge rather than the pill's — at 320px anchoring to the pill pushed it
+   off-screen to the left. */
+.sync-panel{
+  position:absolute;
+  top:calc(100% + 8px);
+  right:16px;
+  z-index:40;
+  width:min(19rem, calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  display:grid;
+  gap:12px;
+  padding:14px;
+  border:1px solid var(--ds-border);
+  border-radius:var(--radius-card);
+  background:var(--ds-card);
+  box-shadow:0 18px 40px -18px rgb(0 0 0 / .45);
+}
+.sync-panel-head{display:flex;align-items:flex-start;gap:10px;}
+.sync-panel-head .sync-dot{margin-top:5px;color:var(--ds-fg-subtle);}
+.sync-menu[data-sync-state="synced"] .sync-panel-head .sync-dot{color:var(--ds-secondary);}
+.sync-menu[data-sync-state="pending"] .sync-panel-head .sync-dot,
+.sync-menu[data-sync-state="syncing"] .sync-panel-head .sync-dot{color:var(--ds-warning);}
+.sync-menu[data-sync-state="failed"] .sync-panel-head .sync-dot,
+.sync-menu[data-sync-state="offline"] .sync-panel-head .sync-dot{color:var(--ds-error);}
+.sync-panel-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.sync-panel-title{
+  font-family:var(--font-heading);
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:-.02em;
+  color:var(--ds-fg);
+}
+.sync-panel-sub{font-size:12px;line-height:1.45;color:var(--ds-fg-muted);}
+.sync-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0;}
+.sync-counts > div{padding:8px 6px;border-radius:8px;background:var(--ds-muted);text-align:center;}
+.sync-counts dt{
+  font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ds-fg-muted);
+}
+.sync-counts dd{
+  margin:3px 0 0;
+  font-family:var(--font-readout);
+  font-variant-numeric:tabular-nums;
+  font-size:13px;
+  font-weight:500;
+  color:var(--ds-fg);
+}
+.sync-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.sync-actions .ds-btn{flex:1 1 auto;min-height:var(--ds-control-min);}
+/* A disabled primary keeps its amber fill in dark mode and reads as tappable,
+   which is misleading for the one control that explains the feature. */
+.sync-actions .ds-btn:disabled{opacity:.5;cursor:not-allowed;}
+.sync-note{margin:0;font-size:11px;line-height:1.5;color:var(--ds-fg-muted);}
 /* Reference `.btn .btn-ghost !min-h-9 !px-2` — transparent, no border, 36px. */
 .header-refresh{
   flex:0 0 auto;
@@ -1282,17 +1361,8 @@ html[data-theme="light"] .map-locate-btn,html[data-theme="light"] .map-theme-tog
    button showing with no history behind it. */
 .ds-chip[hidden],.ds-btn[hidden]{display:none;}
 
-/* Sync indicator. Deliberately quiet: it is only rendered when there is
-   something actionable (a failure, or pending work with a live transport), so
-   it stays out of the way while everything is simply saved on this device. */
-.ds-chip-sync{gap:7px;font-size:11px;}
-.ds-chip-sync .sync-dot{
-  width:7px;height:7px;flex:0 0 7px;
-  border-radius:var(--radius-full);
-  background:var(--ds-fg-subtle);
-}
-.ds-chip-sync.is-error{color:var(--ds-error);}
-.ds-chip-sync.is-error .sync-dot{background:var(--ds-error);}
+/* The sync indicator now lives in the global header (see .sync-menu); the
+   Log-tab chip it replaced was removed with its markup. */
 
 /* Title and records chip share one row, chip flushed right. Measured with real
    text metrics: the title runs 182px and the chip 99px idle / 129px selecting,

@@ -16,13 +16,18 @@ test('the header is global, not inside the Capture view', () => {
   assert.equal((html.match(/<header>/g) || []).length, 1);
 });
 
-test('the header carries the mark, a two-tone wordmark, the net pill and refresh', () => {
+test('the header carries the mark, a two-tone wordmark, the sync control and reload', () => {
   assert.match(html, /class="header-logo" src="kmtrack-mark\.svg"/);
   // Reference Brand: "KM" in the foreground, "TRACK" in --primary.
   assert.match(html, /id="header-wordmark">KM<span class="header-track">TRACK<\/span></);
-  assert.match(html, /id="net-status"[\s\S]{0,140}?Off network/);
-  assert.match(html, /id="net-refresh"/);
-  assert.match(design, /\.header-net\[hidden\]\{display:none;\}/);
+  // The sync indicator is the header's state control and opens its own panel.
+  assert.match(html, /class="sync-menu" id="sync-menu"/);
+  assert.match(html, /id="sync-status-text" role="status"/);
+  assert.match(html, /id="sync-panel-title"/);
+  // Two separate actions: syncing must never navigate.
+  assert.match(html, /id="sync-now-btn">Sync now</);
+  assert.match(html, /id="reload-app-btn">Reload app</);
+  assert.match(html, /class="header-refresh" id="net-refresh" aria-label="Reload app"/);
   assert.match(design, /\.header-wordmark\[hidden\]\{display:none;\}/);
 });
 
@@ -47,10 +52,16 @@ test('the header uses the shared surface and control values', () => {
   assert.match(word, /letter-spacing:-\.05em/);
   assert.match(word, /color:var\(--ds-fg\)/);
   assert.match(design, /\.header-track\{color:var\(--ds-primary\);\}/);
-  // Offline status uses the shared error tone; refresh keeps a full tap target.
-  assert.match(design, /\.header-net\{[\s\S]{0,400}?padding:5px 9px/);
-  assert.match(design, /\.header-net\{[\s\S]{0,400}?border-radius:var\(--radius-full\)/);
-  assert.match(design, /\.header-net\{[\s\S]{0,400}?color:var\(--ds-error\)/);
+  // StatusPill contract: fully rounded, 11px bold, holding the 44px control
+  // height so the whole pill is a valid touch target.
+  const pill = design.slice(design.indexOf('.sync-menu > summary{'), design.indexOf('.sync-menu > summary{') + 600);
+  assert.match(pill, /min-height:var\(--ds-control-min\)/);
+  assert.match(pill, /border-radius:var\(--radius-full\)/);
+  assert.match(pill, /font-size:11px/);
+  // One tone rule per state, from the system's StatusPill vocabulary.
+  assert.match(design, /\.sync-menu\[data-sync-state="synced"\] > summary\{[^}]*color:var\(--ds-secondary\)/);
+  assert.match(design, /\.sync-menu\[data-sync-state="pending"\] > summary,[\s\S]{0,80}?color:var\(--ds-warning\)/);
+  assert.match(design, /\.sync-menu\[data-sync-state="failed"\] > summary,[\s\S]{0,80}?color:var\(--ds-error\)/);
   assert.match(design, /\.header-refresh\{[\s\S]{0,400}?min-height:var\(--ds-control-min\)/);
   assert.match(design, /\.header-actions\{[\s\S]{0,120}?gap:var\(--ds-space-2\)/);
 });
@@ -96,19 +107,61 @@ test('the saved count is dropped when the footer cannot fit it', () => {
   assert.match(html, /syncHeaderContext\(viewName\);[\s\S]{0,120}?fitInstrumentFoot\(\);/);
 });
 
-test('the refresh button re-checks the connection, drains the queue, then reloads', () => {
+test('syncing and reloading are separate actions', () => {
   assert.match(html, /function updateNetStatus\(\)/);
   assert.match(html, /navigator\.onLine !== false/);
   assert.match(html, /window\.addEventListener\('online', updateNetStatus\)/);
   assert.match(html, /window\.addEventListener\('offline', updateNetStatus\)/);
-  assert.match(html, /document\.getElementById\('net-refresh'\)\.addEventListener\('click', refreshConnection\)/);
-  // Inert until a transport exists, so the drain just re-tests the connection.
-  assert.match(html, /await syncQueue\.drain\(entries\)/);
-  // Then a full page reload — AFTER the drain, so an in-flight sync is not cut
-  // off by the navigation itself.
-  assert.match(html, /await syncQueue\.drain\(entries\)[\s\S]{0,900}?window\.location\.reload\(\)/);
-  // ...and the label says so, since it now does more than re-test the network.
-  assert.match(html, /id="net-refresh" aria-label="Re-check connection and reload"/);
+  assert.match(html, /getElementById\('net-refresh'\)\.addEventListener\('click', reloadApp\)/);
+  assert.match(html, /getElementById\('reload-app-btn'\)\.addEventListener\('click', reloadApp\)/);
+  assert.match(html, /getElementById\('sync-now-btn'\)\.addEventListener\('click', syncNow\)/);
+  // Syncing must NOT navigate — a page reload can never be its side effect.
+  const start = html.indexOf('async function syncNow()');
+  const end = html.indexOf('// ---------- Header: connection status + reload ----------');
+  assert.ok(start > -1 && end > start, 'syncNow() must be found');
+  const syncNow = html.slice(start, end);
+  assert.doesNotMatch(syncNow, /location\.reload\(\)/);
+  assert.match(syncNow, /await syncQueue\.drain\(entries\)/);
+  // Reload flushes the queue first, so an in-flight upload is not cut off.
+  const reloadApp = html.slice(html.indexOf('async function reloadApp()'), html.indexOf('async function reloadApp()') + 700);
+  assert.match(reloadApp, /await syncQueue\.drain\(entries\)/);
+  assert.match(reloadApp, /window\.location\.reload\(\)/);
+});
+
+test('the indicator distinguishes all six sync states from real data', () => {
+  assert.match(html, /function syncState\(counts, online, ready, syncing\)/);
+  // Priority, most actionable first: running sync, failures, waiting work, then
+  // connectivity, then the quiet states.
+  assert.match(html, /if\(syncing\) return 'syncing';/);
+  assert.match(html, /if\(counts\.failed > 0\) return 'failed';/);
+  assert.match(html, /if\(ready && counts\.pending > 0\) return 'pending';/);
+  assert.match(html, /if\(!online\) return 'offline';/);
+  assert.match(html, /if\(counts\.total > 0 && counts\.pending === 0 && counts\.failed === 0\) return 'synced';/);
+  assert.match(html, /return 'local';/);
+  // Each state carries copy and one of the system's four tones.
+  assert.match(html, /syncing:\{tone:'warn',/);
+  assert.match(html, /failed: \{tone:'bad',/);
+  assert.match(html, /pending:\{tone:'warn',/);
+  assert.match(html, /offline:\{tone:'bad',/);
+  assert.match(html, /synced: \{tone:'fresh',/);
+  assert.match(html, /local:  \{tone:'neutral',/);
+  // Counts come from the queue's own summary, never a parallel counter.
+  assert.match(html, /KMTrackSync\.summary\(entries\)/);
+  for(const id of ['sync-total','sync-pending','sync-synced','sync-failed']){
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  // The panel is honest while there is no transport to sync with.
+  assert.match(html, /Cloud sync is not configured yet/);
+});
+
+test('the sync indicator exists once, in the global header', () => {
+  assert.equal((html.match(/id="sync-status-text"/g) || []).length, 1);
+  assert.equal((html.match(/id="sync-menu"/g) || []).length, 1);
+  // The old Log-tab chip and its dead CSS are gone with it.
+  assert.doesNotMatch(html, /sync-status-chip/);
+  assert.doesNotMatch(design, /\.ds-chip-sync/);
+  // The map context swap is untouched.
+  assert.match(html, /wordmark\.hidden = isMap;/);
 });
 
 test('a reload comes back to the same tab and map position', () => {
