@@ -378,7 +378,7 @@ html[data-theme="light"] .kmpost.instrument-panel{
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:14px 16px 8px;
+  padding:14px 16px 0px;
   background:transparent;
   border-bottom:0;
 }
