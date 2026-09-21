@@ -2,10 +2,36 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const vm = require('node:vm');
 
 const html = fs.readFileSync(require.resolve('./index.html'),'utf8');
 const controls = fs.readFileSync(require.resolve('./log-controls.js'),'utf8');
 const design = fs.readFileSync(require.resolve('./design-system.css'),'utf8');
+
+test('network disclosure reports loading, available, cached and failed sources honestly',()=>{
+  const elements = Object.fromEntries(['dataset-drawer','dataset-state-label','calib-status','ramp-status','calib-badge','ramp-badge'].map(id=>[id,{dataset:{},textContent:''}]));
+  const source = html.match(/function updateDatasetDrawerState\(\)\{[\s\S]*?\n\}/)[0];
+  const context = vm.createContext({document:{getElementById:id=>elements[id]}});
+  vm.runInContext(source,context);
+  for(const [calib,ramp,expected] of [
+    ['loading','loading','Checking datasets…'],
+    ['ready','loading','Checking datasets…'],
+    ['ready','ready','Both sources ready'],
+    ['cached','ready','Available on this device'],
+    ['cached','cached','Available on this device'],
+    ['error','ready','1 of 2 sources available'],
+    ['cached','error','1 of 2 sources available'],
+    ['error','error','Network data unavailable']
+  ]){
+    elements['calib-status'].dataset.state = calib;
+    elements['ramp-status'].dataset.state = ramp;
+    context.updateDatasetDrawerState();
+    assert.equal(elements['dataset-state-label'].textContent,expected);
+    assert.equal(elements['calib-badge'].dataset.state,calib);
+    assert.equal(elements['ramp-badge'].dataset.state,ramp);
+  }
+  assert.equal(elements['calib-badge'].textContent,'Unavailable');
+});
 
 test('the tab bar exposes inspection, log, map, tools and settings',()=>{
   for(const view of ['inspection','log','map','tools','settings']){
@@ -16,11 +42,12 @@ test('the tab bar exposes inspection, log, map, tools and settings',()=>{
   assert.match(design,/\.app-tab-bar\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
 });
 
-test('bottom navigation uses the correct surface for each theme and a shared teal accent',()=>{
+test('bottom navigation uses each theme’s surface and teal accent',()=>{
   assert.match(design,/\.app-tab-bar\{[^}]*background:#1b2737/);
   assert.match(design,/html\[data-theme="light"\] \.app-tab-bar\{[^}]*background:var\(--ds-card\)/);
   assert.match(design,/html\[data-theme="light"\] \.app-tab-btn\{color:var\(--ds-fg-muted\)/);
-  assert.match(design,/\.app-tab-btn\.active,\s*html\[data-theme="light"\] \.app-tab-btn\.active\{[^}]*background:transparent;[^}]*color:#48aeb1/);
+  assert.match(design,/\.app-tab-btn\.active,\s*html\[data-theme="light"\] \.app-tab-btn\.active\{[^}]*background:transparent;[^}]*color:var\(--ds-secondary\)/);
+  assert.match(design,/\.app-tab-btn:focus-visible\{[^}]*outline:2px solid var\(--ds-secondary\)/);
   assert.match(design,/\.app-tab-btn\.active::after\{[^}]*background:currentColor/);
   assert.doesNotMatch(design,/:is\(\.lane-btn,\.app-tab-btn,\.switch,\[role="button"\]\):focus-within/);
   assert.match(design,/--app-nav-h:calc\(64px \+ env\(safe-area-inset-bottom\)\)/);

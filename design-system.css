@@ -202,7 +202,6 @@ html:not([data-theme="light"]) body{background:var(--ds-bg);}
 .readout-main .field .label,
 .bound-panel-label,
 .header-copy .sub,
-.dataset-panel-title,
 .count-bar-left,
 .eyebrow{
   font-family:var(--font-ui);
@@ -234,7 +233,7 @@ h2,.section-title{
    bare controls on the page, not a card — giving it a surface painted a stray
    white rectangle behind them. `.map-entry-controls` is different: it is a
    genuine floating bar over the map. */
-.readout,.bound-panel,details.calib,.log-entry,.dataset-panel,
+.readout,.bound-panel,details.calib,.log-entry,
 .ds-card,.sharing-filters,.map-entry-controls{
   background:var(--ds-card);
   border:1px solid var(--ds-border);
@@ -245,7 +244,6 @@ html[data-theme="light"] .readout,
 html[data-theme="light"] .bound-panel,
 html[data-theme="light"] details.calib,
 html[data-theme="light"] .log-entry,
-html[data-theme="light"] .dataset-panel,
 html[data-theme="light"] .ds-card{
   background:var(--ds-card);
   border-color:var(--ds-border);
@@ -921,7 +919,7 @@ html[data-theme="light"] .defect-focus-select{background-color:var(--ds-card-2);
 
 /* Compact, fully rounded, one clear tone. Never used to imply a road match
    that has not actually been confirmed. */
-.status,.status-pill,.photo-status,.dataset-state-label{
+.status,.status-pill,.photo-status{
   display:inline-flex;
   align-items:center;
   gap:6px;
@@ -972,18 +970,26 @@ html[data-theme="light"] .map-theme-toggle{
   color:hsl(40 22% 92%);
 }
 
-/* ---------- Dataset drawer ---------------------------------------------- */
+/* ---------- Network data disclosure ------------------------------------- */
 
-.dataset-drawer{
-  background:var(--ds-card);
-  border:1px solid var(--ds-border);
-  border-top:0;
-  box-shadow:var(--ds-shadow-sm);
-}
-.dataset-drawer>summary{color:var(--ds-fg);}
-.dataset-panel{background:var(--ds-bg-2);border:1px solid var(--ds-border);}
-.dataset-state-dot{background:var(--ds-fg-subtle);}
-.dataset-drawer.loaded .dataset-state-dot{background:var(--ds-secondary);}
+.dataset-drawer{margin:0;width:100%;border:0;border-top:1px solid var(--ds-border);background:transparent;box-shadow:none;}
+.dataset-drawer>summary{display:flex;align-items:center;gap:12px;min-height:64px;padding:16px 0;cursor:pointer;list-style:none;color:var(--ds-fg);}
+.dataset-drawer>summary::-webkit-details-marker{display:none;}
+.dataset-summary-copy{display:grid;gap:4px;flex:1;min-width:0;}
+.dataset-summary-copy strong{font-family:var(--font-ui);font-size:14px;font-weight:600;}
+.dataset-state-label{font-size:12px;line-height:1.5;color:var(--ds-fg-muted);}
+.dataset-chevron{width:20px;height:20px;flex:0 0 20px;display:grid;place-items:center;color:var(--ds-fg-muted);}
+.dataset-chevron::after{content:'';width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);}
+.dataset-drawer[open] .dataset-chevron::after{transform:rotate(225deg);}
+.dataset-content{display:grid;grid-template-columns:minmax(0,1fr);}
+.dataset-panel{min-width:0;padding:16px 0;border:0;border-top:1px solid var(--ds-border);background:transparent;box-shadow:none;}
+.dataset-panel-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.dataset-panel-title{margin:0;font-family:var(--font-ui);font-size:14px;line-height:1.5;font-weight:600;color:var(--ds-fg);}
+.dataset-badge{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.5;color:var(--ds-fg-muted);background:var(--ds-muted);}
+.dataset-badge[data-state="ready"],.dataset-badge[data-state="cached"]{color:var(--ds-accent-fg);background:var(--ds-accent);}
+.dataset-badge[data-state="error"]{color:var(--ds-error);background:var(--ds-error-bg);}
+.dataset-panel .calib-hint{margin:8px 0 12px;font-size:13px;line-height:1.6;color:var(--ds-fg-muted);overflow-wrap:anywhere;}
+.dataset-panel .ds-btn{min-height:44px;padding:10px 16px;}
 
 /* ---------- Defect capture ---------------------------------------------- */
 
@@ -1070,7 +1076,7 @@ html[data-theme="light"] .app-tab-btn{color:var(--ds-fg-muted);}
 .app-tab-btn.active,
 html[data-theme="light"] .app-tab-btn.active{
   background:transparent;
-  color:#48aeb1;
+  color:var(--ds-secondary);
 }
 .app-tab-btn.active::after{
   content:"";
@@ -1082,7 +1088,7 @@ html[data-theme="light"] .app-tab-btn.active{
   border-radius:2px;
   background:currentColor;
 }
-.app-tab-btn:focus-visible{outline:2px solid #48aeb1;outline-offset:-2px;}
+.app-tab-btn:focus-visible{outline:2px solid var(--ds-secondary);outline-offset:-2px;}
 
 /* ---------- Map ---------------------------------------------------------- */
 
@@ -1524,34 +1530,6 @@ html[data-theme="light"] .settings-view .theme-toggle{
 }
 .settings-view .theme-toggle:hover{background:var(--ds-muted);}
 
-/* The dataset drawer was a panel hanging off the masthead; inside Settings it
-   becomes an inline disclosure so it stops floating over the page. */
-.settings-view .dataset-drawer,
-html[data-theme="light"] .settings-view .dataset-drawer{
-  position:static;
-  margin:0;
-  width:auto;
-  background:var(--ds-bg-2);
-  border:1px solid var(--ds-border);
-  border-radius:var(--radius-md);
-  box-shadow:none;
-}
-.settings-view .dataset-drawer>summary{
-  min-height:0;
-  padding:11px 12px;
-  color:var(--ds-fg);
-}
-html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-fg);}
-.settings-view .dataset-content{
-  grid-template-columns:1fr;
-  padding:0 12px 12px;
-}
-.settings-view .dataset-panel{
-  background:var(--ds-card);
-  border-color:var(--ds-border);
-}
-.settings-view .dataset-panel-title{color:var(--ds-fg);}
-
 /* Import feedback lives with the import controls now. */
 #import-status:not(:empty){
   margin-top:10px;
@@ -1629,23 +1607,6 @@ html[data-theme="light"] .settings-view .dataset-drawer>summary{color:var(--ds-f
   fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;
 }
-
-/* The two dataset blocks read like the reference's accepted-formats note:
-   a muted rounded block of 12px text with a quiet action. */
-.dataset-content{display:grid;gap:12px;}
-.dataset-panel{
-  padding:12px;
-  border-radius:10px;
-  background:color-mix(in srgb, var(--ds-muted) 65%, transparent);
-}
-.dataset-panel-title{
-  font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ds-fg-muted);
-}
-.dataset-panel .calib-hint{
-  margin:8px 0 0;font-size:12px;line-height:1.6;color:var(--ds-fg-muted);
-}
-.dataset-panel .calib-add{margin-top:12px;}
 
 /* Settings: a 20px icon in --secondary, no tile. */
 .setting-icon{

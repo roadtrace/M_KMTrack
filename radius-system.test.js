@@ -16,8 +16,6 @@ test('date inputs shrink inside both filter grids and bottom tabs keep a compact
 test('pre-system corner shapes are restored while bottom navigation stays rectangular',()=>{
   for(const expected of [
     /header\{border-radius:0 0 24px 24px/,
-    /\.dataset-drawer\{border-radius:0 0 30px 30px/,
-    /\.dataset-panel\{border-radius:14px/,
     /\.readout\{border-radius:18px/,
     /\.bound-panel\{border-radius:10px/,
     /\.kmpost\{border-radius:20px/,

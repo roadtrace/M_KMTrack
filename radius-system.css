@@ -1,10 +1,6 @@
 /* Restored pre-system corner styling. The bottom navigation tray intentionally
    remains rectangular; only its inset selected-tab highlight is rounded. */
 html:root header{border-radius:0 0 24px 24px;}
-html:root .dataset-drawer{border-radius:0 0 30px 30px;}
-html:root .dataset-content{padding:0 10px 10px;}
-html:root .dataset-panel{border-radius:14px;padding:12px 13px;}
-html:root .dataset-panel .calib-add{border-radius:10px;}
 html:root .readout{border-radius:18px;padding:14px 16px;}
 html:root .bound-panel{border-radius:10px;padding:10px 12px;}
 html:root button.bound-btn{border-radius:12px;}
